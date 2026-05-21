@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import shit.zen.event.EventBus;
 import shit.zen.event.EventTarget;
 import shit.zen.event.impl.TickEvent;
+import shit.zen.gui.BuildSourceScreen;
 import shit.zen.manager.CommandManager;
 import shit.zen.manager.ConfigManager;
 import shit.zen.manager.HudManager;
@@ -111,9 +112,14 @@ public class ZenClient extends ClientBase {
     }
 
     private boolean moduleInit = false;
+    private boolean buildNoticeShown = false;
 
     @EventTarget
     public void onTick(TickEvent e) {
+        if (isReady() && !this.buildNoticeShown) {
+            this.buildNoticeShown = true;
+            mc.setScreen(new BuildSourceScreen(mc.screen));
+        }
         if (isReady() && !moduleInit) {
             moduleInit = true;
             this.moduleManager.initModules();
