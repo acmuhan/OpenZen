@@ -9,11 +9,50 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    archivesName = 'OpenZen-acmuhan'
 }
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+def generatedBuildInfoDir = layout.buildDirectory.dir('generated/sources/buildInfo/java')
+
+tasks.register('generateBuildInfo') {
+    outputs.dir(generatedBuildInfoDir)
+    doLast {
+        def outputDir = generatedBuildInfoDir.get().asFile
+        def packageDir = new File(outputDir, 'shit/zen')
+        packageDir.mkdirs()
+        def sha = System.getenv('GITHUB_SHA') ?: 'local-dev'
+        def repoUrl = System.getenv('GITHUB_SERVER_URL') && System.getenv('GITHUB_REPOSITORY')
+                ? "${System.getenv('GITHUB_SERVER_URL')}/${System.getenv('GITHUB_REPOSITORY')}"
+                : 'https://github.com/acmuhan/OpenZen'
+        def repoLabel = repoUrl.replace('https://', '')
+        new File(packageDir, 'BuildInfo.java').text = """package shit.zen;
+
+public final class BuildInfo {
+    public static final String REPOSITORY_URL = \"${repoUrl}\";
+    public static final String REPOSITORY_LABEL = \"${repoLabel}\";
+    public static final String BUILD_SHA = \"${sha}\";
+
+    private BuildInfo() {
+    }
+
+    public static String shortSha() {
+        if (BUILD_SHA == null || BUILD_SHA.isBlank()) {
+            return \"unknown\";
+        }
+        return BUILD_SHA.length() > 12 ? BUILD_SHA.substring(0, 12) : BUILD_SHA;
+    }
+}
+"""
+    }
+}
+
+sourceSets.main.java.srcDir(generatedBuildInfoDir)
+tasks.named('compileJava') {
+    dependsOn tasks.named('generateBuildInfo')
+}
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {

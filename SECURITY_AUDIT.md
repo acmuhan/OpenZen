@@ -3,8 +3,8 @@
 审计对象：`acmuhan/openzen`  
 本地路径：`/opt/data/workspace/openzen-workflow/openzen`  
 审计时间：2026-05-21  
-构建产物：`build/libs/examplemod-1.0.0.jar`  
-构建 SHA256：`7874a0daa180a4cdd1a22d9ce21cbb12c0493478b5d34c5ee5b7baeb4db6cb6f`
+构建产物：`build/libs/OpenZen-acmuhan-1.0.0.jar`  
+构建 SHA256：`7f07751e345f4c745930823008e456165941809de1801921e5c2a200322a6c25`
 
 ## 1. 结论摘要
 
@@ -470,9 +470,9 @@ BUILD SUCCESSFUL in 4m 49s
 产物：
 
 ```text
-build/libs/examplemod-1.0.0.jar
-SHA256: 7874a0daa180a4cdd1a22d9ce21cbb12c0493478b5d34c5ee5b7baeb4db6cb6f
-Size: 13086151 bytes
+build/libs/OpenZen-acmuhan-1.0.0.jar
+SHA256: 7f07751e345f4c745930823008e456165941809de1801921e5c2a200322a6c25
+Size: 13086147 bytes
 ```
 
 ## 9. 审计局限
