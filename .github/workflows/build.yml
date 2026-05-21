@@ -36,24 +36,32 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build --no-daemon --stacktrace
 
-      - name: Generate SHA256
+      - name: Package Action artifacts
         shell: bash
         run: |
-          sha256sum build/libs/*.jar > build/libs/OpenZen-acmuhan.sha256
-          cat build/libs/OpenZen-acmuhan.sha256
+          mkdir -p dist
+          cp build/libs/*.jar dist/
+          sha256sum dist/*.jar > dist/OpenZen-acmuhan.sha256
+          cat dist/OpenZen-acmuhan.sha256
+          {
+            echo "## OpenZen build artifacts"
+            echo ""
+            echo "Action 页面下方的 Artifacts 区域会显示并可下载："
+            echo "- OpenZen-acmuhan-jar"
+            echo ""
+            echo "Release tag 构建时同一份 dist 产物也会上传到 Release。"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload build artifact
+      - name: Upload Action page artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OpenZen-acmuhan-${{ github.sha }}
-          path: |
-            build/libs/*.jar
-            build/libs/*.sha256
+          name: OpenZen-acmuhan-jar
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Publish GitHub Release assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/libs/*.jar
-            build/libs/*.sha256
+          files: dist/*
