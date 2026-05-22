@@ -25,27 +25,27 @@ public class Rotation {
     public Runnable task;
     @Getter @Setter
     public Runnable postTask;
-    static final boolean Đ = true;
+    static final boolean ASSERTIONS_DISABLED = true;
 
     public Rotation() {
         this.yaw = 0.0f;
         this.pitch = 0.0f;
     }
 
-    public Rotation(float f, float f2) {
-        this.yaw = f;
-        this.pitch = f2;
+    public Rotation(float yaw, float pitch) {
+        this.yaw = yaw;
+        this.pitch = pitch;
     }
 
-    public Rotation(Vector2f vector2f) {
-        this.yaw = vector2f.getX();
-        this.pitch = vector2f.getY();
+    public Rotation(Vector2f yawPitch) {
+        this.yaw = yawPitch.getX();
+        this.pitch = yawPitch.getY();
     }
 
-    public Rotation(Vec3 vec3, Vec3 vec32) {
-        Vec3 vec33 = vec32.subtract(vec3);
-        this.yaw = Mth.wrapDegrees((float)Math.toDegrees(Math.atan2(vec33.z, vec33.x)) - 90.0f);
-        this.pitch = Mth.wrapDegrees((float)(-Math.toDegrees(Math.atan2(vec33.y, Math.sqrt(vec33.x * vec33.x + vec33.z * vec33.z)))));
+    public Rotation(Vec3 from, Vec3 to) {
+        Vec3 delta = to.subtract(from);
+        this.yaw = Mth.wrapDegrees((float)Math.toDegrees(Math.atan2(delta.z, delta.x)) - 90.0f);
+        this.pitch = Mth.wrapDegrees((float)(-Math.toDegrees(Math.atan2(delta.y, Math.sqrt(delta.x * delta.x + delta.z * delta.z)))));
     }
 
     public Rotation clone() {
@@ -64,13 +64,13 @@ public class Rotation {
         return new Rotation(-this.yaw, -this.pitch);
     }
 
-    public Rotation withTask(Runnable runnable) {
-        this.task = runnable;
+    public Rotation withTask(Runnable task) {
+        this.task = task;
         return this;
     }
 
-    public Rotation withPostTask(Runnable runnable) {
-        this.postTask = runnable;
+    public Rotation withPostTask(Runnable postTask) {
+        this.postTask = postTask;
         return this;
     }
 
@@ -83,124 +83,124 @@ public class Rotation {
         if (Float.isNaN(this.yaw) || Float.isNaN(this.pitch)) {
             return;
         }
-        this.snapToSensitivity(Float.valueOf(ClientBase.mc.options.sensitivity().get().floatValue()));
+        this.snapToSensitivity(ClientBase.mc.options.sensitivity().get().floatValue());
         player.setYRot(this.yaw);
         player.setXRot(this.pitch);
     }
 
-    public Rotation snapToSensitivity(Float f) {
-        float f2 = f.floatValue() * 0.6f + 0.2f;
-        float f3 = f2 * f2 * f2 * 1.2f;
-        this.yaw -= this.yaw % f3;
-        this.pitch -= this.pitch % f3;
+    public Rotation snapToSensitivity(Float sensitivity) {
+        float scaled = sensitivity.floatValue() * 0.6f + 0.2f;
+        float step = scaled * scaled * scaled * 1.2f;
+        this.yaw -= this.yaw % step;
+        this.pitch -= this.pitch % step;
         return this;
     }
 
-    public static float moveTowards(float f, float f2, float f3) {
-        float f4 = Mth.wrapDegrees(f2 - f);
-        if (f4 > f3) {
-            f4 = f3;
+    public static float moveTowards(float current, float target, float maxStep) {
+        float diff = Mth.wrapDegrees(target - current);
+        if (diff > maxStep) {
+            diff = maxStep;
         }
-        if (f4 < -f3) {
-            f4 = -f3;
+        if (diff < -maxStep) {
+            diff = -maxStep;
         }
-        return f + f4;
+        return current + diff;
     }
 
-    public double distanceTo(Rotation rotation) {
-        float f = Mth.wrapDegrees(this.yaw);
-        float f2 = Mth.wrapDegrees(rotation.yaw);
-        float f3 = Mth.wrapDegrees(f - f2);
-        float f4 = Mth.wrapDegrees(this.pitch);
-        float f5 = Mth.wrapDegrees(rotation.pitch);
-        float f6 = Mth.wrapDegrees(f4 - f5);
-        return Math.sqrt(f3 * f3 + f6 * f6);
+    public double distanceTo(Rotation other) {
+        float thisYaw = Mth.wrapDegrees(this.yaw);
+        float otherYaw = Mth.wrapDegrees(other.yaw);
+        float yawDiff = Mth.wrapDegrees(thisYaw - otherYaw);
+        float thisPitch = Mth.wrapDegrees(this.pitch);
+        float otherPitch = Mth.wrapDegrees(other.pitch);
+        float pitchDiff = Mth.wrapDegrees(thisPitch - otherPitch);
+        return Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
     }
 
-    public float smoothYaw(float f, float f2, float f3) {
-        float f4 = Rotation.moveTowards(f2, f3, f + RandomUtils.nextFloat(0.0f, 15.0f));
-        double d = Mth.wrapDegrees(f3 - f2);
-        if ((double)(-f) > d || d > (double)f) {
-            if (!Đ && ClientBase.mc.player == null) {
+    public float smoothYaw(float speed, float current, float target) {
+        float stepped = Rotation.moveTowards(current, target, speed + RandomUtils.nextFloat(0.0f, 15.0f));
+        double diff = Mth.wrapDegrees(target - current);
+        if ((double)(-speed) > diff || diff > (double)speed) {
+            if (!ASSERTIONS_DISABLED && ClientBase.mc.player == null) {
                 throw new AssertionError();
             }
-            f4 += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)ClientBase.mc.player.getXRot() * Math.PI));
+            stepped += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)ClientBase.mc.player.getXRot() * Math.PI));
         }
-        if (f4 == f2) {
-            return f2;
+        if (stepped == current) {
+            return current;
         }
-        float f5 = ClientBase.mc.options.sensitivity().get().floatValue();
-        if ((double)f5 == 0.5) {
-            f5 = 0.47887325f;
+        float sensitivity = ClientBase.mc.options.sensitivity().get().floatValue();
+        if ((double)sensitivity == 0.5) {
+            sensitivity = 0.47887325f;
         }
-        float f6 = f5 * 0.6f + 0.2f;
-        float f7 = f6 * f6 * f6 * 8.0f;
-        int n = (int)((6.667 * (double)f4 - 6.666666666666667 * (double)f2) / (double)f7);
-        float f8 = (float)n * f7;
-        f4 = (float)((double)f2 + (double)f8 * 0.15);
-        return f4;
+        float scaled = sensitivity * 0.6f + 0.2f;
+        float gcd = scaled * scaled * scaled * 8.0f;
+        int steps = (int)((6.667 * (double)stepped - 6.666666666666667 * (double)current) / (double)gcd);
+        float snapped = (float)steps * gcd;
+        stepped = (float)((double)current + (double)snapped * 0.15);
+        return stepped;
     }
 
-    public float smoothYawArray(float f, float[] fArray, float f2) {
-        float f3 = Rotation.moveTowards(fArray[0], f2, f + RandomUtils.nextFloat(0.0f, 15.0f));
-        if (f3 != f2) {
-            f3 += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)fArray[1] * Math.PI));
+    public float smoothYawArray(float speed, float[] currentPair, float target) {
+        float stepped = Rotation.moveTowards(currentPair[0], target, speed + RandomUtils.nextFloat(0.0f, 15.0f));
+        if (stepped != target) {
+            stepped += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)currentPair[1] * Math.PI));
         }
-        if (f3 == fArray[0]) {
-            return fArray[0];
+        if (stepped == currentPair[0]) {
+            return currentPair[0];
         }
-        float f4 = ClientBase.mc.options.sensitivity().get().floatValue();
-        f3 += (float)(ThreadLocalRandom.current().nextGaussian() * 0.2);
-        if ((double)f4 == 0.5) {
-            f4 = 0.47887325f;
+        float sensitivity = ClientBase.mc.options.sensitivity().get().floatValue();
+        stepped += (float)(ThreadLocalRandom.current().nextGaussian() * 0.2);
+        if ((double)sensitivity == 0.5) {
+            sensitivity = 0.47887325f;
         }
-        float f5 = f4 * 0.6f + 0.2f;
-        float f6 = f5 * f5 * f5 * 8.0f;
-        int n = (int)((6.667 * (double)f3 - 6.6666667 * (double)fArray[0]) / (double)f6);
-        float f7 = (float)n * f6;
-        f3 = (float)((double)fArray[0] + (double)f7 * 0.15);
-        return f3;
+        float scaled = sensitivity * 0.6f + 0.2f;
+        float gcd = scaled * scaled * scaled * 8.0f;
+        int steps = (int)((6.667 * (double)stepped - 6.6666667 * (double)currentPair[0]) / (double)gcd);
+        float snapped = (float)steps * gcd;
+        stepped = (float)((double)currentPair[0] + (double)snapped * 0.15);
+        return stepped;
     }
 
-    public float smoothPitch(float f, float f2, float f3) {
-        float f4;
-        float f5 = Rotation.moveTowards(f2, f3, f + RandomUtils.nextFloat(0.0f, 15.0f));
-        if (f5 != f3) {
-            f5 += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)ClientBase.mc.player.getYRot() * Math.PI));
+    public float smoothPitch(float speed, float current, float target) {
+        float sensitivity;
+        float stepped = Rotation.moveTowards(current, target, speed + RandomUtils.nextFloat(0.0f, 15.0f));
+        if (stepped != target) {
+            stepped += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)ClientBase.mc.player.getYRot() * Math.PI));
         }
-        if ((double)(f4 = ClientBase.mc.options.sensitivity().get().floatValue()) == 0.5) {
-            f4 = 0.47887325f;
+        if ((double)(sensitivity = ClientBase.mc.options.sensitivity().get().floatValue()) == 0.5) {
+            sensitivity = 0.47887325f;
         }
-        float f6 = f4 * 0.6f + 0.2f;
-        float f7 = f6 * f6 * f6 * 8.0f;
-        int n = (int)((6.667 * (double)f5 - 6.666667 * (double)f2) / (double)f7) * -1;
-        float f8 = (float)n * f7;
-        float f9 = (float)((double)f2 - (double)f8 * 0.15);
-        f5 = Mth.clamp(f9, -90.0f, 90.0f);
-        return f5;
+        float scaled = sensitivity * 0.6f + 0.2f;
+        float gcd = scaled * scaled * scaled * 8.0f;
+        int steps = (int)((6.667 * (double)stepped - 6.666667 * (double)current) / (double)gcd) * -1;
+        float snapped = (float)steps * gcd;
+        float result = (float)((double)current - (double)snapped * 0.15);
+        stepped = Mth.clamp(result, -90.0f, 90.0f);
+        return stepped;
     }
 
-    public float smoothPitchArray(float f, float[] fArray, float f2) {
-        float f3;
-        float f4 = Rotation.moveTowards(fArray[1], f2, f + RandomUtils.nextFloat(0.0f, 15.0f));
-        if (f4 != f2) {
-            f4 += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)fArray[0] * Math.PI));
+    public float smoothPitchArray(float speed, float[] currentPair, float target) {
+        float sensitivity;
+        float stepped = Rotation.moveTowards(currentPair[1], target, speed + RandomUtils.nextFloat(0.0f, 15.0f));
+        if (stepped != target) {
+            stepped += (float)((double)RandomUtils.nextFloat(1.0f, 2.0f) * Math.sin((double)currentPair[0] * Math.PI));
         }
-        if ((double)(f3 = ClientBase.mc.options.sensitivity().get().floatValue()) == 0.5) {
-            f3 = 0.47887325f;
+        if ((double)(sensitivity = ClientBase.mc.options.sensitivity().get().floatValue()) == 0.5) {
+            sensitivity = 0.47887325f;
         }
-        float f5 = f3 * 0.6f + 0.2f;
-        float f6 = f5 * f5 * f5 * 8.0f;
-        int n = (int)((6.667 * (double)f4 - 6.666667 * (double)fArray[1]) / (double)f6) * -1;
-        float f7 = (float)n * f6;
-        float f8 = (float)((double)fArray[1] - (double)f7 * 0.15);
-        f4 = Mth.clamp(f8, -90.0f, 90.0f);
-        return f4;
+        float scaled = sensitivity * 0.6f + 0.2f;
+        float gcd = scaled * scaled * scaled * 8.0f;
+        int steps = (int)((6.667 * (double)stepped - 6.666667 * (double)currentPair[1]) / (double)gcd) * -1;
+        float snapped = (float)steps * gcd;
+        float result = (float)((double)currentPair[1] - (double)snapped * 0.15);
+        stepped = Mth.clamp(result, -90.0f, 90.0f);
+        return stepped;
     }
 
-    public void setYawPitch(float f, float f2) {
-        this.yaw = f;
-        this.pitch = f2;
+    public void setYawPitch(float yaw, float pitch) {
+        this.yaw = yaw;
+        this.pitch = pitch;
     }
 
 }

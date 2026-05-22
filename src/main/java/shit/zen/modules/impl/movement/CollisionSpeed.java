@@ -26,43 +26,43 @@ extends Module {
     @EventTarget
     public void onMotion(MotionEvent motionEvent) {
         if (motionEvent.isPost() && MovementUtil.isInputActive() && mc.player != null && mc.level != null) {
-            AABB aABB = mc.player.getBoundingBox().expandTowards(0.25, 0.25, 0.25);
-            int n = 0;
+            AABB playerBox = mc.player.getBoundingBox().expandTowards(0.25, 0.25, 0.25);
+            int collisionCount = 0;
             for (Entity entity : mc.level.entitiesForRendering()) {
-                if (!(entity instanceof LivingEntity) && !(entity instanceof Boat) && !(entity instanceof Minecart) && !(entity instanceof FishingHook) || entity instanceof ArmorStand || entity.getId() == mc.player.getId() || !entity.isAlive() || !aABB.intersects(entity.getBoundingBox()) || entity.getId() == -8 || entity.getId() == -1337 || mc.player.getTeam() != null && entity.getTeam() != null && !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.ALWAYS) && (mc.player.getTeam().isAlliedTo(entity.getTeam()) ? !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.PUSH_OWN_TEAM) : !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.PUSH_OTHER_TEAMS))) continue;
-                ++n;
+                if (!(entity instanceof LivingEntity) && !(entity instanceof Boat) && !(entity instanceof Minecart) && !(entity instanceof FishingHook) || entity instanceof ArmorStand || entity.getId() == mc.player.getId() || !entity.isAlive() || !playerBox.intersects(entity.getBoundingBox()) || entity.getId() == -8 || entity.getId() == -1337 || mc.player.getTeam() != null && entity.getTeam() != null && !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.ALWAYS) && (mc.player.getTeam().isAlliedTo(entity.getTeam()) ? !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.PUSH_OWN_TEAM) : !entity.getTeam().getCollisionRule().equals(Team.CollisionRule.PUSH_OTHER_TEAMS))) continue;
+                ++collisionCount;
             }
-            float f = mc.player.getYRot();
+            float moveYaw = mc.player.getYRot();
             if (mc.options.keyDown.isDown()) {
-                f += 180.0f;
+                moveYaw += 180.0f;
                 if (mc.options.keyLeft.isDown()) {
-                    f += 45.0f;
+                    moveYaw += 45.0f;
                 } else if (mc.options.keyRight.isDown()) {
-                    f -= 45.0f;
+                    moveYaw -= 45.0f;
                 }
             } else if (mc.options.keyUp.isDown()) {
                 if (mc.options.keyLeft.isDown()) {
-                    f -= 45.0f;
+                    moveYaw -= 45.0f;
                 } else if (mc.options.keyRight.isDown()) {
-                    f += 45.0f;
+                    moveYaw += 45.0f;
                 }
             } else if (mc.options.keyRight.isDown()) {
-                f += 90.0f;
+                moveYaw += 90.0f;
             } else if (mc.options.keyLeft.isDown()) {
-                f -= 90.0f;
+                moveYaw -= 90.0f;
             }
-            double d = Math.toRadians(f);
-            double d2 = 0.065f * (float)Math.min(4, n);
+            double moveYawRad = Math.toRadians(moveYaw);
+            double speedBoost = 0.065f * (float)Math.min(4, collisionCount);
             if (TargetStrafe.strafeTarget != null && TargetStrafe.INSTANCE.isEnabled() && (!TargetStrafe.isSmartStrafe() || mc.options.keyJump.isDown())) {
-                float f2 = (float)(d2 / ((double)TargetStrafe.getRange() * Math.PI * 2.0) * 360.0) * (float)TargetStrafe.strafeDirectionSign;
+                float angleStep = (float)(speedBoost / ((double)TargetStrafe.getRange() * Math.PI * 2.0) * 360.0) * (float)TargetStrafe.strafeDirectionSign;
                 Rotation rotation = RotationUtil.rotationToForBow(new Vec3(TargetStrafe.strafeTarget.getX(), TargetStrafe.strafeTarget.getY(), TargetStrafe.strafeTarget.getZ()), new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()));
-                rotation.setYaw(rotation.getYaw() + f2);
-                float f3 = rotation.getYaw() * ((float)Math.PI / 180);
-                double d3 = TargetStrafe.strafeTarget.getX() - Math.sin(f3) * (double)TargetStrafe.getRange();
-                double d4 = TargetStrafe.strafeTarget.getZ() + Math.cos(f3) * (double)TargetStrafe.getRange();
-                d = RotationUtil.rotationToForBow(new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()), new Vec3(d3, TargetStrafe.strafeTarget.getY(), d4)).getYaw() * ((float)Math.PI / 180);
+                rotation.setYaw(rotation.getYaw() + angleStep);
+                float strafeYawRad = rotation.getYaw() * ((float)Math.PI / 180);
+                double strafeX = TargetStrafe.strafeTarget.getX() - Math.sin(strafeYawRad) * (double)TargetStrafe.getRange();
+                double strafeZ = TargetStrafe.strafeTarget.getZ() + Math.cos(strafeYawRad) * (double)TargetStrafe.getRange();
+                moveYawRad = RotationUtil.rotationToForBow(new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()), new Vec3(strafeX, TargetStrafe.strafeTarget.getY(), strafeZ)).getYaw() * ((float)Math.PI / 180);
             }
-            MovementUtil.strafeWithYaw(d, d2);
+            MovementUtil.strafeWithYaw(moveYawRad, speedBoost);
             MovementUtil.strafeForward(1.0E-4f);
         }
     }

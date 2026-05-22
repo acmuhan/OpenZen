@@ -56,11 +56,11 @@ extends Module {
     }
 
     @Override
-    public void setEnabled(boolean bl) {
+    public void setEnabled(boolean enable) {
         if (mc.player == null) {
             return;
         }
-        if (bl) {
+        if (enable) {
             super.setEnabled(true);
         } else if (this.modeSetting.is("Delay")) {
             if (this.stuckState == 3) {
@@ -114,15 +114,15 @@ extends Module {
             mc.player.setDeltaMovement(0.0, 0.0, 0.0);
             if (this.stuckState == 1) {
                 this.stuckState = 2;
-                float f = mc.player.getYRot();
-                float f2 = mc.player.getXRot();
-                if (this.shouldSendCapturedPacket() && (this.savedYaw != f || this.savedPitch != f2)) {
-                    PacketUtil.sendQueued(new ServerboundMovePlayerPacket.Rot(f, f2, mc.player.onGround()));
+                float currentYaw = mc.player.getYRot();
+                float currentPitch = mc.player.getXRot();
+                if (this.shouldSendCapturedPacket() && (this.savedYaw != currentYaw || this.savedPitch != currentPitch)) {
+                    PacketUtil.sendQueued(new ServerboundMovePlayerPacket.Rot(currentYaw, currentPitch, mc.player.onGround()));
                     while (!this.pongQueue.isEmpty()) {
                         PacketUtil.sendQueued((Packet<ServerGamePacketListener>) this.pongQueue.poll());
                     }
-                    this.savedYaw = f;
-                    this.savedPitch = f2;
+                    this.savedYaw = currentYaw;
+                    this.savedPitch = currentPitch;
                 }
                 PacketUtil.sendQueued((Packet<ServerGamePacketListener>) this.capturedPacket);
             } else if (!this.isAntiVoidActive() && this.modeSetting.is("Packet") && mc.player.tickCount % 10 == 0) {
@@ -151,12 +151,12 @@ extends Module {
     }
 
     private boolean shouldSendCapturedPacket() {
-        if (this.capturedPacket instanceof ServerboundUseItemPacket serverboundUseItemPacket) {
-            ItemStack itemStack = mc.player.getItemInHand(serverboundUseItemPacket.getHand());
-            return !(itemStack.getItem() instanceof BowlFoodItem) && !(itemStack.getItem() instanceof BowItem);
+        if (this.capturedPacket instanceof ServerboundUseItemPacket useItemPacket) {
+            ItemStack heldStack = mc.player.getItemInHand(useItemPacket.getHand());
+            return !(heldStack.getItem() instanceof BowlFoodItem) && !(heldStack.getItem() instanceof BowItem);
         }
-        if (this.capturedPacket instanceof ServerboundPlayerActionPacket serverboundPlayerActionPacket) {
-            return serverboundPlayerActionPacket.getAction() == ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM && mc.player.getUseItem().getItem() instanceof BowItem;
+        if (this.capturedPacket instanceof ServerboundPlayerActionPacket actionPacket) {
+            return actionPacket.getAction() == ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM && mc.player.getUseItem().getItem() instanceof BowItem;
         }
         return false;
     }
@@ -180,12 +180,12 @@ extends Module {
         if (mc.player == null) {
             return;
         }
-        Object object = packetEvent.getPacket();
-        if (object instanceof ServerboundMovePlayerPacket serverboundMovePlayerPacket) {
+        Object rawPacket = packetEvent.getPacket();
+        if (rawPacket instanceof ServerboundMovePlayerPacket movePacket) {
             if (this.stuckState != 1 && this.modeSetting.is("Packet")) {
-                object = new Rotation(mc.player.getYRot() + (float)(Math.random() - 0.5), mc.player.getXRot());
-                ReflectionUtil.setXRot(serverboundMovePlayerPacket, ((Rotation)object).getPitch());
-                ReflectionUtil.setYRot(serverboundMovePlayerPacket, ((Rotation)object).getYaw());
+                Rotation jitterRotation = new Rotation(mc.player.getYRot() + (float)(Math.random() - 0.5), mc.player.getXRot());
+                ReflectionUtil.setXRot(movePacket, jitterRotation.getPitch());
+                ReflectionUtil.setYRot(movePacket, jitterRotation.getYaw());
             }
             packetEvent.setCancelled(true);
         } else if (packetEvent.getPacket() instanceof ServerboundPongPacket) {

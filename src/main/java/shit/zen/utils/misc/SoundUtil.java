@@ -17,12 +17,12 @@ import shit.zen.manager.ConfigManager;
 import shit.zen.utils.math.MathUtil;
 
 public final class SoundUtil {
-    public static void playSound(String string, String string2) {
-        JOptionPane.showMessageDialog(null, string2, string, 0);
+    public static void playSound(String title, String message) {
+        JOptionPane.showMessageDialog(null, message, title, 0);
     }
 
-    public static void playSound(String string, float f) {
-        File file = new File(ConfigManager.CONFIG_DIR, string);
+    public static void playSound(String fileName, float gain) {
+        File file = new File(ConfigManager.CONFIG_DIR, fileName);
         if (!file.exists()) {
             System.out.println("Failed to find target file!");
             return;
@@ -34,10 +34,10 @@ public final class SoundUtil {
                 clip.open(audioInputStream);
                 clip.start();
                 FloatControl floatControl = (FloatControl)clip.getControl(FloatControl.Type.MASTER_GAIN);
-                floatControl.setValue(f);
+                floatControl.setValue(gain);
                 clip.start();
-            } catch (IOException | LineUnavailableException | UnsupportedAudioFileException throwable) {
-                throwable.printStackTrace();
+            } catch (IOException | LineUnavailableException | UnsupportedAudioFileException ex) {
+                ex.printStackTrace();
             }
         }, "Netty Client IO #" + MathUtil.randomInt(0, 100)).start();
     }

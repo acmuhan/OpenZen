@@ -31,151 +31,151 @@ implements IHudElement {
     }
 
     @Override
-    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float f, float f2, float f3, float f4, float f5) {
-        float f6;
-        float f7;
-        if (mc == null || mc.player == null || mc.getConnection() == null || f5 <= 0.01f) {
+    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float x, float y, float width, float height, float alpha) {
+        float rowWidth;
+        float maxRowWidth;
+        if (mc == null || mc.player == null || mc.getConnection() == null || alpha <= 0.01f) {
             return;
         }
-        ArrayList<PlayerInfo> arrayList = new ArrayList<>(mc.getConnection().getOnlinePlayers());
-        arrayList.sort(Comparator.comparing(p -> p.getProfile().getName()));
-        Component component = TabListInfo.header;
-        float f8 = component != null && !component.getString().isEmpty() ? (float)component.getString().split("\n").length * 11.0f : 20.0f;
-        int n = 20;
-        int n2 = Math.max(1, (int)Math.ceil((double)arrayList.size() / (double)n));
-        float f9 = 0.0f;
-        if (n2 == 1) {
-            float f10;
-            f7 = 0.0f;
-            if (!arrayList.isEmpty()) {
-                for (PlayerInfo playerInfo2 : arrayList) {
-                    String string = playerInfo2.getProfile().getName();
-                    String string2 = playerInfo2.getLatency() + "ms";
-                    f6 = 12.0f + nameFont.getWidth(string) + 5.0f + nameFont.getWidth(string2);
-                    f7 = Math.max(f7, f6);
+        ArrayList<PlayerInfo> players = new ArrayList<>(mc.getConnection().getOnlinePlayers());
+        players.sort(Comparator.comparing(p -> p.getProfile().getName()));
+        Component header = TabListInfo.header;
+        float headerHeight = header != null && !header.getString().isEmpty() ? (float)header.getString().split("\n").length * 11.0f : 20.0f;
+        int rowsPerColumn = 20;
+        int columnCount = Math.max(1, (int)Math.ceil((double)players.size() / (double)rowsPerColumn));
+        float centerOffset = 0.0f;
+        if (columnCount == 1) {
+            float available;
+            maxRowWidth = 0.0f;
+            if (!players.isEmpty()) {
+                for (PlayerInfo player : players) {
+                    String name = player.getProfile().getName();
+                    String ping = player.getLatency() + "ms";
+                    rowWidth = 12.0f + nameFont.getWidth(name) + 5.0f + nameFont.getWidth(ping);
+                    maxRowWidth = Math.max(maxRowWidth, rowWidth);
                 }
             }
-            if (f7 < (f10 = f3 - 20.0f)) {
-                f9 = (f10 - f7) / 2.0f;
+            if (maxRowWidth < (available = width - 20.0f)) {
+                centerOffset = (available - maxRowWidth) / 2.0f;
             }
         }
-        f7 = f2 + 10.0f + f8 + 10.0f;
-        for (int i = 0; i < arrayList.size(); ++i) {
-            int n3 = i / n;
-            int n4 = i % n;
-            float f11 = f + 10.0f + (float)n3 * 150.0f;
-            if (n2 == 1) {
-                f11 += f9;
+        maxRowWidth = y + 10.0f + headerHeight + 10.0f;
+        for (int i = 0; i < players.size(); ++i) {
+            int column = i / rowsPerColumn;
+            int row = i % rowsPerColumn;
+            float entryX = x + 10.0f + (float)column * 150.0f;
+            if (columnCount == 1) {
+                entryX += centerOffset;
             }
-            f6 = f7 + (float)n4 * 11.0f;
-            PlayerInfo playerInfo3 = arrayList.get(i);
+            rowWidth = maxRowWidth + (float)row * 11.0f;
+            PlayerInfo player = players.get(i);
             poseStack.pushPose();
-            poseStack.translate(f11, f6, 0.0f);
-            guiGraphics.blit(playerInfo3.getSkinLocation(), 0, 0, 8, 8, 8.0f, 8.0f, 8, 8, 64, 64);
-            guiGraphics.blit(playerInfo3.getSkinLocation(), 0, 0, 8, 8, 40.0f, 8.0f, 8, 8, 64, 64);
+            poseStack.translate(entryX, rowWidth, 0.0f);
+            guiGraphics.blit(player.getSkinLocation(), 0, 0, 8, 8, 8.0f, 8.0f, 8, 8, 64, 64);
+            guiGraphics.blit(player.getSkinLocation(), 0, 0, 8, 8, 40.0f, 8.0f, 8, 8, 64, 64);
             poseStack.popPose();
         }
     }
 
     @Override
-    public void render(DrawContext drawContext, float f, float f2, float f3, float f4, float f5) {
-        if (mc == null || mc.player == null || mc.getConnection() == null || f5 <= 0.01f) {
+    public void render(DrawContext drawContext, float x, float y, float width, float height, float alpha) {
+        if (mc == null || mc.player == null || mc.getConnection() == null || alpha <= 0.01f) {
             return;
         }
-        ArrayList<PlayerInfo> arrayList = new ArrayList<>(mc.getConnection().getOnlinePlayers());
-        arrayList.sort(Comparator.comparing(p -> p.getProfile().getName()));
-        Component component = TabListInfo.header;
-        Component component2 = TabListInfo.footer;
+        ArrayList<PlayerInfo> players = new ArrayList<>(mc.getConnection().getOnlinePlayers());
+        players.sort(Comparator.comparing(p -> p.getProfile().getName()));
+        Component header = TabListInfo.header;
+        Component footer = TabListInfo.footer;
         try (Paint paint = new Paint()){
-            int n;
-            float f6;
-            float f7;
-            float f8;
-            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
-            if (component != null && !component.getString().isEmpty()) {
-                f8 = (float)component.getString().split("\n").length * 11.0f;
-                float f9 = f2 + 10.0f;
-                for (String string : component.getString().split("\n")) {
-                    f7 = f + f3 / 2.0f;
-                    this.drawFormattedComponent(drawContext, Component.literal(string), f7, f9 + titleFont.getMetrics().ascent() / 2.0f + 9.0f, titleFont, paint, f5);
-                    f9 += 11.0f;
+            int i;
+            float rowWidth;
+            float maxRowWidth;
+            float headerHeight;
+            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
+            if (header != null && !header.getString().isEmpty()) {
+                headerHeight = (float)header.getString().split("\n").length * 11.0f;
+                float lineY = y + 10.0f;
+                for (String line : header.getString().split("\n")) {
+                    maxRowWidth = x + width / 2.0f;
+                    this.drawFormattedComponent(drawContext, Component.literal(line), maxRowWidth, lineY + titleFont.getMetrics().ascent() / 2.0f + 9.0f, titleFont, paint, alpha);
+                    lineY += 11.0f;
                 }
             } else {
-                f8 = 20.0f;
-                String string = "Player List (" + arrayList.size() + ")";
-                float f10 = f + (f3 - headerFont.getWidth(string)) / 2.0f;
-                GlHelper.drawTextShadowLegacy(string, f10, f2 + 10.0f + headerFont.getMetrics().ascent() + 15.0f, headerFont, -1);
+                headerHeight = 20.0f;
+                String title = "Player List (" + players.size() + ")";
+                float titleX = x + (width - headerFont.getWidth(title)) / 2.0f;
+                GlHelper.drawTextShadowLegacy(title, titleX, y + 10.0f + headerFont.getMetrics().ascent() + 15.0f, headerFont, -1);
             }
-            if (arrayList.isEmpty() && (component2 == null || component2.getString().isEmpty())) {
+            if (players.isEmpty() && (footer == null || footer.getString().isEmpty())) {
                 return;
             }
-            int n2 = arrayList.size();
-            int n3 = 20;
-            int n4 = Math.max(1, (int)Math.ceil((double)n2 / (double)n3));
-            float f11 = f2 + 10.0f + f8 + 10.0f;
-            float f12 = 0.0f;
-            f7 = 0.0f;
-            if (n4 == 1) {
-                float f13;
-                if (!arrayList.isEmpty()) {
-                    for (PlayerInfo playerInfo2 : arrayList) {
-                        String string = playerInfo2.getProfile().getName();
-                        String string2 = playerInfo2.getLatency() + "ms";
-                        f6 = 12.0f + nameFont.getWidth(string) + 5.0f + nameFont.getWidth(string2);
-                        f7 = Math.max(f7, f6);
+            int playerCount = players.size();
+            int rowsPerColumn = 20;
+            int columnCount = Math.max(1, (int)Math.ceil((double)playerCount / (double)rowsPerColumn));
+            float rowsStartY = y + 10.0f + headerHeight + 10.0f;
+            float centerOffset = 0.0f;
+            maxRowWidth = 0.0f;
+            if (columnCount == 1) {
+                float available;
+                if (!players.isEmpty()) {
+                    for (PlayerInfo player : players) {
+                        String name = player.getProfile().getName();
+                        String ping = player.getLatency() + "ms";
+                        rowWidth = 12.0f + nameFont.getWidth(name) + 5.0f + nameFont.getWidth(ping);
+                        maxRowWidth = Math.max(maxRowWidth, rowWidth);
                     }
                 }
-                if (f7 < (f13 = f3 - 20.0f)) {
-                    f12 = (f13 - f7) / 2.0f;
+                if (maxRowWidth < (available = width - 20.0f)) {
+                    centerOffset = (available - maxRowWidth) / 2.0f;
                 }
             }
-            for (n = 0; n < arrayList.size(); ++n) {
-                int n5 = n / n3;
-                int n6 = n % n3;
-                float f14 = f + 10.0f + (float)n5 * 150.0f;
-                if (n4 == 1) {
-                    f14 += f12;
+            for (i = 0; i < players.size(); ++i) {
+                int column = i / rowsPerColumn;
+                int row = i % rowsPerColumn;
+                float entryX = x + 10.0f + (float)column * 150.0f;
+                if (columnCount == 1) {
+                    entryX += centerOffset;
                 }
-                f6 = f11 + (float)n6 * 11.0f;
-                PlayerInfo object = arrayList.get(n);
-                paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
-                String f19 = object.getProfile().getName();
-                String string = object.getLatency() + "ms";
-                float f9 = nameFont.getWidth(string);
-                float f10 = n4 > 1 ? 128.0f - f9 - 5.0f : f7 - 8.0f - 4.0f - f9 - 5.0f;
-                if (nameFont.getWidth(f19) > f10 && f10 > 0.0f) {
-                    while (nameFont.getWidth(f19) > f10 && !f19.isEmpty()) {
-                        f19 = f19.substring(0, f19.length() - 1);
+                rowWidth = rowsStartY + (float)row * 11.0f;
+                PlayerInfo player = players.get(i);
+                paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
+                String displayName = player.getProfile().getName();
+                String ping = player.getLatency() + "ms";
+                float pingWidth = nameFont.getWidth(ping);
+                float nameMaxWidth = columnCount > 1 ? 128.0f - pingWidth - 5.0f : maxRowWidth - 8.0f - 4.0f - pingWidth - 5.0f;
+                if (nameFont.getWidth(displayName) > nameMaxWidth && nameMaxWidth > 0.0f) {
+                    while (nameFont.getWidth(displayName) > nameMaxWidth && !displayName.isEmpty()) {
+                        displayName = displayName.substring(0, displayName.length() - 1);
                     }
                 }
-                drawContext.drawString(f19, f14 + 8.0f + 4.0f + 0.5f, f6 + nameFont.getMetrics().ascent() / 2.0f + 11.0f + 0.5f, nameFont, paint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(f5 * 0.65f * 255.0f))));
-                drawContext.drawString(f19, f14 + 8.0f + 4.0f, f6 + nameFont.getMetrics().ascent() / 2.0f + 11.0f, nameFont, paint.setColor(-1));
-                paint.setColor(this.colorWithAlpha(Color.GRAY.getRGB(), f5));
-                float f13 = n4 > 1 ? f14 + 140.0f - f9 : f14 + f7 - f9;
-                drawContext.drawString(string, f13, f6 + nameFont.getMetrics().ascent() / 2.0f + 11.0f, nameFont, paint);
+                drawContext.drawString(displayName, entryX + 8.0f + 4.0f + 0.5f, rowWidth + nameFont.getMetrics().ascent() / 2.0f + 11.0f + 0.5f, nameFont, paint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(alpha * 0.65f * 255.0f))));
+                drawContext.drawString(displayName, entryX + 8.0f + 4.0f, rowWidth + nameFont.getMetrics().ascent() / 2.0f + 11.0f, nameFont, paint.setColor(-1));
+                paint.setColor(this.colorWithAlpha(Color.GRAY.getRGB(), alpha));
+                float pingX = columnCount > 1 ? entryX + 140.0f - pingWidth : entryX + maxRowWidth - pingWidth;
+                drawContext.drawString(ping, pingX, rowWidth + nameFont.getMetrics().ascent() / 2.0f + 11.0f, nameFont, paint);
             }
-            if (component2 != null && !component2.getString().isEmpty()) {
-                n = arrayList.isEmpty() ? 0 : Math.min(arrayList.size(), n3);
-                float f18 = f11 + (float)n * 11.0f + 10.0f;
-                for (String string : component2.getString().split("\n")) {
-                    float f14 = f + f3 / 2.0f;
-                    this.drawFormattedComponent(drawContext, Component.literal(string), f14, f18, titleFont, paint, f5);
-                    f18 += 11.0f;
+            if (footer != null && !footer.getString().isEmpty()) {
+                i = players.isEmpty() ? 0 : Math.min(players.size(), rowsPerColumn);
+                float footerY = rowsStartY + (float)i * 11.0f + 10.0f;
+                for (String line : footer.getString().split("\n")) {
+                    float centerX = x + width / 2.0f;
+                    this.drawFormattedComponent(drawContext, Component.literal(line), centerX, footerY, titleFont, paint, alpha);
+                    footerY += 11.0f;
                 }
             }
         }
     }
 
-    private void drawFormattedComponent(DrawContext drawContext, Component component, float f, float f2, FontRenderer fontRenderer, Paint paint, float f3) {
-        float f4 = f2;
-        for (String string : component.getString().split("\n")) {
-            float f5 = f;
-            ArrayList<Component> arrayList = new ArrayList<>();
-            String[] stringArray = ("§r" + string).split("§");
+    private void drawFormattedComponent(DrawContext drawContext, Component component, float centerX, float startY, FontRenderer fontRenderer, Paint paint, float alpha) {
+        float lineY = startY;
+        for (String line : component.getString().split("\n")) {
+            float drawX = centerX;
+            ArrayList<Component> segments = new ArrayList<>();
+            String[] parts = ("§r" + line).split("§");
             Style style = Style.EMPTY;
-            for (int i = 0; i < stringArray.length; ++i) {
-                if (stringArray[i].isEmpty()) continue;
-                String segment = stringArray[i];
+            for (int i = 0; i < parts.length; ++i) {
+                if (parts[i].isEmpty()) continue;
+                String segment = parts[i];
                 if (i > 0) {
                     char c = segment.charAt(0);
                     ChatFormatting fmt = ChatFormatting.getByCode(c);
@@ -185,34 +185,34 @@ implements IHudElement {
                     segment = segment.substring(1);
                 }
                 if (segment.isEmpty()) continue;
-                arrayList.add(Component.literal(segment).withStyle(style));
+                segments.add(Component.literal(segment).withStyle(style));
             }
-            float f6 = 0.0f;
-            for (Component component2 : arrayList) {
-                f6 += fontRenderer.getWidth(component2.getString());
+            float totalWidth = 0.0f;
+            for (Component seg : segments) {
+                totalWidth += fontRenderer.getWidth(seg.getString());
             }
-            f5 = f - f6 / 2.0f;
-            for (Component component3 : arrayList) {
-                String text = component3.getString();
-                Style style2 = component3.getStyle();
-                TextColor textColor = style2.getColor();
-                int n = textColor != null ? textColor.getValue() : Color.WHITE.getRGB();
-                paint.setColor(this.colorWithAlpha(n, f3));
-                drawContext.drawString(text, f5, f4, fontRenderer, paint);
-                f5 += fontRenderer.getWidth(text);
+            drawX = centerX - totalWidth / 2.0f;
+            for (Component seg : segments) {
+                String text = seg.getString();
+                Style segStyle = seg.getStyle();
+                TextColor textColor = segStyle.getColor();
+                int color = textColor != null ? textColor.getValue() : Color.WHITE.getRGB();
+                paint.setColor(this.colorWithAlpha(color, alpha));
+                drawContext.drawString(text, drawX, lineY, fontRenderer, paint);
+                drawX += fontRenderer.getWidth(text);
             }
-            f4 += 11.0f;
+            lineY += 11.0f;
         }
     }
 
     private float getComponentWidth(Component component, FontRenderer fontRenderer) {
-        float f = 0.0f;
-        for (String string : component.getString().split("\n")) {
-            String string2 = ChatFormatting.stripFormatting(string);
-            if (string2 == null) continue;
-            f = Math.max(f, fontRenderer.getWidth(string2));
+        float maxWidth = 0.0f;
+        for (String line : component.getString().split("\n")) {
+            String stripped = ChatFormatting.stripFormatting(line);
+            if (stripped == null) continue;
+            maxWidth = Math.max(maxWidth, fontRenderer.getWidth(stripped));
         }
-        return f;
+        return maxWidth;
     }
 
     @Override
@@ -222,59 +222,60 @@ implements IHudElement {
 
     @Override
     public IHudElement.Size getHudAlignment() {
-        float f;
-        float f2;
-        float f3;
-        int n;
+        float screenHeight;
+        float rowWidth;
+        float maxRowWidth;
+        float listWidth;
+        int visibleRows;
         if (mc == null || mc.getConnection() == null) {
             return new IHudElement.Size(200.0f, 30.0f);
         }
-        int n2 = mc.getConnection().getOnlinePlayers().size();
-        Component component = TabListInfo.header;
-        Component component2 = TabListInfo.footer;
-        float f4 = 0.0f;
-        f4 = component != null && !component.getString().isEmpty() ? (float)component.getString().split("\n").length * 11.0f : 20.0f;
-        float f5 = 0.0f;
-        if (component2 != null && !component2.getString().isEmpty()) {
-            f5 = (float)component2.getString().split("\n").length * 11.0f + 10.0f;
+        int playerCount = mc.getConnection().getOnlinePlayers().size();
+        Component header = TabListInfo.header;
+        Component footer = TabListInfo.footer;
+        float headerHeight = 0.0f;
+        headerHeight = header != null && !header.getString().isEmpty() ? (float)header.getString().split("\n").length * 11.0f : 20.0f;
+        float footerHeight = 0.0f;
+        if (footer != null && !footer.getString().isEmpty()) {
+            footerHeight = (float)footer.getString().split("\n").length * 11.0f + 10.0f;
         }
-        int n3 = 20;
-        int n4 = Math.max(1, (int)Math.ceil((double)n2 / (double)n3));
-        int n5 = n = n2 > 0 ? Math.min(n2, n3) : 0;
-        if (n4 > 1) {
-            f3 = (float)n4 * 140.0f + (float)(n4 - 1) * 10.0f;
+        int rowsPerColumn = 20;
+        int columnCount = Math.max(1, (int)Math.ceil((double)playerCount / (double)rowsPerColumn));
+        int rowsShown = visibleRows = playerCount > 0 ? Math.min(playerCount, rowsPerColumn) : 0;
+        if (columnCount > 1) {
+            listWidth = (float)columnCount * 140.0f + (float)(columnCount - 1) * 10.0f;
         } else {
-            f2 = 0.0f;
+            maxRowWidth = 0.0f;
             if (mc.getConnection() != null) {
-                for (PlayerInfo playerInfo : mc.getConnection().getOnlinePlayers()) {
-                    String string = playerInfo.getProfile().getName();
-                    String string2 = playerInfo.getLatency() + "ms";
-                    f = 12.0f + nameFont.getWidth(string) + 5.0f + nameFont.getWidth(string2);
-                    f2 = Math.max(f2, f);
+                for (PlayerInfo player : mc.getConnection().getOnlinePlayers()) {
+                    String name = player.getProfile().getName();
+                    String ping = player.getLatency() + "ms";
+                    rowWidth = 12.0f + nameFont.getWidth(name) + 5.0f + nameFont.getWidth(ping);
+                    maxRowWidth = Math.max(maxRowWidth, rowWidth);
                 }
             }
-            f3 = f2;
+            listWidth = maxRowWidth;
         }
-        f2 = 0.0f;
-        if (component != null) {
-            f2 = this.getComponentWidth(component, titleFont);
+        maxRowWidth = 0.0f;
+        if (header != null) {
+            maxRowWidth = this.getComponentWidth(header, titleFont);
         }
-        float f6 = 0.0f;
-        if (component2 != null) {
-            f6 = this.getComponentWidth(component2, titleFont);
+        float footerWidth = 0.0f;
+        if (footer != null) {
+            footerWidth = this.getComponentWidth(footer, titleFont);
         }
-        float f7 = Math.max(f3, Math.max(f2, f6)) + 20.0f;
-        float f8 = f4 + (float)n * 11.0f + f5 + 20.0f;
-        if (n2 == 0 && component2 == null) {
-            f8 += 10.0f;
+        float totalWidth = Math.max(listWidth, Math.max(maxRowWidth, footerWidth)) + 20.0f;
+        float totalHeight = headerHeight + (float)visibleRows * 11.0f + footerHeight + 20.0f;
+        if (playerCount == 0 && footer == null) {
+            totalHeight += 10.0f;
         }
-        if (n2 > 0 && component != null) {
-            f8 += 10.0f;
+        if (playerCount > 0 && header != null) {
+            totalHeight += 10.0f;
         }
-        float f9 = mc.getWindow().getGuiScaledWidth();
-        f = mc.getWindow().getGuiScaledHeight();
-        f7 = Math.min(f7, f9 * 0.9f);
-        f8 = Math.min(f8, f * 0.9f);
-        return new IHudElement.Size(f7, f8);
+        float screenWidth = mc.getWindow().getGuiScaledWidth();
+        screenHeight = mc.getWindow().getGuiScaledHeight();
+        totalWidth = Math.min(totalWidth, screenWidth * 0.9f);
+        totalHeight = Math.min(totalHeight, screenHeight * 0.9f);
+        return new IHudElement.Size(totalWidth, totalHeight);
     }
 }

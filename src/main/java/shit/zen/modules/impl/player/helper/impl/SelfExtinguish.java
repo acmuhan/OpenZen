@@ -117,24 +117,24 @@ extends HelperBase {
             return InteractionResult.PASS;
         }
         PlayerUtil.sendCarriedItem();
-        PacketUtil.sendPredictive(n -> new ServerboundUseItemPacket(interactionHand, n));
-        ItemStack itemStack = player.getItemInHand(interactionHand);
-        if (player.getCooldowns().isOnCooldown(itemStack.getItem())) {
+        PacketUtil.sendPredictive(seq -> new ServerboundUseItemPacket(interactionHand, seq));
+        ItemStack heldStack = player.getItemInHand(interactionHand);
+        if (player.getCooldowns().isOnCooldown(heldStack.getItem())) {
             return InteractionResult.PASS;
         }
-        InteractionResult interactionResult = ForgeHooks.onItemRightClick(player, interactionHand);
-        if (interactionResult != null) {
-            return interactionResult;
+        InteractionResult forgeResult = ForgeHooks.onItemRightClick(player, interactionHand);
+        if (forgeResult != null) {
+            return forgeResult;
         }
-        InteractionResultHolder interactionResultHolder = itemStack.use(level, player, interactionHand);
-        ItemStack itemStack2 = (ItemStack)interactionResultHolder.getObject();
-        if (itemStack2 != itemStack) {
-            player.setItemInHand(interactionHand, itemStack2);
-            if (itemStack2.isEmpty()) {
-                ForgeEventFactory.onPlayerDestroyItem(player, itemStack, interactionHand);
+        InteractionResultHolder resultHolder = heldStack.use(level, player, interactionHand);
+        ItemStack resultStack = (ItemStack)resultHolder.getObject();
+        if (resultStack != heldStack) {
+            player.setItemInHand(interactionHand, resultStack);
+            if (resultStack.isEmpty()) {
+                ForgeEventFactory.onPlayerDestroyItem(player, heldStack, interactionHand);
             }
         }
-        return interactionResultHolder.getResult();
+        return resultHolder.getResult();
     }
 
     @Override
@@ -147,12 +147,12 @@ extends HelperBase {
         return this.targetRotation;
     }
 
-    public static boolean willCollideBelow(double d) {
+    public static boolean willCollideBelow(double deltaY) {
         if (mc.level == null || mc.player == null) {
             return false;
         }
-        Iterable<VoxelShape> iterable = mc.level.getBlockCollisions(mc.player, mc.player.getBoundingBox().move(0.0, d, 0.0));
-        return iterable.iterator().hasNext();
+        Iterable<VoxelShape> collisions = mc.level.getBlockCollisions(mc.player, mc.player.getBoundingBox().move(0.0, deltaY, 0.0));
+        return collisions.iterator().hasNext();
     }
 
     @Override
@@ -178,9 +178,9 @@ extends HelperBase {
             this.isAiming = false;
             this.targetRotation = null;
             if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK && ((BlockHitResult)mc.hitResult).getBlockPos().above().equals(this.waterBlockPos)) {
-                int n = ItemUtil.getSlot(Items.BUCKET);
-                if (n != -1 && n < 9) {
-                    mc.player.getInventory().selected = n;
+                int bucketSlot = ItemUtil.getSlot(Items.BUCKET);
+                if (bucketSlot != -1 && bucketSlot < 9) {
+                    mc.player.getInventory().selected = bucketSlot;
                     this.useItem(mc.player, mc.level, InteractionHand.MAIN_HAND);
                 }
                 Helper.removeWaterPlacement(this.waterBlockPos);

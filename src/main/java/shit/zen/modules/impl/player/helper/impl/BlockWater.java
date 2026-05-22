@@ -116,9 +116,9 @@ extends HelperBase {
                         this.tryFindPlacement();
                         return;
                     }
-                    this.findSuitableFace(blockPos).ifPresentOrElse(blockWater$PlacementData -> {
-                        this.targetRotation = RotationUtil.exactRotation(mc.player.getEyePosition(), blockWater$PlacementData.hitVec());
-                        this.currentPlacement = blockWater$PlacementData;
+                    this.findSuitableFace(blockPos).ifPresentOrElse(placementData -> {
+                        this.targetRotation = RotationUtil.exactRotation(mc.player.getEyePosition(), placementData.hitVec());
+                        this.currentPlacement = placementData;
                     }, () -> this.reset());
                     break;
                 }
@@ -132,11 +132,11 @@ extends HelperBase {
     }
 
     private boolean tryFindPlacement() {
-        Optional<BlockWater.PlacementData> optional = this.findSuitableFace(this.targetPos);
-        if (optional.isPresent()) {
-            BlockWater.PlacementData blockWater$PlacementData = optional.get();
-            this.targetRotation = RotationUtil.exactRotation(mc.player.getEyePosition(), blockWater$PlacementData.hitVec());
-            this.currentPlacement = blockWater$PlacementData;
+        Optional<BlockWater.PlacementData> placementOpt = this.findSuitableFace(this.targetPos);
+        if (placementOpt.isPresent()) {
+            BlockWater.PlacementData placementData = placementOpt.get();
+            this.targetRotation = RotationUtil.exactRotation(mc.player.getEyePosition(), placementData.hitVec());
+            this.currentPlacement = placementData;
             return true;
         }
         return false;
@@ -191,72 +191,71 @@ extends HelperBase {
             this.targetPos = null;
             return;
         }
-        BlockPos blockPos2 = mc.player.blockPosition();
-        ArrayList<BlockPos> arrayList = new ArrayList<>();
-        for (int i = -3; i <= 3; ++i) {
-            for (int j = -2; j <= 2; ++j) {
-                for (int k = -3; k <= 3; ++k) {
-                    BlockPos blockPos3 = blockPos2.offset(i, j, k);
-                    if (Helper.hasWaterPlacement(blockPos3) || !mc.level.getBlockState(blockPos3).is(Blocks.WATER) || !mc.level.getFluidState(blockPos3).isSource() || !Helper.isPositionInFov(Vec3.atCenterOf(blockPos3))) continue;
-                    arrayList.add(blockPos3);
+        BlockPos playerPos = mc.player.blockPosition();
+        ArrayList<BlockPos> candidates = new ArrayList<>();
+        for (int dx = -3; dx <= 3; ++dx) {
+            for (int dy = -2; dy <= 2; ++dy) {
+                for (int dz = -3; dz <= 3; ++dz) {
+                    BlockPos candidatePos = playerPos.offset(dx, dy, dz);
+                    if (Helper.hasWaterPlacement(candidatePos) || !mc.level.getBlockState(candidatePos).is(Blocks.WATER) || !mc.level.getFluidState(candidatePos).isSource() || !Helper.isPositionInFov(Vec3.atCenterOf(candidatePos))) continue;
+                    candidates.add(candidatePos);
                 }
             }
         }
-        Vec3 vec3 = mc.player.getEyePosition();
-        this.targetPos = (BlockPos)arrayList.stream().min(Comparator.comparingDouble(blockPos -> Vec3.atCenterOf((Vec3i)blockPos).distanceToSqr(vec3))).orElse(null);
+        Vec3 eyePos = mc.player.getEyePosition();
+        this.targetPos = (BlockPos)candidates.stream().min(Comparator.comparingDouble(blockPos -> Vec3.atCenterOf((Vec3i)blockPos).distanceToSqr(eyePos))).orElse(null);
     }
 
     private int findBlockSlot() {
-        int n = ItemUtil.getSlot(Items.COBBLESTONE);
-        if (n != -1 && n < 9) {
-            return n;
+        int cobblestoneSlot = ItemUtil.getSlot(Items.COBBLESTONE);
+        if (cobblestoneSlot != -1 && cobblestoneSlot < 9) {
+            return cobblestoneSlot;
         }
-        for (int i = 0; i < 9; ++i) {
+        for (int slot = 0; slot < 9; ++slot) {
             Block block;
-            ItemStack itemStack = mc.player.getInventory().getItem(i);
+            ItemStack itemStack = mc.player.getInventory().getItem(slot);
             if (!(itemStack.getItem() instanceof BlockItem) || !(block = ((BlockItem)itemStack.getItem()).getBlock()).defaultBlockState().isSolid()) continue;
-            return i;
+            return slot;
         }
         return -1;
     }
 
     private Optional<BlockWater.PlacementData> findSuitableFace(BlockPos blockPos) {
         for (Direction direction : Direction.values()) {
-            BlockPos blockPos3 = blockPos.relative(direction);
-            if (mc.level.getBlockState(blockPos3).isSolid() && !mc.level.getBlockState(blockPos3).is(Blocks.WATER)) {
-                Vec3 hitVec = Vec3.atCenterOf(blockPos3).add(direction.getOpposite().getStepX() * 0.5, direction.getOpposite().getStepY() * 0.5, direction.getOpposite().getStepZ() * 0.5);
-                if (mc.player.getEyePosition().distanceToSqr(hitVec) <= 25.0 && this.canSeeBlockFace(blockPos3, direction.getOpposite())) {
-                    return Optional.of(new BlockWater.PlacementData(blockPos3, direction.getOpposite(), hitVec));
+            BlockPos neighborPos = blockPos.relative(direction);
+            if (mc.level.getBlockState(neighborPos).isSolid() && !mc.level.getBlockState(neighborPos).is(Blocks.WATER)) {
+                Vec3 hitVec = Vec3.atCenterOf(neighborPos).add(direction.getOpposite().getStepX() * 0.5, direction.getOpposite().getStepY() * 0.5, direction.getOpposite().getStepZ() * 0.5);
+                if (mc.player.getEyePosition().distanceToSqr(hitVec) <= 25.0 && this.canSeeBlockFace(neighborPos, direction.getOpposite())) {
+                    return Optional.of(new BlockWater.PlacementData(neighborPos, direction.getOpposite(), hitVec));
                 }
             }
             if (direction != Direction.DOWN) continue;
-            BlockPos blockPos2 = blockPos3;
-            for (int i = 0; i < 8 && mc.level.getBlockState(blockPos2).is(Blocks.WATER); ++i) {
-                blockPos2 = blockPos2.below();
+            BlockPos belowPos = neighborPos;
+            for (int i = 0; i < 8 && mc.level.getBlockState(belowPos).is(Blocks.WATER); ++i) {
+                belowPos = belowPos.below();
             }
-            if (!mc.level.getBlockState(blockPos2).isSolid() || mc.level.getBlockState(blockPos2).is(Blocks.WATER)) continue;
-            Vec3 vec3 = Vec3.atCenterOf(blockPos2).add(new Vec3((double)Direction.UP.getStepX() * 0.5, (double)Direction.UP.getStepY() * 0.5, (double)Direction.UP.getStepZ() * 0.5));
-            if (!(mc.player.getEyePosition().distanceToSqr(vec3) <= 25.0) || !this.canSeeBlockFace(blockPos2, Direction.UP)) continue;
-            return Optional.of(new BlockWater.PlacementData(blockPos2, Direction.UP, vec3));
+            if (!mc.level.getBlockState(belowPos).isSolid() || mc.level.getBlockState(belowPos).is(Blocks.WATER)) continue;
+            Vec3 topHitVec = Vec3.atCenterOf(belowPos).add(new Vec3((double)Direction.UP.getStepX() * 0.5, (double)Direction.UP.getStepY() * 0.5, (double)Direction.UP.getStepZ() * 0.5));
+            if (!(mc.player.getEyePosition().distanceToSqr(topHitVec) <= 25.0) || !this.canSeeBlockFace(belowPos, Direction.UP)) continue;
+            return Optional.of(new BlockWater.PlacementData(belowPos, Direction.UP, topHitVec));
         }
         return Optional.empty();
     }
 
     private boolean canSeeBlockFace(BlockPos blockPos, Direction direction) {
-        Vec3 vec3;
+        Vec3 targetVec;
         if (mc.player == null || mc.level == null) {
             return false;
         }
-        Vec3 vec32 = mc.player.getEyePosition();
-        BlockHitResult blockHitResult = mc.level.clip(new ClipContext(vec32, vec3 = Vec3.atCenterOf(blockPos).add(new Vec3((double)direction.getStepX() * 0.49, (double)direction.getStepY() * 0.49, (double)direction.getStepZ() * 0.49)), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
-        if (blockHitResult.getType() != HitResult.Type.BLOCK) {
+        Vec3 eyePos = mc.player.getEyePosition();
+        BlockHitResult hit = mc.level.clip(new ClipContext(eyePos, targetVec = Vec3.atCenterOf(blockPos).add(new Vec3((double)direction.getStepX() * 0.49, (double)direction.getStepY() * 0.49, (double)direction.getStepZ() * 0.49)), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
+        if (hit.getType() != HitResult.Type.BLOCK) {
             return false;
         }
-        BlockHitResult blockHitResult2 = blockHitResult;
-        if (!blockHitResult2.getBlockPos().equals(blockPos)) {
+        if (!hit.getBlockPos().equals(blockPos)) {
             return false;
         }
-        return blockHitResult2.getLocation().distanceToSqr(vec3) < 0.25;
+        return hit.getLocation().distanceToSqr(targetVec) < 0.25;
     }
 
     @Override

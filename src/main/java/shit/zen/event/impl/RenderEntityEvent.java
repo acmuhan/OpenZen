@@ -30,19 +30,19 @@ extends Event {
     }
 
     @Override
-    public void setCancelled(boolean bl) {
-        this.cancelled = bl;
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 
     @Generated
-    public RenderEntityEvent(EntityRenderer<?> entityRenderer, Entity entity, PoseStack poseStack, MultiBufferSource multiBufferSource, float f, int n, boolean bl) {
+    public RenderEntityEvent(EntityRenderer<?> entityRenderer, Entity entity, PoseStack poseStack, MultiBufferSource bufferSource, float partialTick, int packedLight, boolean cancelled) {
         this.entityRenderer = entityRenderer;
         this.entity = entity;
         this.poseStack = poseStack;
-        this.bufferSource = multiBufferSource;
-        this.partialTick = f;
-        this.packedLight = n;
-        this.cancelled = bl;
+        this.bufferSource = bufferSource;
+        this.partialTick = partialTick;
+        this.packedLight = packedLight;
+        this.cancelled = cancelled;
     }
 
     public static class Pre extends RenderEntityEvent {

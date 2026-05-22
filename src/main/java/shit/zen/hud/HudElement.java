@@ -2,7 +2,6 @@ package shit.zen.hud;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.Generated;
 import shit.zen.event.impl.GlRenderEvent;
 import shit.zen.event.impl.Render2DEvent;
 import shit.zen.modules.Category;
@@ -15,15 +14,16 @@ extends Module {
     protected float x;
     @Getter @Setter
     protected float y;
-    protected float hudWidth;
-    protected float hudHeight;
-    @Getter
-    private boolean dragging = true;
+    @Getter @Setter
+    protected float width;
+    @Getter @Setter
+    protected float height;
+    @Getter @Setter
+    private boolean dragging = false;
     @Getter @Setter
     private float dragOffsetX;
     @Getter @Setter
     private float dragOffsetY;
-    protected boolean visible;
 
     public HudElement(String string) {
         super(string, Category.RENDER);
@@ -35,63 +35,26 @@ extends Module {
 
     public abstract void onSettings();
 
-    public boolean mousePressed(int n, int n2, int n3) {
-        if (this.isHovered(n, n2) && n3 == 0) {
-            this.visible = true;
-            this.dragOffsetX = (float)n - this.getX();
-            this.dragOffsetY = (float)n2 - this.getY();
+    public boolean mousePressed(int mouseX, int mouseY, int button) {
+        if (this.isHovered(mouseX, mouseY) && button == 0) {
+            this.dragging = true;
+            this.dragOffsetX = (float)mouseX - this.getX();
+            this.dragOffsetY = (float)mouseY - this.getY();
             return true;
         }
         return false;
     }
 
-    public void mouseDragged(int n, int n2) {
-        this.x = (float)n - this.dragOffsetX;
-        this.y = (float)n2 - this.dragOffsetY;
+    public void mouseDragged(int mouseX, int mouseY) {
+        this.x = (float)mouseX - this.dragOffsetX;
+        this.y = (float)mouseY - this.dragOffsetY;
     }
 
-    public boolean isHovered(int n, int n2) {
-        return RenderUtil.isHovered(this.x, this.y, this.hudWidth, this.hudHeight, n, n2);
+    public boolean isHovered(int mouseX, int mouseY) {
+        return RenderUtil.isHovered(this.x, this.y, this.width, this.height, mouseX, mouseY);
     }
 
     public void stopDragging() {
-        this.setEnabled(false);
-    }
-
-    @Generated
-    public float getWidth() {
-        return this.hudWidth;
-    }
-
-    @Generated
-    public float getHeight() {
-        return this.hudHeight;
-    }
-
-    @Override
-    @Generated
-    public boolean isEnabled() {
-        return this.visible;
-    }
-
-    @Generated
-    public void setWidth(float f) {
-        this.hudWidth = f;
-    }
-
-    @Generated
-    public void setHeight(float f) {
-        this.hudHeight = f;
-    }
-
-    @Generated
-    protected void setDragging(boolean bl) {
-        this.dragging = bl;
-    }
-
-    @Override
-    @Generated
-    public void setEnabled(boolean bl) {
-        this.visible = bl;
+        this.dragging = false;
     }
 }

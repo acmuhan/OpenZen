@@ -40,139 +40,139 @@ extends ClientBase {
     private static final Color POPUP_BG_COLOR = new Color(20, 20, 24, 230);
     private final Consumer<Float> scaleChangeCallback;
 
-    public SettingsPopup(Consumer<Float> consumer) {
-        this.scaleChangeCallback = consumer;
+    public SettingsPopup(Consumer<Float> scaleChangeCallback) {
+        this.scaleChangeCallback = scaleChangeCallback;
         this.dropdownOpen.put("language", false);
         this.dropdownOpen.put("scale", false);
-        this.dropdownAlpha.put("language", Float.valueOf(0.0f));
-        this.dropdownAlpha.put("scale", Float.valueOf(0.0f));
+        this.dropdownAlpha.put("language", 0.0f);
+        this.dropdownAlpha.put("scale", 0.0f);
         this.dropdownItemHover.put("language", new HashMap<>());
         this.dropdownItemHover.put("scale", new HashMap<>());
     }
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, float f, float f2) {
-        this.updatePopupPosition(n, n2, f);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float scale, float alpha) {
+        this.updatePopupPosition(mouseX, mouseY, scale);
         this.updateOpenAlpha();
         this.updateCloseButtonHover();
         this.updateDropdownAlpha();
         if (this.openAlpha > 0.01f) {
-            this.clampPopupPosition(f);
-            this.renderPopupContent(guiGraphics, n, n2, f, f2);
+            this.clampPopupPosition(scale);
+            this.renderPopupContent(guiGraphics, mouseX, mouseY, scale, alpha);
         }
     }
 
-    private void renderPopupContent(GuiGraphics guiGraphics, int n, int n2, float f, float f2) {
-        int n3 = (int)(220.0f * f);
-        int n4 = this.calculatePopupHeight(f);
-        int n5 = mc.getWindow().getGuiScaledWidth();
-        int n6 = mc.getWindow().getGuiScaledHeight();
-        int n7 = (n5 - n3) / 2 + this.offsetX;
-        int n8 = (n6 - (int)(200.0f * f)) / 2 + this.offsetY;
-        float f3 = this.openAlpha * f2;
-        int n9 = (int)(255.0f * f3);
-        TextGlow.drawBackground(guiGraphics.pose(), n7, n8, n3, n4, 12.0f * f, f3);
-        Renderer.renderConsumer((drawContext -> this.drawPopupBody(drawContext, guiGraphics, n7, n8, n, n2, n4, n9, f, n3)));
+    private void renderPopupContent(GuiGraphics guiGraphics, int mouseX, int mouseY, float scale, float alpha) {
+        int popupWidth = (int)(220.0f * scale);
+        int popupHeight = this.calculatePopupHeight(scale);
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+        int popupX = (screenWidth - popupWidth) / 2 + this.offsetX;
+        int popupY = (screenHeight - (int)(200.0f * scale)) / 2 + this.offsetY;
+        float effectiveAlpha = this.openAlpha * alpha;
+        int alphaByte = (int)(255.0f * effectiveAlpha);
+        TextGlow.drawBackground(guiGraphics.pose(), popupX, popupY, popupWidth, popupHeight, 12.0f * scale, effectiveAlpha);
+        Renderer.renderConsumer((drawContext -> this.drawPopupBody(drawContext, guiGraphics, popupX, popupY, mouseX, mouseY, popupHeight, alphaByte, scale, popupWidth)));
     }
 
-    private void drawPopupBody(DrawContext drawContext, GuiGraphics guiGraphics, int n, int n2, int n3, int n4, int n5, int n6, float f, int n7) {
-        int n8 = n6 << 24 | 0xFFFFFF;
-        FontRenderer fontRenderer = FontPresets.materialIcons(18.0f * f);
-        GlHelper.drawText("", (float)n + 15.0f * f, (float)n2 + 16.0f * f, fontRenderer, n8);
-        FontRenderer fontRenderer2 = FontPresets.museoSans(22.0f * f);
-        String string = "ZENLESS.ZONE";
-        float f2 = GlHelper.getStringWidth(string, fontRenderer2);
-        GlHelper.drawText(string, (float)n + ((float)n7 - f2) / 2.0f, (float)n2 + 35.0f * f, fontRenderer2, n8);
-        this.drawCloseButton(n, n2, fontRenderer, n6, f, n7);
-        FontRenderer fontRenderer3 = FontPresets.axiformaRegular(13.0f * f);
-        FontRenderer fontRenderer4 = FontPresets.axiformaRegular(13.0f * f);
-        int n9 = n6 << 24 | 0xAAAAAA;
-        int n10 = n6 << 24 | 0xFFFFFF;
-        int n11 = (int)(18.0f * f);
-        int n12 = (int)((float)n2 + 65.0f * f);
-        int n13 = (int)((float)(n + n7) - 15.0f * f);
-        GlHelper.drawText("Username:", (float)n + 15.0f * f, n12, fontRenderer3, n9);
-        String string2 = this.getUserId();
-        float f3 = GlHelper.getStringWidth(string2, fontRenderer4);
-        GlHelper.drawText(string2, (float)n13 - f3, n12, fontRenderer4, n10);
-        GlHelper.drawText("Branch:", (float)n + 15.0f * f, n12 += n11, fontRenderer3, n9);
-        String string3 = this.getUserRole();
-        float f4 = GlHelper.getStringWidth(string3, fontRenderer4);
-        GlHelper.drawText(string3, (float)n13 - f4, n12, fontRenderer4, n10);
-        GlHelper.drawText("Updated:", (float)n + 15.0f * f, n12 += n11, fontRenderer3, n9);
-        String string4 = "Aug 4 2025";
-        float f5 = GlHelper.getStringWidth(string4, fontRenderer4);
-        GlHelper.drawText(string4, (float)n13 - f5, n12, fontRenderer4, n10);
-        n12 += n11;
-        n12 = (int)((float)n12 + 8.0f * f);
-        n12 += this.drawDropdown(drawContext, guiGraphics, "Language", this.selectedLanguage, LANGUAGES, "language", n, n12, n3, n4, this.openAlpha, f, n7);
-        n12 = (int)((float)n12 + 8.0f * f);
-        this.drawDropdown(drawContext, guiGraphics, "Menu Scale", this.selectedScale, SCALES, "scale", n, n12, n3, n4, this.openAlpha, f, n7);
-        FontRenderer fontRenderer5 = FontPresets.axiformaRegular(12.0f * f);
-        String string5 = "7unknown © 2024-2025";
-        float f6 = GlHelper.getStringWidth(string5, fontRenderer5);
-        GlHelper.drawText(string5, (float)n + ((float)n7 - f6) / 2.0f, (float)(n2 + n5) - 15.0f * f, fontRenderer5, n9);
+    private void drawPopupBody(DrawContext drawContext, GuiGraphics guiGraphics, int popupX, int popupY, int mouseX, int mouseY, int popupHeight, int alphaByte, float scale, int popupWidth) {
+        int whiteColor = alphaByte << 24 | 0xFFFFFF;
+        FontRenderer iconFont = FontPresets.materialIcons(18.0f * scale);
+        GlHelper.drawText("\uE8B8", (float)popupX + 15.0f * scale, (float)popupY + 16.0f * scale, iconFont, whiteColor);
+        FontRenderer titleFont = FontPresets.museoSans(22.0f * scale);
+        String title = "ZENLESS.ZONE";
+        float titleWidth = GlHelper.getStringWidth(title, titleFont);
+        GlHelper.drawText(title, (float)popupX + ((float)popupWidth - titleWidth) / 2.0f, (float)popupY + 35.0f * scale, titleFont, whiteColor);
+        this.drawCloseButton(popupX, popupY, iconFont, alphaByte, scale, popupWidth);
+        FontRenderer labelFont = FontPresets.axiformaRegular(13.0f * scale);
+        FontRenderer valueFont = FontPresets.axiformaRegular(13.0f * scale);
+        int labelColor = alphaByte << 24 | 0xAAAAAA;
+        int valueColor = alphaByte << 24 | 0xFFFFFF;
+        int rowHeight = (int)(18.0f * scale);
+        int rowY = (int)((float)popupY + 65.0f * scale);
+        int rightEdge = (int)((float)(popupX + popupWidth) - 15.0f * scale);
+        GlHelper.drawText("Username:", (float)popupX + 15.0f * scale, rowY, labelFont, labelColor);
+        String userId = this.getUserId();
+        float userIdWidth = GlHelper.getStringWidth(userId, valueFont);
+        GlHelper.drawText(userId, (float)rightEdge - userIdWidth, rowY, valueFont, valueColor);
+        GlHelper.drawText("Branch:", (float)popupX + 15.0f * scale, rowY += rowHeight, labelFont, labelColor);
+        String userRole = this.getUserRole();
+        float roleWidth = GlHelper.getStringWidth(userRole, valueFont);
+        GlHelper.drawText(userRole, (float)rightEdge - roleWidth, rowY, valueFont, valueColor);
+        GlHelper.drawText("Updated:", (float)popupX + 15.0f * scale, rowY += rowHeight, labelFont, labelColor);
+        String updatedDate = "Aug 4 2025";
+        float dateWidth = GlHelper.getStringWidth(updatedDate, valueFont);
+        GlHelper.drawText(updatedDate, (float)rightEdge - dateWidth, rowY, valueFont, valueColor);
+        rowY += rowHeight;
+        rowY = (int)((float)rowY + 8.0f * scale);
+        rowY += this.drawDropdown(drawContext, guiGraphics, "Language", this.selectedLanguage, LANGUAGES, "language", popupX, rowY, mouseX, mouseY, this.openAlpha, scale, popupWidth);
+        rowY = (int)((float)rowY + 8.0f * scale);
+        this.drawDropdown(drawContext, guiGraphics, "Menu Scale", this.selectedScale, SCALES, "scale", popupX, rowY, mouseX, mouseY, this.openAlpha, scale, popupWidth);
+        FontRenderer footerFont = FontPresets.axiformaRegular(12.0f * scale);
+        String footer = "7unknown © 2024-2025";
+        float footerWidth = GlHelper.getStringWidth(footer, footerFont);
+        GlHelper.drawText(footer, (float)popupX + ((float)popupWidth - footerWidth) / 2.0f, (float)(popupY + popupHeight) - 15.0f * scale, footerFont, labelColor);
     }
 
-    private void drawCloseButton(int n, int n2, FontRenderer fontRenderer, int n3, float f, int n4) {
-        float f2 = (float)(n + n4) - 25.0f * f;
-        float f3 = (float)n2 + 16.0f * f;
-        Color color = new Color(255, 255, 255);
-        Color color2 = new Color(255, 255, 255);
-        int n5 = (int)((float)color.getRed() + (float)(color2.getRed() - color.getRed()) * this.closeButtonHoverAlpha);
-        int n6 = (int)((float)color.getGreen() + (float)(color2.getGreen() - color.getGreen()) * this.closeButtonHoverAlpha);
-        int n7 = (int)((float)color.getBlue() + (float)(color2.getBlue() - color.getBlue()) * this.closeButtonHoverAlpha);
-        int n8 = n3 << 24 | n5 << 16 | n6 << 8 | n7;
-        int n9 = (int)(180.0f * this.closeButtonHoverAlpha * this.openAlpha);
-        int n10 = new Color(n5, n6, n7, n9).getRGB();
-        TextGlow.drawGlowText("", f2, f3, fontRenderer, n8, n10, 10.0f * f);
+    private void drawCloseButton(int popupX, int popupY, FontRenderer iconFont, int alphaByte, float scale, int popupWidth) {
+        float btnX = (float)(popupX + popupWidth) - 25.0f * scale;
+        float btnY = (float)popupY + 16.0f * scale;
+        Color colorFrom = new Color(255, 255, 255);
+        Color colorTo = new Color(255, 255, 255);
+        int r = (int)((float)colorFrom.getRed() + (float)(colorTo.getRed() - colorFrom.getRed()) * this.closeButtonHoverAlpha);
+        int g = (int)((float)colorFrom.getGreen() + (float)(colorTo.getGreen() - colorFrom.getGreen()) * this.closeButtonHoverAlpha);
+        int b = (int)((float)colorFrom.getBlue() + (float)(colorTo.getBlue() - colorFrom.getBlue()) * this.closeButtonHoverAlpha);
+        int textColor = alphaByte << 24 | r << 16 | g << 8 | b;
+        int glowAlpha = (int)(180.0f * this.closeButtonHoverAlpha * this.openAlpha);
+        int glowColor = new Color(r, g, b, glowAlpha).getRGB();
+        TextGlow.drawGlowText("", btnX, btnY, iconFont, textColor, glowColor, 10.0f * scale);
     }
 
-    private int drawDropdown(DrawContext drawContext, GuiGraphics guiGraphics, String string, String string2, String[] stringArray, String string3, int n, int n2, int n3, int n4, float f, float f2, int n5) {
-        FontRenderer fontRenderer = FontPresets.axiformaRegular(13.0f * f2);
-        FontRenderer fontRenderer2 = FontPresets.axiformaRegular(13.0f * f2);
-        int n6 = this.applyAlpha(new Color(0xAAAAAA).getRGB(), f);
-        int n7 = this.applyAlpha(new Color(0xFFFFFF).getRGB(), f);
-        GlHelper.drawText(string, (float)n + 15.0f * f2, (float)n2 + 6.0f * f2, fontRenderer, n6);
-        int n8 = (int)(90.0f * f2);
-        int n9 = (int)((float)(n + n5 - n8) - 15.0f * f2);
-        int n10 = (int)(20.0f * f2);
-        int n11 = (int)(18.0f * f2);
-        float f3 = this.dropdownAlpha.getOrDefault(string3, Float.valueOf(0.0f)).floatValue();
-        String[] stringArray2 = this.filterDropdownItems(stringArray, string2);
-        int n12 = (int)((float)(stringArray2.length * n11) * f3);
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n9, n2, n8, n10 + n12, 4.0f * f2, this.applyAlpha(POPUP_BG_COLOR.getRGB(), f));
-        float f4 = (float)n9 + 8.0f * f2;
-        float f5 = (float)n2 + (float)n10 / 2.0f - fontRenderer2.getMetrics().capHeight() / 2.0f + 3.0f * f2;
-        GlHelper.drawText(string2, f4, f5 - 2.0f, fontRenderer2, n7);
-        FontRenderer fontRenderer3 = FontPresets.materialIcons(18.0f * f2);
-        String string4 = "";
-        float f6 = (float)(n9 + n8) - 18.0f * f2;
-        float f7 = (float)n2 + (float)n10 / 2.0f + fontRenderer3.getMetrics().capHeight() / 2.0f - 10.5f * f2 + 7.0f;
-        GlHelper.drawText(string4, f6, f7, fontRenderer3, n7);
-        if (f3 > 0.01f) {
+    private int drawDropdown(DrawContext drawContext, GuiGraphics guiGraphics, String label, String selectedValue, String[] items, String key, int popupX, int rowY, int mouseX, int mouseY, float openAlpha, float scale, int popupWidth) {
+        FontRenderer labelFont = FontPresets.axiformaRegular(13.0f * scale);
+        FontRenderer valueFont = FontPresets.axiformaRegular(13.0f * scale);
+        int labelColor = this.applyAlpha(new Color(0xAAAAAA).getRGB(), openAlpha);
+        int valueColor = this.applyAlpha(new Color(0xFFFFFF).getRGB(), openAlpha);
+        GlHelper.drawText(label, (float)popupX + 15.0f * scale, (float)rowY + 6.0f * scale, labelFont, labelColor);
+        int dropdownWidth = (int)(90.0f * scale);
+        int dropdownX = (int)((float)(popupX + popupWidth - dropdownWidth) - 15.0f * scale);
+        int dropdownHeaderHeight = (int)(20.0f * scale);
+        int itemHeight = (int)(18.0f * scale);
+        float openFactor = this.dropdownAlpha.getOrDefault(key, 0.0f).floatValue();
+        String[] filteredItems = this.filterDropdownItems(items, selectedValue);
+        int expandedHeight = (int)((float)(filteredItems.length * itemHeight) * openFactor);
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), dropdownX, rowY, dropdownWidth, dropdownHeaderHeight + expandedHeight, 4.0f * scale, this.applyAlpha(POPUP_BG_COLOR.getRGB(), openAlpha));
+        float valueX = (float)dropdownX + 8.0f * scale;
+        float valueY = (float)rowY + (float)dropdownHeaderHeight / 2.0f - valueFont.getMetrics().capHeight() / 2.0f + 3.0f * scale;
+        GlHelper.drawText(selectedValue, valueX, valueY - 2.0f, valueFont, valueColor);
+        FontRenderer arrowFont = FontPresets.materialIcons(18.0f * scale);
+        String arrowIcon = "";
+        float arrowX = (float)(dropdownX + dropdownWidth) - 18.0f * scale;
+        float arrowY = (float)rowY + (float)dropdownHeaderHeight / 2.0f + arrowFont.getMetrics().capHeight() / 2.0f - 10.5f * scale + 7.0f;
+        GlHelper.drawText(arrowIcon, arrowX, arrowY, arrowFont, valueColor);
+        if (openFactor > 0.01f) {
             drawContext.save();
-            drawContext.clip(Rectangle.ofXYWH(n9, n2 + n10, n8, n12));
-            Map<String, Float> map = this.dropdownItemHover.get(string3);
-            int n13 = n2 + n10;
-            for (String string5 : stringArray2) {
-                boolean bl = this.isPointInBounds(n3, n4, n9, n13, n8, n11);
-                this.updateItemHover(map, string5, bl);
-                float f8 = map.getOrDefault(string5, 0.0f);
-                float f9 = (float)n9 + 8.0f * f2;
-                float f10 = (float)n13 + (float)n11 / 2.0f - fontRenderer2.getMetrics().capHeight() / 2.0f + 3.0f * f2;
-                int n14 = this.applyAlpha(n7, f3);
-                float f11 = f8 * f3;
-                if (f11 > 0.01f) {
-                    int n15 = new Color(1.0f, 1.0f, 1.0f, f11).getRGB();
-                    TextGlow.drawGlowText(string5, f9, f10, fontRenderer2, n14, n15, 8.0f * f2);
+            drawContext.clip(Rectangle.ofXYWH(dropdownX, rowY + dropdownHeaderHeight, dropdownWidth, expandedHeight));
+            Map<String, Float> itemHovers = this.dropdownItemHover.get(key);
+            int itemY = rowY + dropdownHeaderHeight;
+            for (String item : filteredItems) {
+                boolean hovered = this.isPointInBounds(mouseX, mouseY, dropdownX, itemY, dropdownWidth, itemHeight);
+                this.updateItemHover(itemHovers, item, hovered);
+                float hoverAmount = itemHovers.getOrDefault(item, 0.0f);
+                float itemTextX = (float)dropdownX + 8.0f * scale;
+                float itemTextY = (float)itemY + (float)itemHeight / 2.0f - valueFont.getMetrics().capHeight() / 2.0f + 3.0f * scale;
+                int itemColor = this.applyAlpha(valueColor, openFactor);
+                float glowAmount = hoverAmount * openFactor;
+                if (glowAmount > 0.01f) {
+                    int glowColor = new Color(1.0f, 1.0f, 1.0f, glowAmount).getRGB();
+                    TextGlow.drawGlowText(item, itemTextX, itemTextY, valueFont, itemColor, glowColor, 8.0f * scale);
                 } else {
-                    GlHelper.drawText(string5, f9, f10, fontRenderer2, n14);
+                    GlHelper.drawText(item, itemTextX, itemTextY, valueFont, itemColor);
                 }
-                n13 += n11;
+                itemY += itemHeight;
             }
             drawContext.restore();
         }
-        return n10 + n12;
+        return dropdownHeaderHeight + expandedHeight;
     }
 
     private String getUserId() {
@@ -183,33 +183,33 @@ extends ClientBase {
         return "User";
     }
 
-    public boolean onMouseClick(int n, int n2, float f) {
-        int n3;
-        int n4;
-        int n5 = (int)(220.0f * f);
-        int n6 = this.calculatePopupHeight(f);
-        int n7 = mc.getWindow().getGuiScaledWidth();
-        int n8 = (n7 - n5) / 2 + this.offsetX;
-        if (this.isMouseOverCloseButton(n, n2, n8, n4 = ((n3 = mc.getWindow().getGuiScaledHeight()) - (int)(200.0f * f)) / 2 + this.offsetY, f, n5)) {
+    public boolean onMouseClick(int mouseX, int mouseY, float scale) {
+        int screenHeight;
+        int popupY;
+        int popupWidth = (int)(220.0f * scale);
+        int popupHeight = this.calculatePopupHeight(scale);
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int popupX = (screenWidth - popupWidth) / 2 + this.offsetX;
+        if (this.isMouseOverCloseButton(mouseX, mouseY, popupX, popupY = ((screenHeight = mc.getWindow().getGuiScaledHeight()) - (int)(200.0f * scale)) / 2 + this.offsetY, scale, popupWidth)) {
             this.toggleOpen();
             return true;
         }
         if (this.isDragging) {
             return true;
         }
-        if (this.isMouseInRect(n, n2, n8, n4, f, n5)) {
-            this.beginDrag(n, n2);
+        if (this.isMouseInRect(mouseX, mouseY, popupX, popupY, scale, popupWidth)) {
+            this.beginDrag(mouseX, mouseY);
             return true;
         }
-        int n9 = (int)(90.0f * f);
-        int n10 = (int)((float)(n8 + n5 - n9) - 15.0f * f);
-        int n11 = (int)((float)n4 + 127.0f * f);
-        boolean bl = this.handleDropdownClick(n, n2, n10, n11, n9, LANGUAGES, this.selectedLanguage, "language", value -> {
+        int dropdownWidth = (int)(90.0f * scale);
+        int dropdownX = (int)((float)(popupX + popupWidth - dropdownWidth) - 15.0f * scale);
+        int langRowY = (int)((float)popupY + 127.0f * scale);
+        boolean langHandled = this.handleDropdownClick(mouseX, mouseY, dropdownX, langRowY, dropdownWidth, LANGUAGES, this.selectedLanguage, "language", value -> {
             this.selectedLanguage = value;
-        }, f);
-        float f2 = (float)this.filterDropdownItems(LANGUAGES, this.selectedLanguage).length * (18.0f * f) * this.dropdownAlpha.getOrDefault("language", 0.0f);
-        int n12 = (int)((float)n11 + 20.0f * f + f2 + 8.0f * f);
-        boolean bl2 = this.handleDropdownClick(n, n2, n10, n12, n9, SCALES, this.selectedScale, "scale", value -> {
+        }, scale);
+        float langExpanded = (float)this.filterDropdownItems(LANGUAGES, this.selectedLanguage).length * (18.0f * scale) * this.dropdownAlpha.getOrDefault("language", 0.0f);
+        int scaleRowY = (int)((float)langRowY + 20.0f * scale + langExpanded + 8.0f * scale);
+        boolean scaleHandled = this.handleDropdownClick(mouseX, mouseY, dropdownX, scaleRowY, dropdownWidth, SCALES, this.selectedScale, "scale", value -> {
             this.selectedScale = value;
             try {
                 float parsed = Float.parseFloat(value.replace("%", "")) / 100.0f;
@@ -217,12 +217,12 @@ extends ClientBase {
             } catch (NumberFormatException numberFormatException) {
                 // empty catch block
             }
-        }, f);
-        boolean bl3 = this.isPointInBounds(n, n2, n8, n4, n5, n6);
-        if (bl || bl2) {
+        }, scale);
+        boolean withinPopup = this.isPointInBounds(mouseX, mouseY, popupX, popupY, popupWidth, popupHeight);
+        if (langHandled || scaleHandled) {
             return true;
         }
-        if (bl3) {
+        if (withinPopup) {
             this.dropdownOpen.put("language", false);
             this.dropdownOpen.put("scale", false);
             return true;
@@ -230,51 +230,51 @@ extends ClientBase {
         return false;
     }
 
-    private boolean handleDropdownClick(int n, int n2, int n3, int n4, int n5, String[] stringArray, String string3, String string4, Consumer<String> consumer, float f) {
-        boolean bl = this.dropdownOpen.getOrDefault(string4, false);
-        int n6 = (int)(18.0f * f);
-        int n7 = (int)(20.0f * f);
-        if (this.isPointInBounds(n, n2, n3, n4, n5, n7)) {
-            this.dropdownOpen.put(string4, !bl);
-            this.dropdownOpen.keySet().stream().filter(string2 -> !string2.equals(string4)).forEach(string -> this.dropdownOpen.put(string, false));
+    private boolean handleDropdownClick(int mouseX, int mouseY, int dropdownX, int dropdownY, int dropdownWidth, String[] items, String selectedValue, String key, Consumer<String> onSelect, float scale) {
+        boolean open = this.dropdownOpen.getOrDefault(key, false);
+        int itemHeight = (int)(18.0f * scale);
+        int headerHeight = (int)(20.0f * scale);
+        if (this.isPointInBounds(mouseX, mouseY, dropdownX, dropdownY, dropdownWidth, headerHeight)) {
+            this.dropdownOpen.put(key, !open);
+            this.dropdownOpen.keySet().stream().filter(otherKey -> !otherKey.equals(key)).forEach(otherKey -> this.dropdownOpen.put(otherKey, false));
             return true;
         }
-        if (bl) {
-            String[] stringArray2 = this.filterDropdownItems(stringArray, string3);
-            for (int i = 0; i < stringArray2.length; ++i) {
-                if (!this.isPointInBounds(n, n2, n3, n4 + n7 + i * n6, n5, n6)) continue;
-                consumer.accept(stringArray2[i]);
-                this.dropdownOpen.put(string4, false);
+        if (open) {
+            String[] filtered = this.filterDropdownItems(items, selectedValue);
+            for (int i = 0; i < filtered.length; ++i) {
+                if (!this.isPointInBounds(mouseX, mouseY, dropdownX, dropdownY + headerHeight + i * itemHeight, dropdownWidth, itemHeight)) continue;
+                onSelect.accept(filtered[i]);
+                this.dropdownOpen.put(key, false);
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isMouseInRect(int n, int n2, int n3, int n4, float f, int n5) {
-        float f2 = (float)(n3 + n5) - 25.0f * f;
-        boolean bl = (float)n >= f2 - 10.0f * f && (float)n <= f2 + 15.0f * f;
-        return n >= n3 && n <= n3 + n5 && n2 >= n4 && (float)n2 <= (float)n4 + 30.0f * f && !bl;
+    private boolean isMouseInRect(int mouseX, int mouseY, int popupX, int popupY, float scale, int popupWidth) {
+        float closeBtnX = (float)(popupX + popupWidth) - 25.0f * scale;
+        boolean overCloseBtn = (float)mouseX >= closeBtnX - 10.0f * scale && (float)mouseX <= closeBtnX + 15.0f * scale;
+        return mouseX >= popupX && mouseX <= popupX + popupWidth && mouseY >= popupY && (float)mouseY <= (float)popupY + 30.0f * scale && !overCloseBtn;
     }
 
-    private boolean isMouseOverCloseButton(int n, int n2, int n3, int n4, float f, int n5) {
-        float f2 = (float)(n3 + n5) - 25.0f * f;
-        float f3 = (float)n4 + 16.0f * f;
-        return (float)n >= f2 - 10.0f * f && (float)n <= f2 + 15.0f * f && (float)n2 >= f3 - 10.0f * f && (float)n2 <= f3 + 10.0f * f;
+    private boolean isMouseOverCloseButton(int mouseX, int mouseY, int popupX, int popupY, float scale, int popupWidth) {
+        float closeBtnX = (float)(popupX + popupWidth) - 25.0f * scale;
+        float closeBtnY = (float)popupY + 16.0f * scale;
+        return (float)mouseX >= closeBtnX - 10.0f * scale && (float)mouseX <= closeBtnX + 15.0f * scale && (float)mouseY >= closeBtnY - 10.0f * scale && (float)mouseY <= closeBtnY + 10.0f * scale;
     }
 
-    private void beginDrag(int n, int n2) {
+    private void beginDrag(int mouseX, int mouseY) {
         this.isDragging = true;
-        this.lastDragX = n;
-        this.lastDragY = n2;
+        this.lastDragX = mouseX;
+        this.lastDragY = mouseY;
     }
 
-    public void onMouseDrag(int n, int n2) {
+    public void onMouseDrag(int mouseX, int mouseY) {
         if (this.isDragging) {
-            this.offsetX += n - this.lastDragX;
-            this.offsetY += n2 - this.lastDragY;
-            this.lastDragX = n;
-            this.lastDragY = n2;
+            this.offsetX += mouseX - this.lastDragX;
+            this.offsetY += mouseY - this.lastDragY;
+            this.lastDragX = mouseX;
+            this.lastDragY = mouseY;
         }
     }
 
@@ -303,23 +303,23 @@ extends ClientBase {
     }
 
     private void updateDropdownAlpha() {
-        for (String string : this.dropdownOpen.keySet()) {
-            boolean bl = this.dropdownOpen.getOrDefault(string, false);
-            float f = this.dropdownAlpha.getOrDefault(string, Float.valueOf(0.0f)).floatValue();
-            float f2 = bl ? 1.0f : 0.0f;
-            f = Math.abs(f - f2) > 0.01f ? LerpUtil.smoothLerp(f, f2, 0.22f) : f2;
-            this.dropdownAlpha.put(string, Float.valueOf(f));
+        for (String key : this.dropdownOpen.keySet()) {
+            boolean open = this.dropdownOpen.getOrDefault(key, false);
+            float current = this.dropdownAlpha.getOrDefault(key, 0.0f).floatValue();
+            float target = open ? 1.0f : 0.0f;
+            current = Math.abs(current - target) > 0.01f ? LerpUtil.smoothLerp(current, target, 0.22f) : target;
+            this.dropdownAlpha.put(key, current);
         }
     }
 
-    private void updatePopupPosition(int n, int n2, float f) {
+    private void updatePopupPosition(int mouseX, int mouseY, float scale) {
         if (this.isOpen) {
-            int n3 = (int)(220.0f * f);
-            int n4 = mc.getWindow().getGuiScaledWidth();
-            int n5 = mc.getWindow().getGuiScaledHeight();
-            int n6 = (n4 - n3) / 2 + this.offsetX;
-            int n7 = (n5 - (int)(200.0f * f)) / 2 + this.offsetY;
-            this.isCloseButtonHovered = this.isMouseOverCloseButton(n, n2, n6, n7, f, n3);
+            int popupWidth = (int)(220.0f * scale);
+            int screenWidth = mc.getWindow().getGuiScaledWidth();
+            int screenHeight = mc.getWindow().getGuiScaledHeight();
+            int popupX = (screenWidth - popupWidth) / 2 + this.offsetX;
+            int popupY = (screenHeight - (int)(200.0f * scale)) / 2 + this.offsetY;
+            this.isCloseButtonHovered = this.isMouseOverCloseButton(mouseX, mouseY, popupX, popupY, scale, popupWidth);
         } else {
             this.isCloseButtonHovered = false;
         }
@@ -329,45 +329,45 @@ extends ClientBase {
         this.closeButtonHoverAlpha = this.isCloseButtonHovered ? LerpUtil.lerp(this.closeButtonHoverAlpha, 1.0f, 0.16f) : LerpUtil.lerp(this.closeButtonHoverAlpha, 0.0f, 0.16f);
     }
 
-    private void updateItemHover(Map<String, Float> map, String string, boolean bl) {
-        float f = map.getOrDefault(string, Float.valueOf(0.0f)).floatValue();
-        float f2 = bl ? 1.0f : 0.0f;
-        f = Math.abs(f - f2) > 0.01f ? LerpUtil.smoothLerp(f, f2, 0.28f) : f2;
-        map.put(string, Float.valueOf(f));
+    private void updateItemHover(Map<String, Float> hoverMap, String key, boolean hovered) {
+        float current = hoverMap.getOrDefault(key, 0.0f).floatValue();
+        float target = hovered ? 1.0f : 0.0f;
+        current = Math.abs(current - target) > 0.01f ? LerpUtil.smoothLerp(current, target, 0.28f) : target;
+        hoverMap.put(key, current);
     }
 
-    private String[] filterDropdownItems(String[] stringArray, String string) {
-        return Stream.of((Object[])stringArray).filter(string2 -> !Objects.equals(string2, string)).toArray(String[]::new);
+    private String[] filterDropdownItems(String[] items, String selectedValue) {
+        return Stream.of((Object[])items).filter(item -> !Objects.equals(item, selectedValue)).toArray(String[]::new);
     }
 
-    private boolean isPointInBounds(int n, int n2, int n3, int n4, int n5, int n6) {
-        return n >= n3 && n <= n3 + n5 && n2 >= n4 && n2 <= n4 + n6;
+    private boolean isPointInBounds(int pointX, int pointY, int boxX, int boxY, int boxWidth, int boxHeight) {
+        return pointX >= boxX && pointX <= boxX + boxWidth && pointY >= boxY && pointY <= boxY + boxHeight;
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private int calculatePopupHeight(float f) {
-        float f2 = 200.0f * f;
-        float f3 = 18.0f * f;
-        float f4 = (float)this.filterDropdownItems(LANGUAGES, this.selectedLanguage).length * f3 * this.dropdownAlpha.getOrDefault("language", Float.valueOf(0.0f)).floatValue();
-        float f5 = (float)this.filterDropdownItems(SCALES, this.selectedScale).length * f3 * this.dropdownAlpha.getOrDefault("scale", Float.valueOf(0.0f)).floatValue();
-        return (int)(f2 + f4 + f5);
+    private int calculatePopupHeight(float scale) {
+        float baseHeight = 200.0f * scale;
+        float itemHeight = 18.0f * scale;
+        float langExpanded = (float)this.filterDropdownItems(LANGUAGES, this.selectedLanguage).length * itemHeight * this.dropdownAlpha.getOrDefault("language", 0.0f).floatValue();
+        float scaleExpanded = (float)this.filterDropdownItems(SCALES, this.selectedScale).length * itemHeight * this.dropdownAlpha.getOrDefault("scale", 0.0f).floatValue();
+        return (int)(baseHeight + langExpanded + scaleExpanded);
     }
 
-    private void clampPopupPosition(float f) {
-        int n = mc.getWindow().getGuiScaledWidth();
-        int n2 = mc.getWindow().getGuiScaledHeight();
-        int n3 = this.calculatePopupHeight(f);
-        int n4 = (int)(220.0f * f);
-        int n5 = (n - n4) / 2;
-        int n6 = -(n - n4) / 2;
-        int n7 = (n2 - n3) / 2;
-        int n8 = -(n2 - (int)(200.0f * f)) / 2;
-        this.offsetX = Math.max(n6, Math.min(this.offsetX, n5));
-        this.offsetY = Math.max(n8, Math.min(this.offsetY, n7));
+    private void clampPopupPosition(float scale) {
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+        int popupHeight = this.calculatePopupHeight(scale);
+        int popupWidth = (int)(220.0f * scale);
+        int maxOffsetX = (screenWidth - popupWidth) / 2;
+        int minOffsetX = -(screenWidth - popupWidth) / 2;
+        int maxOffsetY = (screenHeight - popupHeight) / 2;
+        int minOffsetY = -(screenHeight - (int)(200.0f * scale)) / 2;
+        this.offsetX = Math.max(minOffsetX, Math.min(this.offsetX, maxOffsetX));
+        this.offsetY = Math.max(minOffsetY, Math.min(this.offsetY, maxOffsetY));
     }
 }

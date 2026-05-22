@@ -30,11 +30,9 @@ public class AntiWeb extends Module {
     public static AntiWeb INSTANCE;
     public static Rotation targetRotation;
 
-    public enum Phase { Đ, Ŀ, Ł;
-        public static final Phase IDLE = Đ;
-    }
+    public enum Phase { IDLE, PLACING, RECYCLING }
 
-    public static Phase currentPhase = Phase.Đ;
+    public static Phase currentPhase = Phase.IDLE;
 
     private final TickTimer webCheckTimer = new TickTimer();
     private final TickTimer placementTimer = new TickTimer();
@@ -124,11 +122,11 @@ public class AntiWeb extends Module {
         if (mc.player == null || mc.level == null || mc.gameMode == null) return;
         if (!event.isPost()) return;
 
-        if (currentPhase == Phase.Ŀ && mc.level.getBlockState(this.webPos).is(Blocks.WATER)) {
+        if (currentPhase == Phase.PLACING && mc.level.getBlockState(this.webPos).is(Blocks.WATER)) {
             this.waterSourcePos = this.findNearestWaterSource(this.webPos);
             if (this.waterSourcePos != null) {
                 Helper.markWaterPlaced(this.waterSourcePos);
-                currentPhase = Phase.Ł;
+                currentPhase = Phase.RECYCLING;
                 this.sentUsePacket = false;
                 this.placementTimer.reset();
                 this.pickupTimer.reset();
@@ -139,13 +137,13 @@ public class AntiWeb extends Module {
         }
 
         switch (currentPhase) {
-            case Đ -> {
+            case IDLE -> {
                 if (mc.player.isInWater() || !this.webCheckTimer.hasPassed(5) || !this.isInCobweb()) return;
                 this.waterBucketSlot = ItemUtil.getSlot(Items.WATER_BUCKET);
                 if (this.waterBucketSlot == -1 || this.waterBucketSlot > 8) return;
-                currentPhase = Phase.Ŀ;
+                currentPhase = Phase.PLACING;
             }
-            case Ŀ -> {
+            case PLACING -> {
                 if (!this.isInCobweb()) {
                     this.reset();
                     return;
@@ -164,7 +162,7 @@ public class AntiWeb extends Module {
                 PacketUtil.sendPredictive(n -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, n));
                 this.sentUsePacket = true;
             }
-            case Ł -> {
+            case RECYCLING -> {
                 if (this.pickupTimer.hasPassed(20)) {
                     ChatUtil.print("§cPickup water timeout after 20 ticks, giving up!");
                     this.reset();
@@ -201,7 +199,7 @@ public class AntiWeb extends Module {
 
     @EventTarget
     public void onRender(RenderEvent renderEvent) {
-        if (currentPhase == Phase.Đ || mc.gameRenderer == null) return;
+        if (currentPhase == Phase.IDLE || mc.gameRenderer == null) return;
         PoseStack poseStack = renderEvent.poseStack();
         Vec3 camera = mc.gameRenderer.getMainCamera().getPosition();
         poseStack.pushPose();
@@ -218,7 +216,7 @@ public class AntiWeb extends Module {
             RenderSystem.setShaderColor(color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f, 0.75f);
             RenderUtil.drawOutlineBox(box, poseStack);
         }
-        if (this.waterSourcePos != null && currentPhase == Phase.Ł) {
+        if (this.waterSourcePos != null && currentPhase == Phase.RECYCLING) {
             AABB box = new AABB(this.waterSourcePos);
             Color color = new Color(0, 255, 0);
             RenderSystem.setShaderColor(color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f, 0.25f);
@@ -242,7 +240,7 @@ public class AntiWeb extends Module {
             PlayerUtil.sendCarriedItem();
             this.savedHotbarSlot = -1;
         }
-        currentPhase = Phase.Đ;
+        currentPhase = Phase.IDLE;
         targetRotation = null;
         this.webPos = null;
         this.waterSourcePos = null;

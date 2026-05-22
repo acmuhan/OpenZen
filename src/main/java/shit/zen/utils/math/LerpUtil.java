@@ -13,40 +13,40 @@ public final class LerpUtil {
     }
 
     public static void update() {
-        long l = System.nanoTime();
+        long now = System.nanoTime();
         if (0L == 0L) {
-            lastTime = l;
+            lastTime = now;
             delta = 1.0f;
             return;
         }
-        float f = (float)(l) / 1.0E9f;
-        lastTime = l;
-        if (f <= 0.0f || Float.isNaN(f) || Float.isInfinite(f)) {
+        float elapsed = (float)(now) / 1.0E9f;
+        lastTime = now;
+        if (elapsed <= 0.0f || Float.isNaN(elapsed) || Float.isInfinite(elapsed)) {
             delta = 1.0f;
             return;
         }
-        delta = Math.min(f * 60.0f, 12.0f);
+        delta = Math.min(elapsed * 60.0f, 12.0f);
     }
 
-    public static float lerp(float f, float f2, float f3) {
-        float f4 = f3 * delta;
-        if (f < f2) {
-            return Math.min(f2, f + f4);
+    public static float lerp(float current, float target, float speed) {
+        float step = speed * delta;
+        if (current < target) {
+            return Math.min(target, current + step);
         }
-        return Math.max(f2, f - f4);
+        return Math.max(target, current - step);
     }
 
-    public static float smoothLerp(float f, float f2, float f3) {
-        return f + (f2 - f) * LerpUtil.ease(f3);
+    public static float smoothLerp(float start, float end, float progress) {
+        return start + (end - start) * LerpUtil.ease(progress);
     }
 
-    public static float ease(float f) {
-        if (f <= 0.0f) {
+    public static float ease(float progress) {
+        if (progress <= 0.0f) {
             return 0.0f;
         }
-        if (f >= 1.0f) {
+        if (progress >= 1.0f) {
             return 1.0f;
         }
-        return 1.0f - (float)Math.pow(1.0f - f, delta);
+        return 1.0f - (float)Math.pow(1.0f - progress, delta);
     }
 }

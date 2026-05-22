@@ -50,10 +50,10 @@ extends Module {
         return InputConstants.isKeyDown(mc.getWindow().getWindow(), keyMapping.getDefaultKey().getValue());
     }
 
-    private static float getMovementSpeed(boolean bl, boolean bl2) {
-        if (bl == bl2) {
+    private static float getMovementSpeed(boolean forward, boolean back) {
+        if (forward == back) {
             return 0.0f;
         }
-        return bl ? 1.0f : -1.0f;
+        return forward ? 1.0f : -1.0f;
     }
 }

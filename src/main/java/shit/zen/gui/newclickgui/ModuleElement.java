@@ -56,7 +56,6 @@ extends UIElement {
     private static final String BUILD_TAG;
 
     public ModuleElement(CategoryPanel categoryPanel, Module module) {
-        System.out.println(BUILD_TAG);
         this.parentPanel = categoryPanel;
         this.module = module;
         for (Setting setting : module.getSettings()) {
@@ -78,16 +77,16 @@ extends UIElement {
     }
 
     @Override
-    public void render(NewClickGui newClickGui, GuiGraphics guiGraphics, PoseStack poseStack, int n, int n2, float f, float f2) {
-        float f3;
-        float f4;
-        float f5;
-        float f6 = 0.0f;
+    public void render(NewClickGui clickGui, GuiGraphics guiGraphics, PoseStack poseStack, int mouseX, int mouseY, float alpha, float partialTicks) {
+        float titleY;
+        float titleWidth;
+        float enabledAmount;
+        float settingsTotalHeight = 0.0f;
         for (SettingElement settingElement : this.settingElements) {
             if (!settingElement.getSetting().getVisibility().displayable()) continue;
-            f6 += settingElement.getHeight();
+            settingsTotalHeight += settingElement.getHeight();
         }
-        this.settingsHeightTimer.animate(f6, 0.2, Easings.EASE_OUT_POW2);
+        this.settingsHeightTimer.animate(settingsTotalHeight, 0.2, Easings.EASE_OUT_POW2);
         this.settingsHeightTimer.tick();
         this.parentPanel.setCollapsed(!this.settingsHeightTimer.isDone());
         this.hoveredTimer.animate(this.isHovered ? 1.0 : 0.0, 0.2, Easings.EASE_OUT_POW2);
@@ -96,39 +95,39 @@ extends UIElement {
         this.enabledTimer.tick();
         this.expandTimer.animate(this.isExpanded ? 1.0 : 0.0, 0.2, Easings.EASE_OUT_POW3);
         this.expandTimer.tick();
-        float f7 = this.expandTimer.getValueF();
-        this.totalHeight = 20.0f + f7 * this.settingsHeightTimer.getValueF();
-        this.isHovered = this.parentPanel.equals(NewClickGui.focusedPanel) && CursorUtil.isInBounds(n, n2, this.posX, this.posY, 120.0f, this.totalHeight);
-        RenderUtil.drawFilledRect(poseStack, this.posX + 1.0f, this.posY + 20.0f, 118.0f, this.totalHeight - 20.0f, ColorUtil.withAlpha(BG_COLOR, f7 * f));
-        float f8 = this.hoveredTimer.getValueF();
-        if (f8 > 0.0f) {
-            RenderUtil.drawFilledRect(poseStack, this.posX + 0.5f, this.posY, 119.0f, 20.0f, ColorUtil.withAlpha(-1, 0.1f * f * f8));
+        float expandAmount = this.expandTimer.getValueF();
+        this.totalHeight = 20.0f + expandAmount * this.settingsHeightTimer.getValueF();
+        this.isHovered = this.parentPanel.equals(NewClickGui.focusedPanel) && CursorUtil.isInBounds(mouseX, mouseY, this.posX, this.posY, 120.0f, this.totalHeight);
+        RenderUtil.drawFilledRect(poseStack, this.posX + 1.0f, this.posY + 20.0f, 118.0f, this.totalHeight - 20.0f, ColorUtil.withAlpha(BG_COLOR, expandAmount * alpha));
+        float hoverAmount = this.hoveredTimer.getValueF();
+        if (hoverAmount > 0.0f) {
+            RenderUtil.drawFilledRect(poseStack, this.posX + 0.5f, this.posY, 119.0f, 20.0f, ColorUtil.withAlpha(-1, 0.1f * alpha * hoverAmount));
         }
-        if (1.0f - (f5 = this.enabledTimer.getValueF()) > 0.0f) {
-            FontStore.AXIFORMA_REGULAR_16.drawStringCentered(poseStack, this.module.getName(), this.posX + 60.0f, this.posY + (20.0f - FontStore.AXIFORMA_REGULAR_16.getFontHeight()) / 2.0f, ColorUtil.withAlpha(-1, f * (1.0f - f5) * 0.6f));
+        if (1.0f - (enabledAmount = this.enabledTimer.getValueF()) > 0.0f) {
+            FontStore.AXIFORMA_REGULAR_16.drawStringCentered(poseStack, this.module.getName(), this.posX + 60.0f, this.posY + (20.0f - FontStore.AXIFORMA_REGULAR_16.getFontHeight()) / 2.0f, ColorUtil.withAlpha(-1, alpha * (1.0f - enabledAmount) * 0.6f));
         }
-        if (f5 > 0.0f) {
-            f4 = FontStore.AXIFORMA_BOLD_16.getStringWidth(this.module.getName());
-            f3 = this.posY + (20.0f - FontStore.AXIFORMA_BOLD_16.getFontHeight()) / 2.0f;
-            RenderUtil.drawShadow(poseStack, this.posX + (120.0f - f4) / 2.0f, f3 + FontStore.AXIFORMA_BOLD_16.getFontHeight() / 4.0f, f4, FontStore.AXIFORMA_BOLD_16.getFontHeight() / 2.0f, 12, ColorUtil.withAlpha(-13768502, f * f5 * 0.36f));
-            FontStore.AXIFORMA_BOLD_16.drawStringCentered(poseStack, this.module.getName(), this.posX + 60.0f, f3, ColorUtil.withAlpha(-13768502, f * f5));
+        if (enabledAmount > 0.0f) {
+            titleWidth = FontStore.AXIFORMA_BOLD_16.getStringWidth(this.module.getName());
+            titleY = this.posY + (20.0f - FontStore.AXIFORMA_BOLD_16.getFontHeight()) / 2.0f;
+            RenderUtil.drawShadow(poseStack, this.posX + (120.0f - titleWidth) / 2.0f, titleY + FontStore.AXIFORMA_BOLD_16.getFontHeight() / 4.0f, titleWidth, FontStore.AXIFORMA_BOLD_16.getFontHeight() / 2.0f, 12, ColorUtil.withAlpha(-13768502, alpha * enabledAmount * 0.36f));
+            FontStore.AXIFORMA_BOLD_16.drawStringCentered(poseStack, this.module.getName(), this.posX + 60.0f, titleY, ColorUtil.withAlpha(-13768502, alpha * enabledAmount));
         }
         if (!this.module.getSettings().isEmpty()) {
-            String string = String.valueOf('\ueb4e');
-            f3 = FontStore.MATERIAL_20.getStringWidth(string);
-            float f9 = this.posX + 120.0f - f3 - 6.0f;
-            float f10 = this.posY + (20.0f - FontStore.MATERIAL_20.getFontHeight()) / 2.0f + 1.0f;
-            RenderHelper.pushRotateAround(poseStack, f9 + f3 / 2.0f, f10 + FontStore.MATERIAL_20.getFontHeight() / 2.0f - 1.0f, 180.0f * f7);
-            FontStore.MATERIAL_20.drawString(poseStack, string, f9, f10, ColorUtil.withAlpha(-1, (0.8f - 0.3f * f7) * f));
+            String arrowIcon = String.valueOf('\ueb4e');
+            titleY = FontStore.MATERIAL_20.getStringWidth(arrowIcon);
+            float arrowX = this.posX + 120.0f - titleY - 6.0f;
+            float arrowY = this.posY + (20.0f - FontStore.MATERIAL_20.getFontHeight()) / 2.0f + 1.0f;
+            RenderHelper.pushRotateAround(poseStack, arrowX + titleY / 2.0f, arrowY + FontStore.MATERIAL_20.getFontHeight() / 2.0f - 1.0f, 180.0f * expandAmount);
+            FontStore.MATERIAL_20.drawString(poseStack, arrowIcon, arrowX, arrowY, ColorUtil.withAlpha(-1, (0.8f - 0.3f * expandAmount) * alpha));
             RenderHelper.popPose(poseStack);
         }
         if (this.isExpanded) {
-            f4 = this.posY + 20.0f;
+            titleWidth = this.posY + 20.0f;
             for (SettingElement settingElement : this.settingElements) {
                 settingElement.setX(this.posX);
-                settingElement.setY(f4);
-                settingElement.render(newClickGui, guiGraphics, poseStack, n, n2, f * f7, f2);
-                f4 += settingElement.getAnimatedHeight() * settingElement.getVisibilityTimer().getValueF();
+                settingElement.setY(titleWidth);
+                settingElement.render(clickGui, guiGraphics, poseStack, mouseX, mouseY, alpha * expandAmount, partialTicks);
+                titleWidth += settingElement.getAnimatedHeight() * settingElement.getVisibilityTimer().getValueF();
             }
         }
     }
@@ -200,20 +199,20 @@ extends UIElement {
 
     @Override
     @Generated
-    public void setX(float f) {
-        this.posX = f;
+    public void setX(float x) {
+        this.posX = x;
     }
 
     @Override
     @Generated
-    public void setY(float f) {
-        this.posY = f;
+    public void setY(float y) {
+        this.posY = y;
     }
 
     @Override
     @Generated
-    public void setHeight(float f) {
-        this.totalHeight = f;
+    public void setHeight(float height) {
+        this.totalHeight = height;
     }
 
     static {

@@ -55,8 +55,8 @@ extends Module {
 
     public static ChestStealer INSTANCE;
     private static final Timer actionTimer;
-    private final NumberSetting clickDelaySetting = new NumberSetting("Delay", Integer.valueOf(200), Integer.valueOf(0), Integer.valueOf(1000), Integer.valueOf(10));
-    private final NumberSetting openDelaySetting = new NumberSetting("Open Delay", Integer.valueOf(2), Integer.valueOf(0), Integer.valueOf(10), Integer.valueOf(1));
+    private final NumberSetting clickDelaySetting = new NumberSetting("Delay", 200, 0, 1000, 10);
+    private final NumberSetting openDelaySetting = new NumberSetting("Open Delay", 2, 0, 10, 1);
     private final BooleanSetting chestSetting = new BooleanSetting("Chest", true);
     private final BooleanSetting enderChestSetting = new BooleanSetting("Ender Chest", false);
     private final BooleanSetting furnaceSetting = new BooleanSetting("Furnace", true);
@@ -123,7 +123,7 @@ extends Module {
             return;
         }
         Screen screen = mc.screen;
-        AbstractContainerMenu abstractContainerMenu = mc.player.containerMenu;
+        AbstractContainerMenu containerMenu = mc.player.containerMenu;
         this.countBlocks();
         if (screen instanceof ContainerScreen containerScreen) {
             if (screen != this.lastScreen) {
@@ -137,16 +137,16 @@ extends Module {
                 if (this.openDelayTicks < this.openDelaySetting.getValue().intValue()) {
                     return;
                 }
-                String string = containerScreen.getTitle().getString();
-                String string2 = Component.translatable("container.chest").getString();
-                String string3 = Component.translatable("container.chestDouble").getString();
-                String string4 = Component.translatable("container.enderchest").getString();
+                String title = containerScreen.getTitle().getString();
+                String chestTitle = Component.translatable("container.chest").getString();
+                String doubleChestTitle = Component.translatable("container.chestDouble").getString();
+                String enderChestTitle = Component.translatable("container.enderchest").getString();
                 ChestMenu chestMenu = containerScreen.getMenu();
-                if (this.chestSetting.getValue() && (string.equals(string2) || string.equals(string3) || string.equals("Chest"))) {
+                if (this.chestSetting.getValue() && (title.equals(chestTitle) || title.equals(doubleChestTitle) || title.equals("Chest"))) {
                     if (this.shouldCloseChest(chestMenu)) {
                         this.stealFromChest(chestMenu);
                     }
-                } else if (this.enderChestSetting.getValue() && string.equals(string4) && this.shouldCloseChest(chestMenu)) {
+                } else if (this.enderChestSetting.getValue() && title.equals(enderChestTitle) && this.shouldCloseChest(chestMenu)) {
                     this.stealFromChest(chestMenu);
                 }
             }
@@ -156,12 +156,12 @@ extends Module {
             this.stealTargetQueue.clear();
             this.stealIndex = 0;
         }
-        if (abstractContainerMenu instanceof FurnaceMenu furnaceMenu) {
+        if (containerMenu instanceof FurnaceMenu furnaceMenu) {
             if (this.furnaceSetting.getValue()) {
                 this.stealFromFurnace(furnaceMenu);
             }
         }
-        if (abstractContainerMenu instanceof BrewingStandMenu brewingMenu) {
+        if (containerMenu instanceof BrewingStandMenu brewingMenu) {
             if (this.brewingStandSetting.getValue()) {
                 this.stealFromBrewing(brewingMenu);
             }
@@ -193,9 +193,9 @@ extends Module {
             this.stealIndex = 0;
         }
         if (this.stealIndex < this.stealTargetQueue.size()) {
-            ChestStealer.StealTarget chestStealer$StealTarget = this.stealTargetQueue.get(this.stealIndex);
-            if (!chestMenu.getSlot(chestStealer$StealTarget.slotIndex).getItem().isEmpty()) {
-                this.schedulePendingClick(chestMenu, chestStealer$StealTarget.slotIndex);
+            ChestStealer.StealTarget target = this.stealTargetQueue.get(this.stealIndex);
+            if (!chestMenu.getSlot(target.slotIndex).getItem().isEmpty()) {
+                this.schedulePendingClick(chestMenu, target.slotIndex);
                 ++this.stealIndex;
             } else {
                 ++this.stealIndex;
@@ -206,39 +206,39 @@ extends Module {
     }
 
     private void buildStealQueue(ChestMenu chestMenu) {
-        ArrayList<ChestStealer.StealTarget> arrayList = new ArrayList<>();
-        for (int i = 0; i < chestMenu.getRowCount() * 9; ++i) {
-            ItemStack itemStack = chestMenu.getSlot(i).getItem();
+        ArrayList<ChestStealer.StealTarget> candidates = new ArrayList<>();
+        for (int slot = 0; slot < chestMenu.getRowCount() * 9; ++slot) {
+            ItemStack itemStack = chestMenu.getSlot(slot).getItem();
             if (itemStack.isEmpty() || !this.shouldStealItem(itemStack)) continue;
-            int n = this.getItemPriority(itemStack);
-            double d = this.getItemScore(itemStack);
-            arrayList.add(new ChestStealer.StealTarget(i, itemStack, n, d));
+            int priority = this.getItemPriority(itemStack);
+            double score = this.getItemScore(itemStack);
+            candidates.add(new ChestStealer.StealTarget(slot, itemStack, priority, score));
         }
-        Map<String, List<ChestStealer.StealTarget>> map = this.categorizeItems(arrayList);
+        Map<String, List<ChestStealer.StealTarget>> categoryMap = this.categorizeItems(candidates);
         this.stealTargetQueue.clear();
         List<String> categories = Arrays.asList("god", "helmet", "chestplate", "leggings", "boots", "sword", "bow", "crossbow", "golden_apple", "pickaxe", "axe", "shovel", "special", "utility", "other");
-        for (String string : categories) {
-            if (!map.containsKey(string)) continue;
-            List<ChestStealer.StealTarget> list = map.get(string);
-            boolean bl = string.equals("god") || string.equals("helmet") || string.equals("chestplate") || string.equals("leggings") || string.equals("boots") || string.equals("sword") || string.equals("bow") || string.equals("crossbow") || string.equals("pickaxe") || string.equals("axe") || string.equals("shovel");
-            if (this.onlyBestSetting.getValue() && bl) {
-                ChestStealer.StealTarget best = list.stream().max(Comparator.comparingDouble(t -> t.score)).orElse(null);
+        for (String category : categories) {
+            if (!categoryMap.containsKey(category)) continue;
+            List<ChestStealer.StealTarget> categoryItems = categoryMap.get(category);
+            boolean isBestOnlyCategory = category.equals("god") || category.equals("helmet") || category.equals("chestplate") || category.equals("leggings") || category.equals("boots") || category.equals("sword") || category.equals("bow") || category.equals("crossbow") || category.equals("pickaxe") || category.equals("axe") || category.equals("shovel");
+            if (this.onlyBestSetting.getValue() && isBestOnlyCategory) {
+                ChestStealer.StealTarget best = categoryItems.stream().max(Comparator.comparingDouble(t -> t.score)).orElse(null);
                 if (best == null) continue;
                 this.stealTargetQueue.add(best);
                 continue;
             }
-            list.sort((a, b) -> Double.compare(b.score, a.score));
-            this.stealTargetQueue.addAll(list);
+            categoryItems.sort((a, b) -> Double.compare(b.score, a.score));
+            this.stealTargetQueue.addAll(categoryItems);
         }
     }
 
-    private Map<String, List<ChestStealer.StealTarget>> categorizeItems(List<ChestStealer.StealTarget> list) {
-        HashMap<String, List<ChestStealer.StealTarget>> hashMap = new HashMap<>();
-        for (ChestStealer.StealTarget chestStealer$StealTarget : list) {
-            String string2 = this.getItemCategory(chestStealer$StealTarget.itemStack);
-            hashMap.computeIfAbsent(string2, string -> new ArrayList<>()).add(chestStealer$StealTarget);
+    private Map<String, List<ChestStealer.StealTarget>> categorizeItems(List<ChestStealer.StealTarget> targets) {
+        HashMap<String, List<ChestStealer.StealTarget>> categoryMap = new HashMap<>();
+        for (ChestStealer.StealTarget target : targets) {
+            String category = this.getItemCategory(target.itemStack);
+            categoryMap.computeIfAbsent(category, key -> new ArrayList<>()).add(target);
         }
-        return hashMap;
+        return categoryMap;
     }
 
     private String getItemCategory(ItemStack itemStack) {
@@ -410,14 +410,14 @@ extends Module {
     }
 
     private void stealRandomMode(ChestMenu chestMenu) {
-        List<Integer> list = this.getStealableChestSlots(chestMenu);
-        if (this.randomClickSetting.getValue() && !list.isEmpty() && this.accessCount > 1) {
-            int n = list.get(this.random.nextInt(list.size()));
-            this.schedulePendingClick(chestMenu, n);
+        List<Integer> stealableSlots = this.getStealableChestSlots(chestMenu);
+        if (this.randomClickSetting.getValue() && !stealableSlots.isEmpty() && this.accessCount > 1) {
+            int randomSlot = stealableSlots.get(this.random.nextInt(stealableSlots.size()));
+            this.schedulePendingClick(chestMenu, randomSlot);
         } else {
-            for (int i = 0; i < chestMenu.getRowCount() * 9; ++i) {
-                ItemStack itemStack = chestMenu.getSlot(i).getItem();
-                if (itemStack.isEmpty() || this.accessCount <= 1 || !this.tryStealSlot(chestMenu, i)) continue;
+            for (int slot = 0; slot < chestMenu.getRowCount() * 9; ++slot) {
+                ItemStack itemStack = chestMenu.getSlot(slot).getItem();
+                if (itemStack.isEmpty() || this.accessCount <= 1 || !this.tryStealSlot(chestMenu, slot)) continue;
                 return;
             }
         }
@@ -434,15 +434,15 @@ extends Module {
                 mc.player.closeContainer();
                 return;
             }
-            List<Integer> list = this.getStealableContainerSlots(container);
-            if (this.randomClickSetting.getValue() && !list.isEmpty() && this.accessCount > 1) {
-                int n = list.get(this.random.nextInt(list.size()));
-                this.schedulePendingClick(furnaceMenu, n);
+            List<Integer> stealableSlots = this.getStealableContainerSlots(container);
+            if (this.randomClickSetting.getValue() && !stealableSlots.isEmpty() && this.accessCount > 1) {
+                int randomSlot = stealableSlots.get(this.random.nextInt(stealableSlots.size()));
+                this.schedulePendingClick(furnaceMenu, randomSlot);
             } else {
-                for (int i = 0; i < container.getContainerSize(); ++i) {
-                    ItemStack itemStack = container.getItem(i);
+                for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+                    ItemStack itemStack = container.getItem(slot);
                     if (itemStack.isEmpty() || this.accessCount <= 1 || !this.shouldStealItem(itemStack)) continue;
-                    this.schedulePendingClick(furnaceMenu, i);
+                    this.schedulePendingClick(furnaceMenu, slot);
                     return;
                 }
             }
@@ -461,54 +461,54 @@ extends Module {
             mc.player.closeContainer();
             return;
         }
-        List<Integer> list = this.getStealableContainerSlots(container);
-        if (this.randomClickSetting.getValue() && !list.isEmpty() && this.accessCount > 1) {
-            int n = list.get(this.random.nextInt(list.size()));
-            this.schedulePendingClick(brewingStandMenu, n);
+        List<Integer> stealableSlots = this.getStealableContainerSlots(container);
+        if (this.randomClickSetting.getValue() && !stealableSlots.isEmpty() && this.accessCount > 1) {
+            int randomSlot = stealableSlots.get(this.random.nextInt(stealableSlots.size()));
+            this.schedulePendingClick(brewingStandMenu, randomSlot);
         } else {
-            for (int i = 0; i < container.getContainerSize(); ++i) {
-                ItemStack itemStack = container.getItem(i);
+            for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+                ItemStack itemStack = container.getItem(slot);
                 if (itemStack.isEmpty() || this.accessCount <= 1 || !this.shouldStealItem(itemStack)) continue;
-                this.schedulePendingClick(brewingStandMenu, i);
+                this.schedulePendingClick(brewingStandMenu, slot);
                 return;
             }
         }
     }
 
     private List<Integer> getStealableChestSlots(ChestMenu chestMenu) {
-        ArrayList<Integer> arrayList = new ArrayList<>();
-        for (int i = 0; i < chestMenu.getRowCount() * 9; ++i) {
-            ItemStack itemStack = chestMenu.getSlot(i).getItem();
+        ArrayList<Integer> stealableSlots = new ArrayList<>();
+        for (int slot = 0; slot < chestMenu.getRowCount() * 9; ++slot) {
+            ItemStack itemStack = chestMenu.getSlot(slot).getItem();
             if (itemStack.isEmpty() || !ChestStealer.isWorthStealing(itemStack) && !this.pickTrashSetting.getValue() || !this.shouldStealItem(itemStack)) continue;
-            arrayList.add(i);
+            stealableSlots.add(slot);
         }
-        return arrayList;
+        return stealableSlots;
     }
 
     private List<Integer> getStealableContainerSlots(Container container) {
-        ArrayList<Integer> arrayList = new ArrayList<>();
-        for (int i = 0; i < container.getContainerSize(); ++i) {
-            ItemStack itemStack = container.getItem(i);
+        ArrayList<Integer> stealableSlots = new ArrayList<>();
+        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+            ItemStack itemStack = container.getItem(slot);
             if (itemStack.isEmpty() || !this.shouldStealItem(itemStack)) continue;
-            arrayList.add(i);
+            stealableSlots.add(slot);
         }
-        return arrayList;
+        return stealableSlots;
     }
 
-    private Container getFurnaceContainer(AbstractFurnaceMenu abstractFurnaceMenu) throws Exception {
-        Field[] fieldArray;
-        for (Field field : fieldArray = AbstractFurnaceMenu.class.getDeclaredFields()) {
+    private Container getFurnaceContainer(AbstractFurnaceMenu furnaceMenu) throws Exception {
+        Field[] fields;
+        for (Field field : fields = AbstractFurnaceMenu.class.getDeclaredFields()) {
             if (!Container.class.isAssignableFrom(field.getType())) continue;
             field.setAccessible(true);
-            return (Container)field.get(abstractFurnaceMenu);
+            return (Container)field.get(furnaceMenu);
         }
         return null;
     }
 
-    private void schedulePendingClick(AbstractContainerMenu abstractContainerMenu, int n) {
+    private void schedulePendingClick(AbstractContainerMenu menu, int slot) {
         if (!this.hasPendingClick) {
-            this.pendingMenu = abstractContainerMenu;
-            this.pendingSlot = n;
+            this.pendingMenu = menu;
+            this.pendingSlot = slot;
             this.hasPendingClick = true;
             this.ticksSinceMenu = 0;
         }
@@ -524,10 +524,10 @@ extends Module {
         }
     }
 
-    private boolean tryStealSlot(ChestMenu chestMenu, int n) {
-        ItemStack itemStack = chestMenu.getSlot(n).getItem();
+    private boolean tryStealSlot(ChestMenu chestMenu, int slot) {
+        ItemStack itemStack = chestMenu.getSlot(slot).getItem();
         if ((ChestStealer.isWorthStealing(itemStack) || this.pickTrashSetting.getValue()) && this.shouldStealItem(itemStack)) {
-            this.schedulePendingClick(chestMenu, n);
+            this.schedulePendingClick(chestMenu, slot);
             return true;
         }
         return false;
@@ -547,22 +547,22 @@ extends Module {
 
     private void countBlocks() {
         this.totalBlockCount = 0;
-        for (int i = 0; i < mc.player.getInventory().getContainerSize(); ++i) {
-            ItemStack itemStack = mc.player.getInventory().getItem(i);
+        for (int slot = 0; slot < mc.player.getInventory().getContainerSize(); ++slot) {
+            ItemStack itemStack = mc.player.getInventory().getItem(slot);
             if (itemStack.isEmpty() || !(itemStack.getItem() instanceof BlockItem)) continue;
             this.totalBlockCount += itemStack.getCount();
         }
     }
 
     private boolean shouldStealItem(ItemStack itemStack) {
-        int n;
+        int count;
         Item item = itemStack.getItem();
-        if (item instanceof FishingRodItem && (n = ItemUtil.countItem(Items.FISHING_ROD)) > 0) {
+        if (item instanceof FishingRodItem && (count = ItemUtil.countItem(Items.FISHING_ROD)) > 0) {
             return false;
         }
         if (item instanceof BlockItem && item != Items.COBWEB) {
-            n = InventoryManager.getMaxBlockSize();
-            if (this.totalBlockCount + itemStack.getCount() > n) {
+            count = InventoryManager.getMaxBlockSize();
+            if (this.totalBlockCount + itemStack.getCount() > count) {
                 return false;
             }
         }
@@ -594,62 +594,62 @@ extends Module {
 
     private boolean isBetterThanCurrent(ItemStack itemStack) {
         if (itemStack.getItem() instanceof SwordItem) {
-            float f;
-            float f2 = ItemUtil.getSwordDamage(itemStack);
-            return f2 > (f = ItemUtil.getBestSwordDamage());
+            float candidateDamage = ItemUtil.getSwordDamage(itemStack);
+            float bestDamage = ItemUtil.getBestSwordDamage();
+            return candidateDamage > bestDamage;
         }
         if (itemStack.getItem() instanceof DiggerItem) {
             if (itemStack.getItem() instanceof PickaxeItem) {
-                float f;
-                float f3 = ItemUtil.getDigSpeed(itemStack);
-                return f3 > (f = ItemUtil.getBestPickaxeScore());
+                float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+                float bestSpeed = ItemUtil.getBestPickaxeScore();
+                return candidateSpeed > bestSpeed;
             }
             if (itemStack.getItem() instanceof AxeItem) {
-                float f;
                 if (ItemUtil.isLegitAxe(itemStack)) {
-                    float f4 = ItemUtil.getAxeDamage(itemStack);
-                    ItemStack itemStack2 = ItemUtil.getBestSharpAxe();
-                    float f5 = itemStack2 != null ? ItemUtil.getAxeDamage(itemStack2) : 0.0f;
-                    return f4 > f5;
+                    float candidateDamage = ItemUtil.getAxeDamage(itemStack);
+                    ItemStack bestAxeStack = ItemUtil.getBestSharpAxe();
+                    float bestDamage = bestAxeStack != null ? ItemUtil.getAxeDamage(bestAxeStack) : 0.0f;
+                    return candidateDamage > bestDamage;
                 }
-                float f6 = ItemUtil.getDigSpeed(itemStack);
-                return f6 > (f = ItemUtil.getBestAxeScore());
+                float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+                float bestSpeed = ItemUtil.getBestAxeScore();
+                return candidateSpeed > bestSpeed;
             }
             if (itemStack.getItem() instanceof ShovelItem) {
-                float f;
-                float f7 = ItemUtil.getDigSpeed(itemStack);
-                return f7 > (f = ItemUtil.getBestShovelScore());
+                float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+                float bestSpeed = ItemUtil.getBestShovelScore();
+                return candidateSpeed > bestSpeed;
             }
         } else {
             Item item = itemStack.getItem();
             if (item instanceof ArmorItem armorItem) {
-                float f;
-                float f8 = ItemUtil.getArmorScore(itemStack);
-                return f8 > (f = ItemUtil.getEquippedArmorScore(armorItem.getEquipmentSlot())) + 0.1f;
+                float candidateScore = ItemUtil.getArmorScore(itemStack);
+                float equippedScore = ItemUtil.getEquippedArmorScore(armorItem.getEquipmentSlot());
+                return candidateScore > equippedScore + 0.1f;
             }
             if (itemStack.getItem() instanceof BowItem) {
                 if (ItemUtil.isGoodBow(itemStack)) {
-                    float f;
-                    float f9 = ItemUtil.getBowScore(itemStack);
-                    return f9 > (f = ItemUtil.getBestBowScore());
+                    float candidateScore = ItemUtil.getBowScore(itemStack);
+                    float bestScore = ItemUtil.getBestBowScore();
+                    return candidateScore > bestScore;
                 }
                 if (ItemUtil.isGoodBowAlt(itemStack)) {
-                    float f;
-                    float f10 = ItemUtil.getBowScoreAlt(itemStack);
-                    return f10 > (f = ItemUtil.getBestBowScoreAlt());
+                    float candidateScore = ItemUtil.getBowScoreAlt(itemStack);
+                    float bestScore = ItemUtil.getBestBowScoreAlt();
+                    return candidateScore > bestScore;
                 }
             } else if (itemStack.getItem() instanceof CrossbowItem) {
-                float f;
-                float f11 = ItemUtil.getCrossbowScore(itemStack);
-                return f11 > (f = ItemUtil.getBestCrossbowScore());
+                float candidateScore = ItemUtil.getCrossbowScore(itemStack);
+                float bestScore = ItemUtil.getBestCrossbowScore();
+                return candidateScore > bestScore;
             }
         }
         return true;
     }
 
     private boolean isChestDone(ChestMenu chestMenu) {
-        for (int i = 0; i < chestMenu.getRowCount() * 9; ++i) {
-            ItemStack itemStack = chestMenu.getSlot(i).getItem();
+        for (int slot = 0; slot < chestMenu.getRowCount() * 9; ++slot) {
+            ItemStack itemStack = chestMenu.getSlot(slot).getItem();
             if (itemStack.isEmpty() || !ChestStealer.isWorthStealing(itemStack) && !this.pickTrashSetting.getValue() || !this.shouldStealItem(itemStack)) continue;
             return false;
         }
@@ -657,8 +657,8 @@ extends Module {
     }
 
     private boolean isChestComplete(ChestMenu chestMenu) {
-        for (int i = 0; i < chestMenu.getRowCount() * 9; ++i) {
-            ItemStack itemStack = chestMenu.getSlot(i).getItem();
+        for (int slot = 0; slot < chestMenu.getRowCount() * 9; ++slot) {
+            ItemStack itemStack = chestMenu.getSlot(slot).getItem();
             if (itemStack.isEmpty() || !ChestStealer.isWorthStealing(itemStack) && !this.pickTrashSetting.getValue() || !this.shouldStealItem(itemStack)) continue;
             return false;
         }
@@ -671,8 +671,8 @@ extends Module {
             if (container == null) {
                 return false;
             }
-            for (int i = 0; i < container.getContainerSize(); ++i) {
-                ItemStack itemStack = container.getItem(i);
+            for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+                ItemStack itemStack = container.getItem(slot);
                 if (itemStack.isEmpty() || !this.shouldStealItem(itemStack)) continue;
                 return false;
             }
@@ -688,8 +688,8 @@ extends Module {
         if (container == null) {
             return true;
         }
-        for (int i = 0; i < container.getContainerSize(); ++i) {
-            ItemStack itemStack = container.getItem(i);
+        for (int slot = 0; slot < container.getContainerSize(); ++slot) {
+            ItemStack itemStack = container.getItem(slot);
             if (itemStack.isEmpty() || !this.shouldStealItem(itemStack)) continue;
             return false;
         }
@@ -705,44 +705,44 @@ extends Module {
         }
         Item item = itemStack.getItem();
         if (item instanceof ArmorItem armorItem) {
-            float f;
-            float f2 = ItemUtil.getArmorScore(itemStack);
-            return !(f2 <= (f = ItemUtil.getBestArmorScore(armorItem.getEquipmentSlot())));
+            float candidateScore = ItemUtil.getArmorScore(itemStack);
+            float bestScore = ItemUtil.getBestArmorScore(armorItem.getEquipmentSlot());
+            return !(candidateScore <= bestScore);
         }
         if (itemStack.getItem() instanceof SwordItem) {
-            float f;
-            float f3 = ItemUtil.getSwordDamage(itemStack);
-            return !(f3 <= (f = ItemUtil.getBestSwordDamage()));
+            float candidateDamage = ItemUtil.getSwordDamage(itemStack);
+            float bestDamage = ItemUtil.getBestSwordDamage();
+            return !(candidateDamage <= bestDamage);
         }
         if (itemStack.getItem() instanceof PickaxeItem) {
-            float f;
-            float f4 = ItemUtil.getDigSpeed(itemStack);
-            return !(f4 <= (f = ItemUtil.getBestPickaxeScore()));
+            float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+            float bestSpeed = ItemUtil.getBestPickaxeScore();
+            return !(candidateSpeed <= bestSpeed);
         }
         if (itemStack.getItem() instanceof AxeItem) {
-            float f;
-            float f5 = ItemUtil.getDigSpeed(itemStack);
-            return !(f5 <= (f = ItemUtil.getBestAxeScore()));
+            float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+            float bestSpeed = ItemUtil.getBestAxeScore();
+            return !(candidateSpeed <= bestSpeed);
         }
         if (itemStack.getItem() instanceof ShovelItem) {
-            float f;
-            float f6 = ItemUtil.getDigSpeed(itemStack);
-            return !(f6 <= (f = ItemUtil.getBestShovelScore()));
+            float candidateSpeed = ItemUtil.getDigSpeed(itemStack);
+            float bestSpeed = ItemUtil.getBestShovelScore();
+            return !(candidateSpeed <= bestSpeed);
         }
         if (itemStack.getItem() instanceof CrossbowItem) {
-            float f;
-            float f7 = ItemUtil.getCrossbowScore(itemStack);
-            return !(f7 <= (f = ItemUtil.getBestCrossbowScore()));
+            float candidateScore = ItemUtil.getCrossbowScore(itemStack);
+            float bestScore = ItemUtil.getBestCrossbowScore();
+            return !(candidateScore <= bestScore);
         }
         if (itemStack.getItem() instanceof BowItem && ItemUtil.isGoodBow(itemStack)) {
-            float f;
-            float f8 = ItemUtil.getBowScore(itemStack);
-            return !(f8 <= (f = ItemUtil.getBestBowScore()));
+            float candidateScore = ItemUtil.getBowScore(itemStack);
+            float bestScore = ItemUtil.getBestBowScore();
+            return !(candidateScore <= bestScore);
         }
         if (itemStack.getItem() instanceof BowItem && ItemUtil.isGoodBowAlt(itemStack)) {
-            float f;
-            float f9 = ItemUtil.getBowScoreAlt(itemStack);
-            return !(f9 <= (f = ItemUtil.getBestBowScoreAlt()));
+            float candidateScore = ItemUtil.getBowScoreAlt(itemStack);
+            float bestScore = ItemUtil.getBestBowScoreAlt();
+            return !(candidateScore <= bestScore);
         }
         if (itemStack.getItem() == Items.GOLDEN_APPLE || itemStack.getItem() == Items.ENCHANTED_GOLDEN_APPLE) {
             return true;

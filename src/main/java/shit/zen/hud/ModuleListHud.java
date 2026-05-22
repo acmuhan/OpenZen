@@ -22,11 +22,11 @@ extends HudElement {
     }
 
     private List<Module> getVisibleModules() {
-        return ZenClient.getInstance().getModuleManager().getModules().stream().filter(module -> !(module instanceof ModuleListHud) && !(module instanceof Interface)).filter(Module::isEnabled).filter(module -> !module.getName().isEmpty()).sorted((module, module2) -> Mth.ceil(GlHelper.getStringWidth(module2.getName(), FontPresets.pingfang(16.0f)) - GlHelper.getStringWidth(module.getName(), FontPresets.pingfang(16.0f)))).collect(Collectors.toList());
+        return ZenClient.getInstance().getModuleManager().getModules().stream().filter(module -> !(module instanceof ModuleListHud) && !(module instanceof Interface)).filter(Module::isEnabled).filter(module -> !module.getName().isEmpty()).sorted((a, b) -> Mth.ceil(GlHelper.getStringWidth(b.getName(), FontPresets.pingfang(16.0f)) - GlHelper.getStringWidth(a.getName(), FontPresets.pingfang(16.0f)))).collect(Collectors.toList());
     }
 
     @Override
-    public void onRender2D(Render2DEvent render2DEvent, float f, float f2) {
+    public void onRender2D(Render2DEvent render2DEvent, float x, float y) {
     }
 
     @EventTarget
@@ -38,21 +38,21 @@ extends HudElement {
             return;
         }
         FontRenderer fontRenderer = FontPresets.pingfang(16.0f);
-        List<Module> list = this.getVisibleModules();
+        List<Module> visibleModules = this.getVisibleModules();
         GlHelper.drawTextShadowLegacy("Z", 4.0f, 4.0f, fontRenderer, ColorUtil.getRainbowColor(10, 1).getRGB());
         GlHelper.drawTextShadowLegacy("en (" + mc.getFps() + "FPS)", 4.0f + GlHelper.getStringWidth("Z", fontRenderer), 4.0f, fontRenderer, -1);
-        if (!list.isEmpty()) {
-            float f = 0.0f;
-            for (Module module : list) {
-                GlHelper.drawTextShadowLegacy(module.getName(), 4.0f, 16.0f + f, fontRenderer, ColorUtil.getRainbowColor(10, list.indexOf(module) * 8).getRGB());
+        if (!visibleModules.isEmpty()) {
+            float offsetY = 0.0f;
+            for (Module module : visibleModules) {
+                GlHelper.drawTextShadowLegacy(module.getName(), 4.0f, 16.0f + offsetY, fontRenderer, ColorUtil.getRainbowColor(10, visibleModules.indexOf(module) * 8).getRGB());
                 Objects.requireNonNull(mc.font);
-                f += (float)(9 + 2);
+                offsetY += (float)(9 + 2);
             }
         }
     }
 
     @Override
-    public void onGlRender(GlRenderEvent glRenderEvent, float f, float f2) {
+    public void onGlRender(GlRenderEvent glRenderEvent, float x, float y) {
     }
 
     @Override

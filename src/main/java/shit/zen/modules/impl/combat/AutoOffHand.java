@@ -26,7 +26,7 @@ import shit.zen.event.EventTarget;
 public class AutoOffHand extends Module {
     public static AutoOffHand INSTANCE;
 
-    public enum ItemType { Đ, Ŀ, Ł }
+    public enum ItemType { SNOWBALL, GAPPLE, NONE }
 
     public final NumberSetting range = new NumberSetting("Range", 6.0, 1.0, 12.0, 0.5);
     public final BooleanSetting gapple = new BooleanSetting("Gapple", true);
@@ -51,7 +51,7 @@ public class AutoOffHand extends Module {
         }
         boolean nearEnemy = this.isNearEnemy();
         ItemType desired = this.getDesiredItemType(nearEnemy);
-        if (desired == ItemType.Ł) return;
+        if (desired == ItemType.NONE) return;
         ItemStack mainHand = mc.player.getMainHandItem();
         if (this.isItemOfType(mainHand, desired)) return;
         ItemStack offHand = mc.player.getOffhandItem();
@@ -78,11 +78,11 @@ public class AutoOffHand extends Module {
 
     private boolean isNearEnemy() {
         if (mc.level == null || mc.player == null) return false;
-        double d = this.range.getValue().doubleValue();
+        double rangeValue = this.range.getValue().doubleValue();
         return mc.level.players().stream().anyMatch(
                 p -> !p.equals(mc.player)
                         && !p.isRemoved()
-                        && mc.player.distanceToSqr(p) <= d * d
+                        && mc.player.distanceToSqr(p) <= rangeValue * rangeValue
                         && this.hasLineOfSight(p));
     }
 
@@ -96,22 +96,22 @@ public class AutoOffHand extends Module {
 
     private ItemType getDesiredItemType(boolean nearEnemy) {
         if (mc.player.getHealth() < this.health.getValue().doubleValue()) {
-            if (this.gapple.getValue()) return ItemType.Ŀ;
+            if (this.gapple.getValue()) return ItemType.GAPPLE;
         } else if (this.revertOnRegen.getValue() && mc.player.hasEffect(MobEffects.REGENERATION)) {
-            if (this.snowball.getValue()) return ItemType.Đ;
+            if (this.snowball.getValue()) return ItemType.SNOWBALL;
         } else if (nearEnemy) {
-            if (this.snowball.getValue()) return ItemType.Đ;
+            if (this.snowball.getValue()) return ItemType.SNOWBALL;
         } else if (this.gapple.getValue()) {
-            return ItemType.Ŀ;
+            return ItemType.GAPPLE;
         }
-        return ItemType.Ł;
+        return ItemType.NONE;
     }
 
     private boolean isItemOfType(ItemStack stack, ItemType type) {
         if (stack == null || stack.isEmpty()) return false;
         return switch (type) {
-            case Đ -> stack.getItem() == Items.SNOWBALL || stack.getItem() == Items.EGG;
-            case Ŀ -> stack.getItem() == Items.GOLDEN_APPLE || stack.getItem() == Items.ENCHANTED_GOLDEN_APPLE;
+            case SNOWBALL -> stack.getItem() == Items.SNOWBALL || stack.getItem() == Items.EGG;
+            case GAPPLE -> stack.getItem() == Items.GOLDEN_APPLE || stack.getItem() == Items.ENCHANTED_GOLDEN_APPLE;
             default -> false;
         };
     }

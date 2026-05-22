@@ -22,45 +22,45 @@ extends Event {
     }
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof StuckInBlockEvent stuckInBlockEvent)) {
+        if (!(other instanceof StuckInBlockEvent otherEvent)) {
             return false;
         }
-        if (!stuckInBlockEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        BlockState blockState = this.getBlockState();
-        BlockState blockState2 = stuckInBlockEvent.getBlockState();
-        if (!Objects.equals(blockState, blockState2)) {
+        BlockState thisState = this.getBlockState();
+        BlockState otherState = otherEvent.getBlockState();
+        if (!Objects.equals(thisState, otherState)) {
             return false;
         }
-        Vec3 vec3 = this.getMotion();
-        Vec3 vec32 = stuckInBlockEvent.getMotion();
-        return !(!Objects.equals(vec3, vec32));
+        Vec3 thisMotion = this.getMotion();
+        Vec3 otherMotion = otherEvent.getMotion();
+        return !(!Objects.equals(thisMotion, otherMotion));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof StuckInBlockEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof StuckInBlockEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        BlockState blockState = this.getBlockState();
-        n2 = n2 * 59 + (blockState == null ? 43 : blockState.hashCode());
-        Vec3 vec3 = this.getMotion();
-        n2 = n2 * 59 + (vec3 == null ? 43 : vec3.hashCode());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        BlockState state = this.getBlockState();
+        result = result * 59 + (state == null ? 43 : state.hashCode());
+        Vec3 motion = this.getMotion();
+        result = result * 59 + (motion == null ? 43 : motion.hashCode());
+        return result;
     }
 
     @Generated
-    public StuckInBlockEvent(BlockState blockState, Vec3 vec3) {
+    public StuckInBlockEvent(BlockState blockState, Vec3 motion) {
         this.blockState = blockState;
-        this.motion = vec3;
+        this.motion = motion;
     }
 }

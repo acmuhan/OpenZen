@@ -2,12 +2,12 @@ package shit.zen.render;
 
 public record Rectangle(float x1, float y1, float x2, float y2) {
 
-    public static Rectangle ofXYWH(float f, float f2, float f3, float f4) {
-        return new Rectangle(f, f2, f + f3, f2 + f4);
+    public static Rectangle ofXYWH(float x, float y, float width, float height) {
+        return new Rectangle(x, y, x + width, y + height);
     }
 
-    public static Rectangle ofCorners(float f, float f2, float f3, float f4) {
-        return new Rectangle(f, f2, f3, f4);
+    public static Rectangle ofCorners(float x1, float y1, float x2, float y2) {
+        return new Rectangle(x1, y1, x2, y2);
     }
 
     public float getWidth() {

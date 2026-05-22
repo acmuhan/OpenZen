@@ -32,9 +32,9 @@ import shit.zen.event.EventTarget;
 public class AutoThrow
 extends Module {
     public static AutoThrow INSTANCE;
-    private final NumberSetting minDistance = new NumberSetting("Min Distance", Integer.valueOf(5), Integer.valueOf(3), Integer.valueOf(30), Integer.valueOf(1));
-    private final NumberSetting maxDistance = new NumberSetting("Max Distance", Integer.valueOf(10), Integer.valueOf(3), Integer.valueOf(30), Integer.valueOf(1));
-    private final NumberSetting throwDelay = new NumberSetting("Delay", Integer.valueOf(500), Integer.valueOf(50), Integer.valueOf(2000), Integer.valueOf(50));
+    private final NumberSetting minDistance = new NumberSetting("Min Distance", 5, 3, 30, 1);
+    private final NumberSetting maxDistance = new NumberSetting("Max Distance", 10, 3, 30, 1);
+    private final NumberSetting throwDelay = new NumberSetting("Delay", 500, 50, 2000, 50);
     private final Timer throwTimer = new Timer();
     public Rotation targetRotation;
     public int ticksUntilThrow;
@@ -67,7 +67,7 @@ extends Module {
      */
     @EventTarget
     public void onSprint(SprintEvent sprintEvent) {
-        int n;
+        int slot;
         if (mc.player == null || mc.level == null || mc.gameMode == null || mc.getConnection() == null) {
             return;
         }
@@ -79,28 +79,27 @@ extends Module {
         if (this.ticksUntilThrow <= 0) {
             this.targetRotation = null;
         }
-        int n2 = -1;
-        for (n = 0; n < 9; ++n) {
-            ItemStack itemStack = mc.player.getInventory().getItem(n);
+        int projectileSlot = -1;
+        for (slot = 0; slot < 9; ++slot) {
+            ItemStack itemStack = mc.player.getInventory().getItem(slot);
             if (itemStack.isEmpty() || !(itemStack.getItem() instanceof EggItem) && !(itemStack.getItem() instanceof SnowballItem)) continue;
-            n2 = n;
+            projectileSlot = slot;
             break;
         }
         if (mc.player.isUsingItem() || mc.player.getMainHandItem().getItem() instanceof BowItem || mc.player.getMainHandItem().getItem() instanceof CrossbowItem) {
             return;
         }
-        if (n2 == -1) return;
+        if (projectileSlot == -1) return;
         if (--this.ticksUntilThrow == 0) {
-            boolean bl;
-            n = mc.player.getInventory().selected;
-            boolean bl2 = bl = n != n2;
-            if (bl) {
-                mc.player.getInventory().selected = n2;
+            slot = mc.player.getInventory().selected;
+            boolean shouldSwap = slot != projectileSlot;
+            if (shouldSwap) {
+                mc.player.getInventory().selected = projectileSlot;
                 PlayerUtil.sendCarriedItem();
-                this.savedSlot = n;
+                this.savedSlot = slot;
             }
-            float f = mc.player.getYRot();
-            float f2 = mc.player.getXRot();
+            float prevYaw = mc.player.getYRot();
+            float prevPitch = mc.player.getXRot();
             if (RotationHandler.targetRotation != null && RotationHandler.isRotating) {
                 mc.player.setYRot(RotationHandler.targetRotation.getYaw());
                 mc.player.setXRot(RotationHandler.targetRotation.getPitch());
@@ -109,8 +108,8 @@ extends Module {
                 if (!(mc.player.getMainHandItem().getItem() instanceof EggItem) && !(mc.player.getMainHandItem().getItem() instanceof SnowballItem)) return;
                 mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
             } finally {
-                mc.player.setYRot(f);
-                mc.player.setXRot(f2);
+                mc.player.setYRot(prevYaw);
+                mc.player.setXRot(prevPitch);
             }
         } else {
             if (!this.findTarget().isPresent() || !this.throwTimer.hasPassed((float)((long) this.throwDelay.getValue().doubleValue())) || Stuck.INSTANCE != null && Stuck.INSTANCE.isEnabled()) return;
@@ -137,58 +136,58 @@ extends Module {
     }
 
     private Rotation calculateThrowRotation(Entity entity) {
-        float f;
-        float f2 = 1.5f;
-        float f3 = 0.03f;
-        double d = entity.getX();
-        double d2 = entity.getY() + (double)entity.getBbHeight() * 0.8;
-        double d3 = entity.getZ();
-        double d4 = entity.getX() - entity.xOld;
-        double d5 = entity.getY() - entity.yOld;
-        double d6 = entity.getZ() - entity.zOld;
+        float pitch;
+        float projectileSpeed = 1.5f;
+        float gravity = 0.03f;
+        double predictX = entity.getX();
+        double predictY = entity.getY() + (double)entity.getBbHeight() * 0.8;
+        double predictZ = entity.getZ();
+        double velX = entity.getX() - entity.xOld;
+        double velY = entity.getY() - entity.yOld;
+        double velZ = entity.getZ() - entity.zOld;
         for (int i = 0; i < 3; ++i) {
-            double d7 = d - mc.player.getX();
-            double d8 = d2 - (mc.player.getY() + (double)mc.player.getEyeHeight(mc.player.getPose()));
-            double d9 = d3 - mc.player.getZ();
-            double d10 = Math.sqrt(d7 * d7 + d9 * d9);
-            f = (float)(d10 / (double)(f2 * 0.4f));
-            d = entity.getX() + d4 * (double)f;
-            d2 = entity.getY() + (double)entity.getBbHeight() * 0.8 + d5 * (double)f;
-            d3 = entity.getZ() + d6 * (double)f;
+            double dx = predictX - mc.player.getX();
+            double dy = predictY - (mc.player.getY() + (double)mc.player.getEyeHeight(mc.player.getPose()));
+            double dz = predictZ - mc.player.getZ();
+            double horizDist = Math.sqrt(dx * dx + dz * dz);
+            float travelTicks = (float)(horizDist / (double)(projectileSpeed * 0.4f));
+            predictX = entity.getX() + velX * (double)travelTicks;
+            predictY = entity.getY() + (double)entity.getBbHeight() * 0.8 + velY * (double)travelTicks;
+            predictZ = entity.getZ() + velZ * (double)travelTicks;
         }
-        double d11 = d - mc.player.getX();
-        double d12 = d2 - (mc.player.getY() + (double)mc.player.getEyeHeight(mc.player.getPose()));
-        double d13 = d3 - mc.player.getZ();
-        double d14 = Math.sqrt(d11 * d11 + d13 * d13);
-        float f4 = (float)(Math.atan2(d13, d11) * 180.0 / Math.PI) - 90.0f;
-        f = -RotationUtil.ballisticPitch((float)d14, (float)d12, f2, f3);
-        return new Rotation(f4, f);
+        double dx = predictX - mc.player.getX();
+        double dy = predictY - (mc.player.getY() + (double)mc.player.getEyeHeight(mc.player.getPose()));
+        double dz = predictZ - mc.player.getZ();
+        double horizDist = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float)(Math.atan2(dz, dx) * 180.0 / Math.PI) - 90.0f;
+        pitch = -RotationUtil.ballisticPitch((float)horizDist, (float)dy, projectileSpeed, gravity);
+        return new Rotation(yaw, pitch);
     }
 
     private Optional<? extends Player> findTarget() {
         if (mc.player == null || mc.level == null) {
             return Optional.empty();
         }
-        return mc.level.players().stream().filter(abstractClientPlayer -> abstractClientPlayer != mc.player).filter(abstractClientPlayer -> KillAura.INSTANCE.isValidTarget(abstractClientPlayer)).filter(abstractClientPlayer -> {
-            double d = this.getDistanceTo(abstractClientPlayer);
-            return d >= this.minDistance.getValue().doubleValue() && d <= this.maxDistance.getValue().doubleValue();
-        }).filter(this::hasLineOfSight).filter(abstractClientPlayer -> !this.isInvisibleAlly(abstractClientPlayer)).min(Comparator.comparingDouble(abstractClientPlayer -> mc.player.distanceTo(abstractClientPlayer)));
+        return mc.level.players().stream().filter(player -> player != mc.player).filter(player -> KillAura.INSTANCE.isValidTarget(player)).filter(player -> {
+            double dist = this.getDistanceTo(player);
+            return dist >= this.minDistance.getValue().doubleValue() && dist <= this.maxDistance.getValue().doubleValue();
+        }).filter(this::hasLineOfSight).filter(player -> !this.isInvisibleAlly(player)).min(Comparator.comparingDouble(player -> mc.player.distanceTo(player)));
     }
 
     private double getDistanceTo(Entity entity) {
-        double d = mc.player.getX() - entity.getX();
-        double d2 = mc.player.getZ() - entity.getZ();
-        return Math.sqrt(d * d + d2 * d2);
+        double dx = mc.player.getX() - entity.getX();
+        double dz = mc.player.getZ() - entity.getZ();
+        return Math.sqrt(dx * dx + dz * dz);
     }
 
     private boolean hasLineOfSight(Entity entity) {
-        Vec3 vec3;
+        Vec3 targetPos;
         if (mc.player == null || mc.level == null) {
             return false;
         }
-        Vec3 vec32 = new Vec3(mc.player.getX(), mc.player.getY() + (double)mc.player.getEyeHeight(), mc.player.getZ());
-        BlockHitResult blockHitResult = mc.level.clip(new ClipContext(vec32, vec3 = new Vec3(entity.getX(), entity.getY() + (double)entity.getEyeHeight(), entity.getZ()), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
-        return blockHitResult.getType() == HitResult.Type.MISS;
+        Vec3 eyePos = new Vec3(mc.player.getX(), mc.player.getY() + (double)mc.player.getEyeHeight(), mc.player.getZ());
+        BlockHitResult hit = mc.level.clip(new ClipContext(eyePos, targetPos = new Vec3(entity.getX(), entity.getY() + (double)entity.getEyeHeight(), entity.getZ()), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
+        return hit.getType() == HitResult.Type.MISS;
     }
 
     private boolean isInvisibleAlly(Entity entity) {

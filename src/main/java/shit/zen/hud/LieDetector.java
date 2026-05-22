@@ -34,23 +34,23 @@ extends HudElement {
     }
 
     @Override
-    public void onRender2D(Render2DEvent render2DEvent, float f, float f2) {
+    public void onRender2D(Render2DEvent render2DEvent, float x, float y) {
     }
 
     @Override
-    public void onGlRender(GlRenderEvent glRenderEvent, float f, float f2) {
+    public void onGlRender(GlRenderEvent glRenderEvent, float x, float y) {
         this.loadTextures();
         this.needleAnim.animate(KillAura.aimingTarget == null ? 0.0 : (double)((LivingEntity)KillAura.aimingTarget).hurtTime, 0.32, Easings.BACK_OUT);
         this.needleAnim.tick();
         PoseStack poseStack = glRenderEvent.poseStack();
         RenderHelper.resetShaderColor();
-        RenderUtil.drawTexture(this.panelTexture.getId(), poseStack, f, f2, this.panelDisplayWidth, this.panelDisplayHeight, 1.0f, -1);
-        RenderUtil.drawTexture(this.panelTexture.getId(), poseStack, f, f2, this.panelDisplayWidth, this.panelDisplayHeight, 1.0f, -1);
-        float f3 = f + (this.panelDisplayWidth - this.panelWidth / 2.0f) / 2.0f + 2.0f;
-        float f4 = f2 + this.panelDisplayHeight - this.pointerHeight;
-        RenderHelper.pushRotateAround(poseStack, f3 + 9.0f, f4 + 8.5f, this.needleAnim.getValueF() * -18.0f);
-        RenderUtil.drawTexture(this.pointerTexture.getId(), poseStack, f3, f4, this.panelWidth, this.pointerHeight, 1.0f, -1);
-        RenderUtil.drawTexture(this.pointerTexture.getId(), poseStack, f3, f4, this.panelWidth, this.pointerHeight, 1.0f, -1);
+        RenderUtil.drawTexture(this.panelTexture.getId(), poseStack, x, y, this.panelDisplayWidth, this.panelDisplayHeight, 1.0f, -1);
+        RenderUtil.drawTexture(this.panelTexture.getId(), poseStack, x, y, this.panelDisplayWidth, this.panelDisplayHeight, 1.0f, -1);
+        float pointerX = x + (this.panelDisplayWidth - this.panelWidth / 2.0f) / 2.0f + 2.0f;
+        float pointerY = y + this.panelDisplayHeight - this.pointerHeight;
+        RenderHelper.pushRotateAround(poseStack, pointerX + 9.0f, pointerY + 8.5f, this.needleAnim.getValueF() * -18.0f);
+        RenderUtil.drawTexture(this.pointerTexture.getId(), poseStack, pointerX, pointerY, this.panelWidth, this.pointerHeight, 1.0f, -1);
+        RenderUtil.drawTexture(this.pointerTexture.getId(), poseStack, pointerX, pointerY, this.panelWidth, this.pointerHeight, 1.0f, -1);
         RenderHelper.popPose(poseStack);
         this.setWidth(this.panelDisplayWidth);
         this.setHeight(this.panelDisplayHeight);

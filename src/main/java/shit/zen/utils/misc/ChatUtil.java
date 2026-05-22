@@ -12,12 +12,12 @@ extends ClientBase {
         chatComponent.addMessage(component);
     }
 
-    public static void print(String string) {
-        ChatUtil.print(true, string);
+    public static void print(String message) {
+        ChatUtil.print(true, message);
     }
 
-    public static void print(boolean bl, String string) {
-        ChatUtil.addMessage(Component.nullToEmpty((bl ? "§7[§b§7] " : "") + string));
+    public static void print(boolean withPrefix, String message) {
+        ChatUtil.addMessage(Component.nullToEmpty((withPrefix ? "§7[§b§7] " : "") + message));
     }
 
     @Generated

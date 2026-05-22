@@ -15,72 +15,72 @@ extends SettingComponent {
     private boolean dragging;
     private final NumberSetting numberSetting;
 
-    public NumberComponent(Setting<?> setting, ModuleButton moduleButton, int n) {
-        super(setting, moduleButton, n);
+    public NumberComponent(Setting<?> setting, ModuleButton moduleButton, int yOffset) {
+        super(setting, moduleButton, yOffset);
         this.numberSetting = (NumberSetting)setting;
         this.dragging = false;
     }
 
     @Override
-    public void renderWithAlpha(PoseStack poseStack, int n, int n2, float f, float f2) {
-        int n3 = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
-        int n4 = this.parentButton.panel.x;
-        int n5 = this.parentButton.panel.width;
-        int n6 = this.parentButton.panel.rowHeight;
-        int n7 = new Color(255, 255, 255, (int)(255.0f * f2)).getRGB();
-        int n8 = new Color(138, 180, 248, (int)(255.0f * f2)).getRGB();
-        int n9 = 8;
-        int n10 = n4 + n9;
-        int n11 = (int)FontStore.OPENSANS_16.getStringWidth("00.00");
-        int n12 = n5 - n9 * 2 - n11 + 20;
+    public void renderWithAlpha(PoseStack poseStack, int mouseX, int mouseY, float partialTicks, float alpha) {
+        int rowY = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
+        int panelX = this.parentButton.panel.x;
+        int panelWidth = this.parentButton.panel.width;
+        int rowHeight = this.parentButton.panel.rowHeight;
+        int textColor = new Color(255, 255, 255, (int)(255.0f * alpha)).getRGB();
+        int sliderColor = new Color(138, 180, 248, (int)(255.0f * alpha)).getRGB();
+        int textPadding = 8;
+        int sliderX = panelX + textPadding;
+        int valueTextWidth = (int)FontStore.OPENSANS_16.getStringWidth("00.00");
+        int sliderWidth = panelWidth - textPadding * 2 - valueTextWidth + 20;
         if (this.dragging) {
-            this.updateSliderValue(n, n10, n12);
+            this.updateSliderValue(mouseX, sliderX, sliderWidth);
         }
-        String string = this.numberSetting.getName();
-        String string2 = this.numberSetting.getStep().doubleValue() % 1.0 == 0.0 ? String.format("%d", new Object[]{this.numberSetting.getValue().intValue()}) : String.format("%.2f", new Object[]{Float.valueOf(this.numberSetting.getValue().floatValue())});
-        float f3 = (float)n3 + ((float)n6 - FontStore.OPENSANS_16.getFontHeight()) / 2.0f;
-        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, string, n10, f3, n7);
-        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, string2, (float)(n4 + n5 - n9) - FontStore.OPENSANS_16.getStringWidth(string2), f3, n7);
-        float f4 = this.numberSetting.getMin().floatValue();
-        float f5 = this.numberSetting.getMax().floatValue();
-        float f6 = this.numberSetting.getValue().floatValue();
-        float f7 = (f6 - f4) / (f5 - f4);
-        int n13 = n3 + n6 / 2 + 10;
-        int n14 = 2;
-        RenderUtil.drawFilledRect(poseStack, n10, n13, n12, n14, new Color(10, 10, 10, 200).getRGB());
-        RenderUtil.drawFilledRect(poseStack, n10, n13, (int)((float)n12 * f7), n14, n8);
+        String name = this.numberSetting.getName();
+        String valueText = this.numberSetting.getStep().doubleValue() % 1.0 == 0.0 ? String.format("%d", new Object[]{this.numberSetting.getValue().intValue()}) : String.format("%.2f", new Object[]{this.numberSetting.getValue().floatValue()});
+        float textY = (float)rowY + ((float)rowHeight - FontStore.OPENSANS_16.getFontHeight()) / 2.0f;
+        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, name, sliderX, textY, textColor);
+        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, valueText, (float)(panelX + panelWidth - textPadding) - FontStore.OPENSANS_16.getStringWidth(valueText), textY, textColor);
+        float min = this.numberSetting.getMin().floatValue();
+        float max = this.numberSetting.getMax().floatValue();
+        float current = this.numberSetting.getValue().floatValue();
+        float progress = (current - min) / (max - min);
+        int sliderY = rowY + rowHeight / 2 + 10;
+        int sliderHeight = 2;
+        RenderUtil.drawFilledRect(poseStack, sliderX, sliderY, sliderWidth, sliderHeight, new Color(10, 10, 10, 200).getRGB());
+        RenderUtil.drawFilledRect(poseStack, sliderX, sliderY, (int)((float)sliderWidth * progress), sliderHeight, sliderColor);
     }
 
-    private void updateSliderValue(double d, int n, int n2) {
-        float f = this.numberSetting.getMin().floatValue();
-        float f2 = this.numberSetting.getMax().floatValue();
-        float f3 = f2 - f;
-        double d2 = Math.max(n, Math.min(d, n + n2));
-        float f4 = f + f3 * (float)((d2 - (double)n) / (double)n2);
-        this.numberSetting.setValue(MathUtil.roundDecimal(f4, 2));
+    private void updateSliderValue(double mouseX, int sliderX, int sliderWidth) {
+        float min = this.numberSetting.getMin().floatValue();
+        float max = this.numberSetting.getMax().floatValue();
+        float range = max - min;
+        double clampedX = Math.max(sliderX, Math.min(mouseX, sliderX + sliderWidth));
+        float newValue = min + range * (float)((clampedX - (double)sliderX) / (double)sliderWidth);
+        this.numberSetting.setValue(MathUtil.roundDecimal(newValue, 2));
     }
 
     @Override
-    public void mouseClicked(double d, double d2, int n) {
-        boolean bl;
-        int n2 = this.parentButton.panel.x;
-        int n3 = this.parentButton.panel.width;
-        int n4 = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
-        int n5 = this.parentButton.panel.rowHeight;
-        int n6 = 8;
-        int n7 = n2 + n6;
-        int n8 = (int)FontStore.OPENSANS_16.getStringWidth("00.00");
-        int n9 = n3 - n6 * 2 - n8 + 20;
-        boolean bl2 = bl = d >= (double)n7 && d <= (double)(n7 + n9) && d2 >= (double)n4 && d2 <= (double)(n4 + n5);
-        if (n == 0 && bl) {
+    public void mouseClicked(double mouseX, double mouseY, int button) {
+        boolean overSlider;
+        int panelX = this.parentButton.panel.x;
+        int panelWidth = this.parentButton.panel.width;
+        int rowY = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
+        int rowHeight = this.parentButton.panel.rowHeight;
+        int textPadding = 8;
+        int sliderX = panelX + textPadding;
+        int valueTextWidth = (int)FontStore.OPENSANS_16.getStringWidth("00.00");
+        int sliderWidth = panelWidth - textPadding * 2 - valueTextWidth + 20;
+        boolean dup = overSlider = mouseX >= (double)sliderX && mouseX <= (double)(sliderX + sliderWidth) && mouseY >= (double)rowY && mouseY <= (double)(rowY + rowHeight);
+        if (button == 0 && overSlider) {
             this.dragging = true;
-            this.updateSliderValue(d, n7, n9);
+            this.updateSliderValue(mouseX, sliderX, sliderWidth);
         }
     }
 
     @Override
-    public void mouseReleased(double d, double d2, int n) {
-        if (n == 0) {
+    public void mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
             this.dragging = false;
         }
     }

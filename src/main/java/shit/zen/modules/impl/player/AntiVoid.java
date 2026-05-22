@@ -25,7 +25,7 @@ import shit.zen.event.EventTarget;
 public class AntiVoid
 extends Module {
     public static AntiVoid INSTANCE;
-    private final NumberSetting fallDistanceSetting = new NumberSetting("Fall Distance", Double.valueOf(5.0), Double.valueOf(1.0), Double.valueOf(10.0), Double.valueOf(0.5));
+    private final NumberSetting fallDistanceSetting = new NumberSetting("Fall Distance", 5.0, 1.0, 10.0, 0.5);
     private final LinkedBlockingDeque<Packet<ServerGamePacketListener>> bufferedPackets = new LinkedBlockingDeque();
     private boolean scaffoldWasActive = false;
     public boolean bufferingPackets = false;
@@ -85,9 +85,8 @@ extends Module {
             return;
         }
         if (!this.bufferingPackets && !this.sentFlyPacket && !mc.player.onGround() && mc.player.getDeltaMovement().y < 0.0) {
-            boolean bl;
-            boolean bl2 = bl = mc.player.getDeltaMovement().y < 0.1 && this.isVoidBelow() && !PlayerUtil.isSafe(mc.player.getY() + (double)mc.player.getEyeHeight());
-            if (bl) {
+            boolean shouldBuffer = mc.player.getDeltaMovement().y < 0.1 && this.isVoidBelow() && !PlayerUtil.isSafe(mc.player.getY() + (double)mc.player.getEyeHeight());
+            if (shouldBuffer) {
                 this.scaffoldWasActive = Scaffold.INSTANCE.isEnabled();
                 this.bufferingPackets = true;
                 this.bufferedPackets.clear();
@@ -153,11 +152,11 @@ extends Module {
     }
 
     private boolean isVoidBelow() {
-        BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-        int n = 30;
-        for (int i = 0; i < n; ++i) {
-            mutableBlockPos.set(mc.player.getX(), mc.player.getY() - (double)i, mc.player.getZ());
-            if (mc.level.getBlockState(mutableBlockPos).getBlock() == Blocks.AIR) continue;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int scanDepth = 30;
+        for (int dy = 0; dy < scanDepth; ++dy) {
+            cursor.set(mc.player.getX(), mc.player.getY() - (double)dy, mc.player.getZ());
+            if (mc.level.getBlockState(cursor).getBlock() == Blocks.AIR) continue;
             return false;
         }
         return true;

@@ -24,77 +24,77 @@ implements SettingRenderer {
     private final Map<String, Float> selectedAnimations = new HashMap<>();
 
     @Override
-    public int render(GuiGraphics guiGraphics, Setting<?> setting, int n, int n2, int n3, int n4, int n5, float f, float f2) {
+    public int render(GuiGraphics guiGraphics, Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, float alpha, float scale) {
         if (!(setting instanceof MultiSelectSetting multiSelectSetting)) {
             return 0;
         }
-        FontRenderer fontRenderer = FontPresets.axiformaRegular(14.0f * f2);
-        float f3 = (float)n2 + 20.0f * f2 / 2.0f - fontRenderer.getMetrics().capHeight() / 2.0f;
-        TextGlow.drawGlowText(multiSelectSetting.getName(), n, f3, fontRenderer, this.applyAlpha(-1, f), this.applyAlpha(new Color(255, 255, 255, 120).getRGB(), f), 8.0f * f2);
-        int n6 = n2 + Math.round(20.0f * f2);
-        int n7 = Math.round(20.0f * f2);
-        int n8 = Math.round(10.0f * f2);
-        int n9 = Math.round(5.0f * f2);
-        for (String string : multiSelectSetting.getOptions()) {
-            int n10;
-            boolean bl = multiSelectSetting.isSelected(string);
-            boolean bl2 = n4 >= n && n4 <= n + n3 && n5 >= n6 && n5 <= n6 + n7;
-            this.updateAnimation(this.hoverAnimations, string, bl2, 0.28f);
-            this.updateAnimation(this.selectedAnimations, string, bl, 0.25f);
-            float f4 = this.hoverAnimations.getOrDefault(string, Float.valueOf(0.0f)).floatValue();
-            float f5 = this.selectedAnimations.getOrDefault(string, Float.valueOf(0.0f)).floatValue();
-            int n11 = n + n3 - n8 - n9;
-            int n12 = n6 + (n7 - n8) / 2;
-            if (f5 > 0.01f) {
-                n10 = this.applyAlpha(COLOR_SELECTED_GLOW, f * f5);
-                RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)n11 - f2, (float)n12 - f2, (float)n8 + 2.0f * f2, (float)n8 + 2.0f * f2, 2.0f * f2, n10);
+        FontRenderer nameFont = FontPresets.axiformaRegular(14.0f * scale);
+        float nameY = (float)y + 20.0f * scale / 2.0f - nameFont.getMetrics().capHeight() / 2.0f;
+        TextGlow.drawGlowText(multiSelectSetting.getName(), x, nameY, nameFont, this.applyAlpha(-1, alpha), this.applyAlpha(new Color(255, 255, 255, 120).getRGB(), alpha), 8.0f * scale);
+        int optionY = y + Math.round(20.0f * scale);
+        int rowHeight = Math.round(20.0f * scale);
+        int boxSize = Math.round(10.0f * scale);
+        int rightPadding = Math.round(5.0f * scale);
+        for (String option : multiSelectSetting.getOptions()) {
+            int color;
+            boolean selected = multiSelectSetting.isSelected(option);
+            boolean hovered = mouseX >= x && mouseX <= x + width && mouseY >= optionY && mouseY <= optionY + rowHeight;
+            this.updateAnimation(this.hoverAnimations, option, hovered, 0.28f);
+            this.updateAnimation(this.selectedAnimations, option, selected, 0.25f);
+            float hoverAmount = this.hoverAnimations.getOrDefault(option, 0.0f).floatValue();
+            float selectedAmount = this.selectedAnimations.getOrDefault(option, 0.0f).floatValue();
+            int boxX = x + width - boxSize - rightPadding;
+            int boxY = optionY + (rowHeight - boxSize) / 2;
+            if (selectedAmount > 0.01f) {
+                color = this.applyAlpha(COLOR_SELECTED_GLOW, alpha * selectedAmount);
+                RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)boxX - scale, (float)boxY - scale, (float)boxSize + 2.0f * scale, (float)boxSize + 2.0f * scale, 2.0f * scale, color);
             }
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n11, n12, n8, n8, 2.0f * f2, this.applyAlpha(-5592406, f));
-            if ((double)f5 > 0.01) {
-                float f6 = (1.0f - f5) * ((float)n8 / 2.0f);
-                RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)n11 + f6, (float)n12 + f6, (float)n8 - f6 * 2.0f, (float)n8 - f6 * 2.0f, f2, this.applyAlpha(COLOR_SELECTED, f));
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), boxX, boxY, boxSize, boxSize, 2.0f * scale, this.applyAlpha(-5592406, alpha));
+            if ((double)selectedAmount > 0.01) {
+                float inset = (1.0f - selectedAmount) * ((float)boxSize / 2.0f);
+                RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)boxX + inset, (float)boxY + inset, (float)boxSize - inset * 2.0f, (float)boxSize - inset * 2.0f, scale, this.applyAlpha(COLOR_SELECTED, alpha));
             }
-            n10 = bl ? -1 : -5592406;
-            int n13 = this.lerpColor(n10, -1, f4);
-            FontRenderer fontRenderer2 = FontPresets.axiformaRegular(13.0f * f2);
-            float f7 = (float)n6 + (float)n7 / 2.0f - fontRenderer2.getMetrics().capHeight() / 2.0f;
-            if (f5 > 0.01f) {
-                int n14 = this.applyAlpha(COLOR_SELECTED_GLOW, f * f5);
-                TextGlow.drawGlowText(string, n + n9, f7, fontRenderer2, this.applyAlpha(n13, f), n14, 8.0f * f2 * f5);
+            color = selected ? -1 : -5592406;
+            int labelColor = this.lerpColor(color, -1, hoverAmount);
+            FontRenderer labelFont = FontPresets.axiformaRegular(13.0f * scale);
+            float labelY = (float)optionY + (float)rowHeight / 2.0f - labelFont.getMetrics().capHeight() / 2.0f;
+            if (selectedAmount > 0.01f) {
+                int glowColor = this.applyAlpha(COLOR_SELECTED_GLOW, alpha * selectedAmount);
+                TextGlow.drawGlowText(option, x + rightPadding, labelY, labelFont, this.applyAlpha(labelColor, alpha), glowColor, 8.0f * scale * selectedAmount);
             } else {
-                GlHelper.drawText(string, n + n9, f7, fontRenderer2, this.applyAlpha(n13, f));
+                GlHelper.drawText(option, x + rightPadding, labelY, labelFont, this.applyAlpha(labelColor, alpha));
             }
-            n6 += n7;
+            optionY += rowHeight;
         }
-        return (multiSelectSetting.getOptions().size() + 1) * n7;
+        return (multiSelectSetting.getOptions().size() + 1) * rowHeight;
     }
 
-    private void updateAnimation(Map<String, Float> map, String string, boolean bl, float f) {
-        float f2 = map.getOrDefault(string, Float.valueOf(0.0f)).floatValue();
-        float f3 = bl ? 1.0f : 0.0f;
-        f2 = Math.abs(f3 - f2) > 0.01f ? LerpUtil.smoothLerp(f2, f3, f) : f3;
-        map.put(string, Float.valueOf(f2));
+    private void updateAnimation(Map<String, Float> map, String key, boolean target, float speed) {
+        float current = map.getOrDefault(key, 0.0f).floatValue();
+        float targetValue = target ? 1.0f : 0.0f;
+        current = Math.abs(targetValue - current) > 0.01f ? LerpUtil.smoothLerp(current, targetValue, speed) : targetValue;
+        map.put(key, current);
     }
 
     @Override
-    public boolean onClick(Setting<?> setting, int n, int n2, int n3, int n4, int n5, int n6, float f) {
-        if (!(setting instanceof MultiSelectSetting multiSelectSetting) || n6 != 0) {
+    public boolean onClick(Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, int button, float scale) {
+        if (!(setting instanceof MultiSelectSetting multiSelectSetting) || button != 0) {
             return false;
         }
-        int n7 = n2 + Math.round(20.0f * f);
-        int n8 = Math.round(20.0f * f);
-        for (String string : multiSelectSetting.getOptions()) {
-            if (n4 >= n && n4 <= n + n3 && n5 >= n7 && n5 <= n7 + n8) {
-                if (multiSelectSetting.isSelected(string)) {
-                    multiSelectSetting.getValue().remove(string);
+        int optionY = y + Math.round(20.0f * scale);
+        int rowHeight = Math.round(20.0f * scale);
+        for (String option : multiSelectSetting.getOptions()) {
+            if (mouseX >= x && mouseX <= x + width && mouseY >= optionY && mouseY <= optionY + rowHeight) {
+                if (multiSelectSetting.isSelected(option)) {
+                    multiSelectSetting.getValue().remove(option);
                 } else {
-                    multiSelectSetting.getValue().add(string);
+                    multiSelectSetting.getValue().add(option);
                 }
-                boolean bl = multiSelectSetting.isSelected(string);
-                PanelClickGui.panelClickGui.addToast(string + (bl ? " enabled" : " disabled"));
+                boolean nowSelected = multiSelectSetting.isSelected(option);
+                PanelClickGui.panelClickGui.addToast(option + (nowSelected ? " enabled" : " disabled"));
                 return true;
             }
-            n7 += n8;
+            optionY += rowHeight;
         }
         return false;
     }
@@ -105,37 +105,37 @@ implements SettingRenderer {
     }
 
     @Override
-    public int getHeight(Setting<?> setting, float f) {
+    public int getHeight(Setting<?> setting, float scale) {
         if (!(setting instanceof MultiSelectSetting multiSelectSetting)) {
             return 0;
         }
-        return Math.round((float)((multiSelectSetting.getOptions().size() + 1) * 20) * f);
+        return Math.round((float)((multiSelectSetting.getOptions().size() + 1) * 20) * scale);
     }
 
     @Override
-    public void onMouseRelease(double d, double d2, int n) {
+    public void onMouseRelease(double mouseX, double mouseY, int button) {
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private int lerpColor(int n, int n2, float f) {
-        float f2 = 1.0f - f;
-        int n3 = n >> 24 & 0xFF;
-        int n4 = n >> 16 & 0xFF;
-        int n5 = n >> 8 & 0xFF;
-        int n6 = n & 0xFF;
-        int n7 = n2 >> 24 & 0xFF;
-        int n8 = n2 >> 16 & 0xFF;
-        int n9 = n2 >> 8 & 0xFF;
-        int n10 = n2 & 0xFF;
-        int n11 = (int)((float)n3 * f2 + (float)n7 * f);
-        int n12 = (int)((float)n4 * f2 + (float)n8 * f);
-        int n13 = (int)((float)n5 * f2 + (float)n9 * f);
-        int n14 = (int)((float)n6 * f2 + (float)n10 * f);
-        return n11 << 24 | n12 << 16 | n13 << 8 | n14;
+    private int lerpColor(int fromColor, int toColor, float t) {
+        float inv = 1.0f - t;
+        int aFrom = fromColor >> 24 & 0xFF;
+        int rFrom = fromColor >> 16 & 0xFF;
+        int gFrom = fromColor >> 8 & 0xFF;
+        int bFrom = fromColor & 0xFF;
+        int aTo = toColor >> 24 & 0xFF;
+        int rTo = toColor >> 16 & 0xFF;
+        int gTo = toColor >> 8 & 0xFF;
+        int bTo = toColor & 0xFF;
+        int a = (int)((float)aFrom * inv + (float)aTo * t);
+        int r = (int)((float)rFrom * inv + (float)rTo * t);
+        int g = (int)((float)gFrom * inv + (float)gTo * t);
+        int b = (int)((float)bFrom * inv + (float)bTo * t);
+        return a << 24 | r << 16 | g << 8 | b;
     }
 }

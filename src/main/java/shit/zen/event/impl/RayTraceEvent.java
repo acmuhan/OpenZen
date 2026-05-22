@@ -18,55 +18,55 @@ implements EventMarker {
     public float blockRange;
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof RayTraceEvent rayTraceEvent)) {
+        if (!(other instanceof RayTraceEvent otherEvent)) {
             return false;
         }
-        if (!rayTraceEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        if (Float.compare(this.getRange(), rayTraceEvent.getRange()) != 0) {
+        if (Float.compare(this.getRange(), otherEvent.getRange()) != 0) {
             return false;
         }
-        if (Float.compare(this.getBlockRange(), rayTraceEvent.getBlockRange()) != 0) {
+        if (Float.compare(this.getBlockRange(), otherEvent.getBlockRange()) != 0) {
             return false;
         }
-        Entity entity = this.getEntity();
-        Entity entity2 = rayTraceEvent.getEntity();
-        return !(!Objects.equals(entity, entity2));
+        Entity thisEntity = this.getEntity();
+        Entity otherEntity = otherEvent.getEntity();
+        return !(!Objects.equals(thisEntity, otherEntity));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof RayTraceEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof RayTraceEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.getRange());
-        n2 = n2 * 59 + Float.floatToIntBits(this.getBlockRange());
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.getRange());
+        result = result * 59 + Float.floatToIntBits(this.getBlockRange());
         Entity entity = this.getEntity();
-        n2 = n2 * 59 + (entity == null ? 43 : entity.hashCode());
-        return n2;
+        result = result * 59 + (entity == null ? 43 : entity.hashCode());
+        return result;
     }
 
     @Generated
     public String toString() {
-        float f = this.getBlockRange();
-        float f2 = this.getRange();
-        String string = String.valueOf(this.getEntity());
-        return "RayTraceEvent(entity=" + string + ", yaw=" + f2 + ", pitch=" + f + ")";
+        float blockRange = this.getBlockRange();
+        float range = this.getRange();
+        String entityStr = String.valueOf(this.getEntity());
+        return "RayTraceEvent(entity=" + entityStr + ", yaw=" + range + ", pitch=" + blockRange + ")";
     }
 
     @Generated
-    public RayTraceEvent(Entity entity, float f, float f2) {
+    public RayTraceEvent(Entity entity, float range, float blockRange) {
         this.entity = entity;
-        this.range = f;
-        this.blockRange = f2;
+        this.range = range;
+        this.blockRange = blockRange;
     }
 }

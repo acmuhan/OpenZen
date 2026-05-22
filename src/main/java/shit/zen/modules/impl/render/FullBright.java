@@ -10,7 +10,7 @@ public class FullBright
 extends Module
 implements TripleProvider {
     public static FullBright INSTANCE;
-    public final NumberSetting brightnessSetting = new NumberSetting("Brightness", Float.valueOf(100.0f), Float.valueOf(0.0f), Float.valueOf(100.0f), Float.valueOf(1.0f));
+    public final NumberSetting brightnessSetting = new NumberSetting("Brightness", 100.0f, 0.0f, 100.0f, 1.0f);
 
     public FullBright() {
         super("FullBright", Category.RENDER);

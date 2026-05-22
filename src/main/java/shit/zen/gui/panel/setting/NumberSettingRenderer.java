@@ -28,59 +28,59 @@ implements SettingRenderer {
     private final Map<NumberSetting, Boolean> editIconHover = new HashMap<>();
 
     @Override
-    public int render(GuiGraphics guiGraphics, Setting<?> setting, int n, int n2, int n3, int n4, int n5, float f, float f2) {
+    public int render(GuiGraphics guiGraphics, Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, float alpha, float scale) {
         if (!(setting instanceof NumberSetting numberSetting)) {
             return 0;
         }
-        boolean bl = numberSetting.equals(editingNumberSetting);
-        int n6 = Math.round(24.0f * f2);
-        int n7 = Math.round(12.0f * f2);
-        int n8 = Math.round(8.0f * f2);
-        FontRenderer fontRenderer = FontPresets.axiformaBold(14.0f * f2);
-        String string = bl ? editingText : this.formatValue(numberSetting.getValue().doubleValue());
-        float f3 = GlHelper.getStringWidth(string, fontRenderer);
-        int n9 = n7 * 2 + (int)f3 + n8 * 2 - Math.round(2.0f * f2);
-        int n10 = n + n3 - n9;
-        int n11 = n6 - Math.round(14.0f * f2);
-        float f4 = (float)n2 + (float)n6 / 2.0f;
-        int n12 = Math.round(f4 - (float)n11 / 2.0f);
-        int n13 = Math.round(16.0f * f2);
-        int n14 = Math.round(4.0f * f2);
-        int n15 = n10 - n13 - n14;
-        int n16 = Math.round(f4 - (float)n13 / 2.0f) + Math.round(3.0f * f2);
-        this.updateHoverStates(numberSetting, n4, n5, n10, n12, n9, n7, n11, n15, n16, n13);
-        this.drawNumberWidget(guiGraphics, numberSetting, n, n2, n3, n10, n12, n9, n11, n15, n16, bl, f, f2);
-        return n6;
+        boolean editing = numberSetting.equals(editingNumberSetting);
+        int rowHeight = Math.round(24.0f * scale);
+        int sidePadding = Math.round(12.0f * scale);
+        int innerPadding = Math.round(8.0f * scale);
+        FontRenderer valueFont = FontPresets.axiformaBold(14.0f * scale);
+        String valueText = editing ? editingText : this.formatValue(numberSetting.getValue().doubleValue());
+        float valueWidth = GlHelper.getStringWidth(valueText, valueFont);
+        int widgetWidth = sidePadding * 2 + (int)valueWidth + innerPadding * 2 - Math.round(2.0f * scale);
+        int widgetX = x + width - widgetWidth;
+        int widgetHeight = rowHeight - Math.round(14.0f * scale);
+        float centerY = (float)y + (float)rowHeight / 2.0f;
+        int widgetY = Math.round(centerY - (float)widgetHeight / 2.0f);
+        int iconSize = Math.round(16.0f * scale);
+        int iconGap = Math.round(4.0f * scale);
+        int iconX = widgetX - iconSize - iconGap;
+        int iconY = Math.round(centerY - (float)iconSize / 2.0f) + Math.round(3.0f * scale);
+        this.updateHoverStates(numberSetting, mouseX, mouseY, widgetX, widgetY, widgetWidth, sidePadding, widgetHeight, iconX, iconY, iconSize);
+        this.drawNumberWidget(guiGraphics, numberSetting, x, y, width, widgetX, widgetY, widgetWidth, widgetHeight, iconX, iconY, editing, alpha, scale);
+        return rowHeight;
     }
 
     @Override
-    public boolean onClick(Setting<?> setting, int n, int n2, int n3, int n4, int n5, int n6, float f) {
-        if (!(setting instanceof NumberSetting numberSetting) || n6 != 0) {
+    public boolean onClick(Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, int button, float scale) {
+        if (!(setting instanceof NumberSetting numberSetting) || button != 0) {
             return false;
         }
-        int n7 = Math.round(24.0f * f);
-        int n8 = Math.round(12.0f * f);
-        int n9 = Math.round(8.0f * f);
-        FontRenderer fontRenderer = FontPresets.axiformaBold(14.0f * f);
-        String string = this.formatValue(numberSetting.getValue().doubleValue());
-        float f2 = GlHelper.getStringWidth(string, fontRenderer);
-        int n10 = n8 * 2 + (int)f2 + n9 * 2 - Math.round(2.0f * f);
-        int n11 = n + n3 - n10;
-        int n12 = n7 - Math.round(14.0f * f);
-        float f3 = (float)n2 + (float)n7 / 2.0f;
-        int n13 = Math.round(f3 - (float)n12 / 2.0f);
-        int n14 = Math.round(16.0f * f);
-        int n15 = Math.round(4.0f * f);
-        int n16 = n11 - n14 - n15;
-        int n17 = Math.round(f3 - (float)n14 / 2.0f);
-        if (n4 >= n16 && n4 <= n16 + n14 && n5 >= n17 && n5 <= n17 + n14) {
+        int rowHeight = Math.round(24.0f * scale);
+        int sidePadding = Math.round(12.0f * scale);
+        int innerPadding = Math.round(8.0f * scale);
+        FontRenderer valueFont = FontPresets.axiformaBold(14.0f * scale);
+        String valueText = this.formatValue(numberSetting.getValue().doubleValue());
+        float valueWidth = GlHelper.getStringWidth(valueText, valueFont);
+        int widgetWidth = sidePadding * 2 + (int)valueWidth + innerPadding * 2 - Math.round(2.0f * scale);
+        int widgetX = x + width - widgetWidth;
+        int widgetHeight = rowHeight - Math.round(14.0f * scale);
+        float centerY = (float)y + (float)rowHeight / 2.0f;
+        int widgetY = Math.round(centerY - (float)widgetHeight / 2.0f);
+        int iconSize = Math.round(16.0f * scale);
+        int iconGap = Math.round(4.0f * scale);
+        int iconX = widgetX - iconSize - iconGap;
+        int iconY = Math.round(centerY - (float)iconSize / 2.0f);
+        if (mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize) {
             this.startEditing(numberSetting);
             return true;
         }
-        if (n4 >= n11 && n4 <= n11 + n10 && n5 >= n13 && n5 <= n13 + n12) {
-            if (n4 < n11 + n8) {
+        if (mouseX >= widgetX && mouseX <= widgetX + widgetWidth && mouseY >= widgetY && mouseY <= widgetY + widgetHeight) {
+            if (mouseX < widgetX + sidePadding) {
                 this.decrementValue(numberSetting);
-            } else if (n4 > n11 + n10 - n8) {
+            } else if (mouseX > widgetX + widgetWidth - sidePadding) {
                 this.incrementValue(numberSetting);
             }
             return true;
@@ -92,19 +92,19 @@ implements SettingRenderer {
         NumberSettingRenderer.cancelEdit();
     }
 
-    public static boolean onKeyPress(int n, int n2, int n3) {
+    public static boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
         if (editingNumberSetting == null) {
             return false;
         }
-        if (n == 257 || n == 335) {
+        if (keyCode == 257 || keyCode == 335) {
             NumberSettingRenderer.commitEdit();
             return true;
         }
-        if (n == 256) {
+        if (keyCode == 256) {
             NumberSettingRenderer.cancelEdit();
             return true;
         }
-        if (n == 259 && !editingText.isEmpty()) {
+        if (keyCode == 259 && !editingText.isEmpty()) {
             editingText = editingText.substring(0, editingText.length() - 1);
             lastInputTime = System.currentTimeMillis();
             return true;
@@ -128,11 +128,11 @@ implements SettingRenderer {
     }
 
     @Override
-    public void onMouseMove(double d, double d2) {
+    public void onMouseMove(double mouseX, double mouseY) {
     }
 
     @Override
-    public void onMouseRelease(double d, double d2, int n) {
+    public void onMouseRelease(double mouseX, double mouseY, int button) {
     }
 
     private void startEditing(NumberSetting numberSetting) {
@@ -147,12 +147,12 @@ implements SettingRenderer {
             return;
         }
         try {
-            double d = Double.parseDouble(editingText);
-            double d2 = editingNumberSetting.getMin().doubleValue();
-            double d3 = editingNumberSetting.getMax().doubleValue();
-            d = Math.max(d2, Math.min(d3, d));
-            NumberSettingRenderer.applyValueStatic(editingNumberSetting, d);
-            PanelClickGui.panelClickGui.addToast(editingNumberSetting.getName() + " set to " + String.format(Locale.US, "%.1f", new Object[]{d}));
+            double parsed = Double.parseDouble(editingText);
+            double min = editingNumberSetting.getMin().doubleValue();
+            double max = editingNumberSetting.getMax().doubleValue();
+            parsed = Math.max(min, Math.min(max, parsed));
+            NumberSettingRenderer.applyValueStatic(editingNumberSetting, parsed);
+            PanelClickGui.panelClickGui.addToast(editingNumberSetting.getName() + " set to " + String.format(Locale.US, "%.1f", new Object[]{parsed}));
         } catch (NumberFormatException numberFormatException) {
             PanelClickGui.panelClickGui.addToast("Invalid input, edit cancelled");
         }
@@ -164,139 +164,139 @@ implements SettingRenderer {
         editingText = "";
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private void drawNumberWidget(GuiGraphics guiGraphics, NumberSetting numberSetting, int n, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9, boolean bl, float f, float f2) {
-        String string;
-        float f3 = 24.0f * f2;
-        float f4 = (float)n2 + f3 / 2.0f;
-        FontRenderer fontRenderer = FontPresets.axiformaRegular(14.0f * f2);
-        FontRenderer fontRenderer2 = FontPresets.axiformaBold(14.0f * f2);
-        FontRenderer fontRenderer3 = FontPresets.axiformaBold(12.0f * f2);
-        GlyphMetrics glyphMetrics = fontRenderer.getMetrics();
-        float f5 = f4 - (glyphMetrics.ascent() + glyphMetrics.descent()) / 2.0f + glyphMetrics.ascent() + 6.0f * f2;
-        TextGlow.drawGlowText(numberSetting.getName(), n, f5, fontRenderer, this.applyAlpha(-1, f), this.applyAlpha(new Color(255, 255, 255, 120).getRGB(), f), 8.0f * f2);
-        this.drawEditIcon(guiGraphics, n8, n9, numberSetting, f, f2);
-        int n10 = Math.round(12.0f * f2);
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n4, n5, n6, n7, 5.0f * f2, this.applyAlpha(0x50F5F5F5, f));
-        int n11 = n4 + n10;
-        int n12 = n6 - n10 * 2;
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n11, n5, n12, n7, 0.0f, this.applyAlpha(1086900424, f));
-        GlyphMetrics glyphMetrics2 = fontRenderer3.getMetrics();
-        float f6 = (float)n5 + (float)n7 / 2.0f;
-        float f7 = f6 - (glyphMetrics2.ascent() + glyphMetrics2.descent()) / 2.0f + glyphMetrics2.ascent() + 5.0f * f2 - 2.5f;
-        int n13 = this.minusButtonHover.getOrDefault(numberSetting, false) != false ? new Color(255, 255, 255).getRGB() : -1;
-        GlHelper.drawText("-", (float)n4 + (float)n10 / 2.0f - GlHelper.getStringWidth("-", fontRenderer3) / 2.0f, f7, fontRenderer3, this.applyAlpha(n13, f));
-        int n14 = this.plusButtonHover.getOrDefault(numberSetting, false) != false ? new Color(255, 255, 255).getRGB() : -1;
-        GlHelper.drawText("+", (float)(n4 + n6 - n10) + ((float)n10 / 2.0f - GlHelper.getStringWidth("+", fontRenderer3) / 2.0f), f7, fontRenderer3, this.applyAlpha(n14, f));
-        String string2 = string = bl ? editingText : this.formatValue(numberSetting.getValue().doubleValue());
-        if (bl && string.isEmpty()) {
-            string = "0";
+    private void drawNumberWidget(GuiGraphics guiGraphics, NumberSetting numberSetting, int x, int y, int width, int widgetX, int widgetY, int widgetWidth, int widgetHeight, int iconX, int iconY, boolean editing, float alpha, float scale) {
+        String displayText;
+        float rowHeight = 24.0f * scale;
+        float centerY = (float)y + rowHeight / 2.0f;
+        FontRenderer nameFont = FontPresets.axiformaRegular(14.0f * scale);
+        FontRenderer valueFont = FontPresets.axiformaBold(14.0f * scale);
+        FontRenderer signFont = FontPresets.axiformaBold(12.0f * scale);
+        GlyphMetrics nameMetrics = nameFont.getMetrics();
+        float nameY = centerY - (nameMetrics.ascent() + nameMetrics.descent()) / 2.0f + nameMetrics.ascent() + 6.0f * scale;
+        TextGlow.drawGlowText(numberSetting.getName(), x, nameY, nameFont, this.applyAlpha(-1, alpha), this.applyAlpha(new Color(255, 255, 255, 120).getRGB(), alpha), 8.0f * scale);
+        this.drawEditIcon(guiGraphics, iconX, iconY, numberSetting, alpha, scale);
+        int sidePadding = Math.round(12.0f * scale);
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), widgetX, widgetY, widgetWidth, widgetHeight, 5.0f * scale, this.applyAlpha(0x50F5F5F5, alpha));
+        int middleX = widgetX + sidePadding;
+        int middleWidth = widgetWidth - sidePadding * 2;
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), middleX, widgetY, middleWidth, widgetHeight, 0.0f, this.applyAlpha(1086900424, alpha));
+        GlyphMetrics signMetrics = signFont.getMetrics();
+        float widgetCenterY = (float)widgetY + (float)widgetHeight / 2.0f;
+        float signY = widgetCenterY - (signMetrics.ascent() + signMetrics.descent()) / 2.0f + signMetrics.ascent() + 5.0f * scale - 2.5f;
+        int minusColor = this.minusButtonHover.getOrDefault(numberSetting, false) != false ? new Color(255, 255, 255).getRGB() : -1;
+        GlHelper.drawText("-", (float)widgetX + (float)sidePadding / 2.0f - GlHelper.getStringWidth("-", signFont) / 2.0f, signY, signFont, this.applyAlpha(minusColor, alpha));
+        int plusColor = this.plusButtonHover.getOrDefault(numberSetting, false) != false ? new Color(255, 255, 255).getRGB() : -1;
+        GlHelper.drawText("+", (float)(widgetX + widgetWidth - sidePadding) + ((float)sidePadding / 2.0f - GlHelper.getStringWidth("+", signFont) / 2.0f), signY, signFont, this.applyAlpha(plusColor, alpha));
+        String dup = displayText = editing ? editingText : this.formatValue(numberSetting.getValue().doubleValue());
+        if (editing && displayText.isEmpty()) {
+            displayText = "0";
         }
-        float f8 = GlHelper.getStringWidth(string, fontRenderer2);
-        float f9 = (float)n4 + (float)n6 / 2.0f - f8 / 2.0f;
-        GlyphMetrics glyphMetrics3 = fontRenderer2.getMetrics();
-        float f10 = f7 + f2 - 1.5f;
-        if (bl) {
-            long l = System.currentTimeMillis();
-            float f11 = (float)(l % 1000L) / 1000.0f;
-            float f12 = (float)(Math.sin((double)f11 * Math.PI * 2.0) * 0.5 + 0.5);
-            int n15 = (int)(255.0f * (0.6f + f12 * 0.4f) * f);
-            int n16 = n15 << 24 | 0xFFFFFF;
-            GlHelper.drawText(string, f9, f10, fontRenderer2, n16);
-            float f13 = f9 + f8 + 2.0f * f2;
-            int n17 = (int)(255.0f * f12 * f);
-            int n18 = n17 << 24 | 0xFFFFFF;
-            float f14 = glyphMetrics3.capHeight();
-            float f15 = f10 - glyphMetrics3.ascent() + (glyphMetrics3.ascent() - f14) / 2.0f;
-            RenderUtil.drawFilledRect(guiGraphics.pose(), f13, f15, Math.round(f2), Math.round(f14), n18);
+        float displayWidth = GlHelper.getStringWidth(displayText, valueFont);
+        float displayX = (float)widgetX + (float)widgetWidth / 2.0f - displayWidth / 2.0f;
+        GlyphMetrics valueMetrics = valueFont.getMetrics();
+        float displayY = signY + scale - 1.5f;
+        if (editing) {
+            long now = System.currentTimeMillis();
+            float cyclePos = (float)(now % 1000L) / 1000.0f;
+            float sineWave = (float)(Math.sin((double)cyclePos * Math.PI * 2.0) * 0.5 + 0.5);
+            int textAlpha = (int)(255.0f * (0.6f + sineWave * 0.4f) * alpha);
+            int textColor = textAlpha << 24 | 0xFFFFFF;
+            GlHelper.drawText(displayText, displayX, displayY, valueFont, textColor);
+            float caretX = displayX + displayWidth + 2.0f * scale;
+            int caretAlpha = (int)(255.0f * sineWave * alpha);
+            int caretColor = caretAlpha << 24 | 0xFFFFFF;
+            float caretHeight = valueMetrics.capHeight();
+            float caretY = displayY - valueMetrics.ascent() + (valueMetrics.ascent() - caretHeight) / 2.0f;
+            RenderUtil.drawFilledRect(guiGraphics.pose(), caretX, caretY, Math.round(scale), Math.round(caretHeight), caretColor);
         } else {
-            int n19 = new Color(255, 255, 255, 120).getRGB();
-            TextGlow.drawGlowText(string, f9, f10, fontRenderer2, this.applyAlpha(-1, f), this.applyAlpha(n19, f), 6.0f * f2);
+            int glowColor = new Color(255, 255, 255, 120).getRGB();
+            TextGlow.drawGlowText(displayText, displayX, displayY, valueFont, this.applyAlpha(-1, alpha), this.applyAlpha(glowColor, alpha), 6.0f * scale);
         }
     }
 
-    private void drawEditIcon(GuiGraphics guiGraphics, int n, int n2, NumberSetting numberSetting, float f, float f2) {
-        boolean bl = this.editIconHover.getOrDefault(numberSetting, false);
-        long l = this.editIconTimers.getOrDefault(numberSetting, 0L);
-        long l2 = System.currentTimeMillis() - l;
-        int n3 = Math.round(16.0f * f2);
-        float f3 = Math.min(1.0f, (float)l2 / 200.0f);
-        if (!bl) {
-            f3 = 1.0f - f3;
+    private void drawEditIcon(GuiGraphics guiGraphics, int iconX, int iconY, NumberSetting numberSetting, float alpha, float scale) {
+        boolean hovered = this.editIconHover.getOrDefault(numberSetting, false);
+        long timerStart = this.editIconTimers.getOrDefault(numberSetting, 0L);
+        long sinceChange = System.currentTimeMillis() - timerStart;
+        int iconSize = Math.round(16.0f * scale);
+        float progress = Math.min(1.0f, (float)sinceChange / 200.0f);
+        if (!hovered) {
+            progress = 1.0f - progress;
         }
-        int n4 = -5197648;
-        int n5 = -1;
-        int n6 = RenderUtil.lerpColorHSB(n4, n5, f3);
-        FontRenderer fontRenderer = FontPresets.materialIcons(n3);
-        String string = "";
-        float f4 = GlHelper.getStringWidth(string, fontRenderer);
-        GlyphMetrics glyphMetrics = fontRenderer.getMetrics();
-        float f5 = (float)n + ((float)n3 - f4) / 2.0f;
-        float f6 = (float)n2 + (float)n3 / 2.0f - (glyphMetrics.ascent() + glyphMetrics.descent()) / 2.0f + glyphMetrics.ascent() + 1.0f;
-        GlHelper.drawText(string, f5, f6, fontRenderer, this.applyAlpha(n6, f));
+        int colorFrom = -5197648;
+        int colorTo = -1;
+        int iconColor = RenderUtil.lerpColorHSB(colorFrom, colorTo, progress);
+        FontRenderer iconFont = FontPresets.materialIcons(iconSize);
+        String iconText = "\uE3C9";
+        float iconTextWidth = GlHelper.getStringWidth(iconText, iconFont);
+        GlyphMetrics iconMetrics = iconFont.getMetrics();
+        float drawX = (float)iconX + ((float)iconSize - iconTextWidth) / 2.0f;
+        float drawY = (float)iconY + (float)iconSize / 2.0f - (iconMetrics.ascent() + iconMetrics.descent()) / 2.0f + iconMetrics.ascent() + 1.0f;
+        GlHelper.drawText(iconText, drawX, drawY, iconFont, this.applyAlpha(iconColor, alpha));
     }
 
     private void incrementValue(NumberSetting numberSetting) {
-        double d = numberSetting.getValue().doubleValue();
-        double d2 = numberSetting.getStep().doubleValue();
-        double d3 = numberSetting.getMax().doubleValue();
-        double d4 = Math.min(d3, d + d2);
-        this.applyValue(numberSetting, d4);
-        PanelClickGui.panelClickGui.addToast(numberSetting.getName() + " set to " + this.formatValue(d4));
+        double current = numberSetting.getValue().doubleValue();
+        double step = numberSetting.getStep().doubleValue();
+        double max = numberSetting.getMax().doubleValue();
+        double newValue = Math.min(max, current + step);
+        this.applyValue(numberSetting, newValue);
+        PanelClickGui.panelClickGui.addToast(numberSetting.getName() + " set to " + this.formatValue(newValue));
     }
 
     private void decrementValue(NumberSetting numberSetting) {
-        double d = numberSetting.getValue().doubleValue();
-        double d2 = numberSetting.getStep().doubleValue();
-        double d3 = numberSetting.getMin().doubleValue();
-        double d4 = Math.max(d3, d - d2);
-        this.applyValue(numberSetting, d4);
-        PanelClickGui.panelClickGui.addToast(numberSetting.getName() + " set to " + this.formatValue(d4));
+        double current = numberSetting.getValue().doubleValue();
+        double step = numberSetting.getStep().doubleValue();
+        double min = numberSetting.getMin().doubleValue();
+        double newValue = Math.max(min, current - step);
+        this.applyValue(numberSetting, newValue);
+        PanelClickGui.panelClickGui.addToast(numberSetting.getName() + " set to " + this.formatValue(newValue));
     }
 
-    private void applyValue(NumberSetting numberSetting, double d) {
+    private void applyValue(NumberSetting numberSetting, double value) {
         if (numberSetting.getValue() instanceof Integer) {
-            numberSetting.setValue((int)Math.round(d));
+            numberSetting.setValue((int)Math.round(value));
         } else if (numberSetting.getValue() instanceof Long) {
-            numberSetting.setValue(Math.round(d));
+            numberSetting.setValue(Math.round(value));
         } else if (numberSetting.getValue() instanceof Float) {
-            numberSetting.setValue(Float.valueOf((float)d));
+            numberSetting.setValue((float)value);
         } else {
-            numberSetting.setValue(d);
+            numberSetting.setValue(value);
         }
     }
 
-    private static void applyValueStatic(NumberSetting numberSetting, double d) {
+    private static void applyValueStatic(NumberSetting numberSetting, double value) {
         if (numberSetting.getValue() instanceof Integer) {
-            numberSetting.setValue((int)Math.round(d));
+            numberSetting.setValue((int)Math.round(value));
         } else if (numberSetting.getValue() instanceof Long) {
-            numberSetting.setValue(Math.round(d));
+            numberSetting.setValue(Math.round(value));
         } else if (numberSetting.getValue() instanceof Float) {
-            numberSetting.setValue(Float.valueOf((float)d));
+            numberSetting.setValue((float)value);
         } else {
-            numberSetting.setValue(d);
+            numberSetting.setValue(value);
         }
     }
 
-    private void updateHoverStates(NumberSetting numberSetting, int n, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9, int n10) {
-        boolean bl;
-        boolean bl2 = n >= n3 && n <= n3 + n5 && n2 >= n4 && n2 <= n4 + n7;
-        this.minusButtonHover.put(numberSetting, bl2 && n < n3 + n6);
-        this.plusButtonHover.put(numberSetting, bl2 && n > n3 + n5 - n6);
-        boolean bl3 = bl = n >= n8 && n <= n8 + n10 && n2 >= n9 && n2 <= n9 + n10;
-        if (bl != this.editIconHover.getOrDefault(numberSetting, false)) {
-            this.editIconHover.put(numberSetting, bl);
+    private void updateHoverStates(NumberSetting numberSetting, int mouseX, int mouseY, int widgetX, int widgetY, int widgetWidth, int sidePadding, int widgetHeight, int iconX, int iconY, int iconSize) {
+        boolean iconHovered;
+        boolean overWidget = mouseX >= widgetX && mouseX <= widgetX + widgetWidth && mouseY >= widgetY && mouseY <= widgetY + widgetHeight;
+        this.minusButtonHover.put(numberSetting, overWidget && mouseX < widgetX + sidePadding);
+        this.plusButtonHover.put(numberSetting, overWidget && mouseX > widgetX + widgetWidth - sidePadding);
+        boolean dup = iconHovered = mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize;
+        if (iconHovered != this.editIconHover.getOrDefault(numberSetting, false)) {
+            this.editIconHover.put(numberSetting, iconHovered);
             this.editIconTimers.put(numberSetting, System.currentTimeMillis());
         }
     }
 
-    private String formatValue(double d) {
-        return String.format(Locale.US, "%.1f", new Object[]{d});
+    private String formatValue(double value) {
+        return String.format(Locale.US, "%.1f", new Object[]{value});
     }
 
     @Override
@@ -305,8 +305,8 @@ implements SettingRenderer {
     }
 
     @Override
-    public int getHeight(Setting<?> setting, float f) {
-        return Math.round(24.0f * f);
+    public int getHeight(Setting<?> setting, float scale) {
+        return Math.round(24.0f * scale);
     }
 
     static {

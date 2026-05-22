@@ -31,33 +31,33 @@ public class ItemAlertTracker {
         if (!ItemUtil.isOtherCheat(itemStack)) {
             return;
         }
-        int n = itemStack.getDamageValue();
-        UUID uUID2 = player.getUUID();
-        Integer n2 = trackedItems.get(uUID2);
-        if (n2 != null && n > n2) {
+        int damageValue = itemStack.getDamageValue();
+        UUID playerId = player.getUUID();
+        Integer prevDamage = trackedItems.get(playerId);
+        if (prevDamage != null && damageValue > prevDamage) {
             ChatUtil.print(String.format(ALERT_FORMAT, new Object[]{player.getName().getString()}));
-            alertedItems.computeIfAbsent(uUID2, uUID -> new HashSet<>()).add(itemStack.getItem());
+            alertedItems.computeIfAbsent(playerId, uUID -> new HashSet<>()).add(itemStack.getItem());
         }
-        trackedItems.put(uUID2, n);
+        trackedItems.put(playerId, damageValue);
     }
 
-    public static void trackEntityItem(Object object2, ItemStack itemStack) {
+    public static void trackEntityItem(Object entityKey, ItemStack itemStack) {
         if (!ItemAlertTracker.isNewItem(itemStack)) {
             return;
         }
-        Set<ItemStack> set = entityItems.computeIfAbsent(object2, object -> new CopyOnWriteArraySet<>());
-        if (set.stream().noneMatch(itemStack2 -> ItemStack.matches(itemStack2, itemStack))) {
-            set.add(itemStack);
+        Set<ItemStack> stacks = entityItems.computeIfAbsent(entityKey, key -> new CopyOnWriteArraySet<>());
+        if (stacks.stream().noneMatch(existing -> ItemStack.matches(existing, itemStack))) {
+            stacks.add(itemStack);
         }
     }
 
-    public static Set<ItemStack> getEntityItems(Object object) {
-        return entityItems.getOrDefault(object, Collections.emptySet());
+    public static Set<ItemStack> getEntityItems(Object entityKey) {
+        return entityItems.getOrDefault(entityKey, Collections.emptySet());
     }
 
-    public static boolean hasItem(UUID uUID, Item item) {
-        Set<Item> set = alertedItems.getOrDefault(uUID, Collections.emptySet());
-        return set.contains(item);
+    public static boolean hasItem(UUID playerId, Item item) {
+        Set<Item> items = alertedItems.getOrDefault(playerId, Collections.emptySet());
+        return items.contains(item);
     }
 
     public static void clear() {
@@ -66,20 +66,20 @@ public class ItemAlertTracker {
         entityItems.clear();
     }
 
-    public static void removeEntity(Object object) {
-        entityItems.remove(object);
+    public static void removeEntity(Object entityKey) {
+        entityItems.remove(entityKey);
     }
 
-    public static void updateItems(Set<?> set) {
-        entityItems.keySet().removeIf(object -> !set.contains(object));
+    public static void updateItems(Set<?> activeEntities) {
+        entityItems.keySet().removeIf(entityKey -> !activeEntities.contains(entityKey));
     }
 
-    public static Integer getItemCount(UUID uUID) {
-        return trackedItems.get(uUID);
+    public static Integer getItemCount(UUID playerId) {
+        return trackedItems.get(playerId);
     }
 
-    public static void setItemCount(UUID uUID, int n) {
-        trackedItems.put(uUID, n);
+    public static void setItemCount(UUID playerId, int count) {
+        trackedItems.put(playerId, count);
     }
 
     static {

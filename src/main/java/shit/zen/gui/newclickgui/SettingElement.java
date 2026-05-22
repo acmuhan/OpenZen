@@ -17,8 +17,8 @@ extends UIElement {
     protected final SmoothAnimationTimer visibilityTimer = new SmoothAnimationTimer();
 
     @Generated
-    public SettingElement(CategoryPanel categoryPanel, T t) {
+    public SettingElement(CategoryPanel categoryPanel, T setting) {
         this.parentPanel = categoryPanel;
-        this.setting = t;
+        this.setting = setting;
     }
 }

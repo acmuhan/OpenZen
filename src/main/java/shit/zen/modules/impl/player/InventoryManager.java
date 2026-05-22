@@ -63,30 +63,30 @@ import shit.zen.event.EventTarget;
 public class InventoryManager
 extends Module {
     public static InventoryManager INSTANCE;
-    private final NumberSetting actionDelaySetting = new NumberSetting("Delay", Integer.valueOf(200), Integer.valueOf(0), Integer.valueOf(500), Integer.valueOf(10));
-    private final NumberSetting sprintDelayTicksSetting = new NumberSetting("Open Delay", Integer.valueOf(2), Integer.valueOf(0), Integer.valueOf(10), Integer.valueOf(1));
-    private final NumberSetting dropDelaySetting = new NumberSetting("Drop Delay", Integer.valueOf(200), Integer.valueOf(0), Integer.valueOf(500), Integer.valueOf(10));
+    private final NumberSetting actionDelaySetting = new NumberSetting("Delay", 200, 0, 500, 10);
+    private final NumberSetting sprintDelayTicksSetting = new NumberSetting("Open Delay", 2, 0, 10, 1);
+    private final NumberSetting dropDelaySetting = new NumberSetting("Drop Delay", 200, 0, 500, 10);
     private final BooleanSetting autoArmorSetting = new BooleanSetting("Auto Armor", true);
     private final BooleanSetting throwItemsSetting = new BooleanSetting("Throw Items", true);
     private final ModeSetting offhandItemSetting = new ModeSetting("Offhand Items", "Golden Apple", "Fishing Rod", "None").withDefault("Projectile");
     private final ModeSetting bowPrioritySetting = new ModeSetting("Bow Priority", "Crossbow", "Punch Bow").withDefault("Crossbow");
     private final BooleanSetting inventoryOnlySetting = new BooleanSetting("Inventory Only", true);
     private final BooleanSetting fastThrowSetting = new BooleanSetting("Fast Throw", false);
-    private final NumberSetting maxEggsSnowballsSetting = new NumberSetting("Max Eggs & Snowballs Size", Integer.valueOf(64), Integer.valueOf(16), Integer.valueOf(256), Integer.valueOf(16));
-    public final NumberSetting maxBlockSizeSetting = new NumberSetting("Max Block Size", Integer.valueOf(256), Integer.valueOf(64), Integer.valueOf(512), Integer.valueOf(64));
-    private final NumberSetting maxFoodSizeSetting = new NumberSetting("Max Food Size", Integer.valueOf(128), Integer.valueOf(32), Integer.valueOf(256), Integer.valueOf(32));
-    private final NumberSetting maxRodSizeSetting = new NumberSetting("Max Rod Size", Integer.valueOf(1), Integer.valueOf(1), Integer.valueOf(16), Integer.valueOf(1));
-    private final NumberSetting swordSlotSetting = new NumberSetting("Sword Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting blockSlotSetting = new NumberSetting("Block Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting axeSlotSetting = new NumberSetting("Axe Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting pickaxeSlotSetting = new NumberSetting("Pickaxe Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting bowSlotSetting = new NumberSetting("Bow Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting waterBucketSlotSetting = new NumberSetting("Water Bucket Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting pearlSlotSetting = new NumberSetting("Ender Pearl Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting goldenAppleSlotSetting = new NumberSetting("Golden Apple Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting eggsSnowballsSlotSetting = new NumberSetting("Eggs & Snowballs Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting slimeBallSlotSetting = new NumberSetting("Slime Ball Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
-    private final NumberSetting crystalSlotSetting = new NumberSetting("Crystal Slot", Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(9), Integer.valueOf(1));
+    private final NumberSetting maxEggsSnowballsSetting = new NumberSetting("Max Eggs & Snowballs Size", 64, 16, 256, 16);
+    public final NumberSetting maxBlockSizeSetting = new NumberSetting("Max Block Size", 256, 64, 512, 64);
+    private final NumberSetting maxFoodSizeSetting = new NumberSetting("Max Food Size", 128, 32, 256, 32);
+    private final NumberSetting maxRodSizeSetting = new NumberSetting("Max Rod Size", 1, 1, 16, 1);
+    private final NumberSetting swordSlotSetting = new NumberSetting("Sword Slot", 0, 0, 9, 1);
+    private final NumberSetting blockSlotSetting = new NumberSetting("Block Slot", 0, 0, 9, 1);
+    private final NumberSetting axeSlotSetting = new NumberSetting("Axe Slot", 0, 0, 9, 1);
+    private final NumberSetting pickaxeSlotSetting = new NumberSetting("Pickaxe Slot", 0, 0, 9, 1);
+    private final NumberSetting bowSlotSetting = new NumberSetting("Bow Slot", 0, 0, 9, 1);
+    private final NumberSetting waterBucketSlotSetting = new NumberSetting("Water Bucket Slot", 0, 0, 9, 1);
+    private final NumberSetting pearlSlotSetting = new NumberSetting("Ender Pearl Slot", 0, 0, 9, 1);
+    private final NumberSetting goldenAppleSlotSetting = new NumberSetting("Golden Apple Slot", 0, 0, 9, 1);
+    private final NumberSetting eggsSnowballsSlotSetting = new NumberSetting("Eggs & Snowballs Slot", 0, 0, 9, 1);
+    private final NumberSetting slimeBallSlotSetting = new NumberSetting("Slime Ball Slot", 0, 0, 9, 1);
+    private final NumberSetting crystalSlotSetting = new NumberSetting("Crystal Slot", 0, 0, 9, 1);
     private static final Timer actionTimer;
     private boolean didInventoryAction = false;
     private boolean pendingOffhandPlace = false;
@@ -151,15 +151,14 @@ extends Module {
             }
         } else {
             Screen screen;
-            AbstractContainerScreen abstractContainerScreen;
-            ServerboundPlayerCommandPacket serverboundPlayerCommandPacket;
-            boolean bl;
-            boolean bl2 = bl = !this.pendingPackets.isEmpty();
+            AbstractContainerScreen containerScreen;
+            ServerboundPlayerCommandPacket commandPacket;
+            boolean hasPendingPackets = !this.pendingPackets.isEmpty();
             if (packet instanceof ServerboundPlayerCommandPacket) {
-                serverboundPlayerCommandPacket = (ServerboundPlayerCommandPacket)packet;
-                if (serverboundPlayerCommandPacket.getAction() == ServerboundPlayerCommandPacket.Action.START_SPRINTING) {
+                commandPacket = (ServerboundPlayerCommandPacket)packet;
+                if (commandPacket.getAction() == ServerboundPlayerCommandPacket.Action.START_SPRINTING) {
                     this.wasSprinting = true;
-                } else if (serverboundPlayerCommandPacket.getAction() == ServerboundPlayerCommandPacket.Action.STOP_SPRINTING) {
+                } else if (commandPacket.getAction() == ServerboundPlayerCommandPacket.Action.STOP_SPRINTING) {
                     this.wasSprinting = false;
                 }
             }
@@ -172,14 +171,13 @@ extends Module {
                 }
             }
             if ((screen = mc.screen) instanceof AbstractContainerScreen) {
-                abstractContainerScreen = (AbstractContainerScreen)screen;
-                if (abstractContainerScreen.getMenu().containerId != mc.player.inventoryMenu.containerId) {
+                containerScreen = (AbstractContainerScreen)screen;
+                if (containerScreen.getMenu().containerId != mc.player.inventoryMenu.containerId) {
                     return;
                 }
             }
-            boolean bl3 = false;
-            boolean bl4 = bl3;
-            if (bl4) return;
+            boolean shouldSkip = false;
+            if (shouldSkip) return;
             if (!(packet instanceof ServerboundContainerClickPacket)) {
                 if (!(packet instanceof ServerboundContainerClosePacket)) return;
             }
@@ -191,9 +189,8 @@ extends Module {
     @EventTarget
     public void onMotion(MotionEvent motionEvent) {
         if (motionEvent.isPost() && !this.inventoryOnlySetting.getValue() && GuiMove.INSTANCE.isEnabled() && mc.player != null) {
-            boolean bl;
-            boolean bl2 = bl = !this.pendingPackets.isEmpty();
-            if (bl) {
+            boolean hasPendingPackets = !this.pendingPackets.isEmpty();
+            if (hasPendingPackets) {
                 if (this.wasSprinting || mc.player.isSprinting()) {
                     this.skipNextTick = true;
                     this.sprintDelayTicks = 2 + this.sprintDelayTicksSetting.getValue().intValue();
@@ -207,14 +204,14 @@ extends Module {
                     PacketUtil.sendQueued((Packet<ServerGamePacketListener>) this.pendingPackets.poll());
                 }
                 PacketUtil.sendQueued(new ServerboundContainerClosePacket(mc.player.inventoryMenu.containerId));
-                boolean bl3 = mc.options.keyJump.isDown();
-                boolean bl4 = mc.options.keyShift.isDown();
+                boolean jumpDown = mc.options.keyJump.isDown();
+                boolean shiftDown = mc.options.keyShift.isDown();
                 this.justClosedInventory = true;
             } else {
                 this.sprintDelayTicks = 0;
                 if (this.justClosedInventory) {
-                    boolean bl5 = mc.options.keyJump.isDown();
-                    boolean bl6 = mc.options.keyShift.isDown();
+                    boolean jumpDown = mc.options.keyJump.isDown();
+                    boolean shiftDown = mc.options.keyShift.isDown();
                     this.justClosedInventory = false;
                 }
             }
@@ -222,28 +219,28 @@ extends Module {
     }
 
     private boolean validateSlotConfig() {
-        ArrayList<Pair<Boolean, NumberSetting>> arrayList = new ArrayList<>();
-        arrayList.add(Pair.of(this.swordSlotSetting.getValue().intValue() != 0, this.swordSlotSetting));
-        arrayList.add(Pair.of(this.axeSlotSetting.getValue().intValue() != 0, this.axeSlotSetting));
-        arrayList.add(Pair.of(this.pickaxeSlotSetting.getValue().intValue() != 0, this.pickaxeSlotSetting));
-        arrayList.add(Pair.of(this.bowSlotSetting.getValue().intValue() != 0, this.bowSlotSetting));
-        arrayList.add(Pair.of(this.waterBucketSlotSetting.getValue().intValue() != 0, this.waterBucketSlotSetting));
-        arrayList.add(Pair.of(this.pearlSlotSetting.getValue().intValue() != 0, this.pearlSlotSetting));
-        arrayList.add(Pair.of(this.slimeBallSlotSetting.getValue().intValue() != 0, this.slimeBallSlotSetting));
-        arrayList.add(Pair.of(this.crystalSlotSetting.getValue().intValue() != 0, this.crystalSlotSetting));
-        arrayList.add(Pair.of(this.eggsSnowballsSlotSetting.getValue().intValue() != 0, this.eggsSnowballsSlotSetting));
+        ArrayList<Pair<Boolean, NumberSetting>> slotEntries = new ArrayList<>();
+        slotEntries.add(Pair.of(this.swordSlotSetting.getValue().intValue() != 0, this.swordSlotSetting));
+        slotEntries.add(Pair.of(this.axeSlotSetting.getValue().intValue() != 0, this.axeSlotSetting));
+        slotEntries.add(Pair.of(this.pickaxeSlotSetting.getValue().intValue() != 0, this.pickaxeSlotSetting));
+        slotEntries.add(Pair.of(this.bowSlotSetting.getValue().intValue() != 0, this.bowSlotSetting));
+        slotEntries.add(Pair.of(this.waterBucketSlotSetting.getValue().intValue() != 0, this.waterBucketSlotSetting));
+        slotEntries.add(Pair.of(this.pearlSlotSetting.getValue().intValue() != 0, this.pearlSlotSetting));
+        slotEntries.add(Pair.of(this.slimeBallSlotSetting.getValue().intValue() != 0, this.slimeBallSlotSetting));
+        slotEntries.add(Pair.of(this.crystalSlotSetting.getValue().intValue() != 0, this.crystalSlotSetting));
+        slotEntries.add(Pair.of(this.eggsSnowballsSlotSetting.getValue().intValue() != 0, this.eggsSnowballsSlotSetting));
         if (!"Golden Apple".equals(this.offhandItemSetting.getValue())) {
-            arrayList.add(Pair.of(this.goldenAppleSlotSetting.getValue().intValue() != 0, this.goldenAppleSlotSetting));
+            slotEntries.add(Pair.of(this.goldenAppleSlotSetting.getValue().intValue() != 0, this.goldenAppleSlotSetting));
         }
         if (!"Block".equals(this.offhandItemSetting.getValue())) {
-            arrayList.add(Pair.of(this.blockSlotSetting.getValue().intValue() != 0, this.blockSlotSetting));
+            slotEntries.add(Pair.of(this.blockSlotSetting.getValue().intValue() != 0, this.blockSlotSetting));
         }
-        HashSet<Integer> hashSet = new HashSet<>();
-        for (Pair<Boolean, NumberSetting> pair : arrayList) {
-            if (!pair.getKey()) continue;
-            int n = pair.getValue().getValue().intValue() - 1;
-            if (!hashSet.contains(n)) {
-                hashSet.add(n);
+        HashSet<Integer> usedSlots = new HashSet<>();
+        for (Pair<Boolean, NumberSetting> entry : slotEntries) {
+            if (!entry.getKey()) continue;
+            int slot = entry.getValue().getValue().intValue() - 1;
+            if (!usedSlots.contains(slot)) {
+                usedSlots.add(slot);
                 continue;
             }
             return false;
@@ -267,32 +264,32 @@ extends Module {
                 return;
             }
             this.idleTicks = MovementUtil.isInputActive() ? 0 : ++this.idleTicks;
-            boolean bl = false;
-            AbstractContainerMenu abstractContainerMenu = mc.player.containerMenu;
-            Object object = mc.screen;
-            if (object instanceof ContainerScreen) {
-                containerScreen = (ContainerScreen)object;
-                object = containerScreen.getTitle().getString();
-                String string = Component.translatable("container.chest").getString();
-                String string2 = Component.translatable("container.chestDouble").getString();
-                String string3 = Component.translatable("container.enderchest").getString();
+            boolean isContainerOpen = false;
+            AbstractContainerMenu containerMenu = mc.player.containerMenu;
+            Object screen = mc.screen;
+            if (screen instanceof ContainerScreen) {
+                containerScreen = (ContainerScreen)screen;
+                String title = containerScreen.getTitle().getString();
+                String chestTitle = Component.translatable("container.chest").getString();
+                String doubleChestTitle = Component.translatable("container.chestDouble").getString();
+                String enderChestTitle = Component.translatable("container.enderchest").getString();
                 ChestMenu chestMenu = containerScreen.getMenu();
-                if (object.equals(string) || object.equals(string2) || object.equals("Chest")) {
-                    bl = true;
+                if (title.equals(chestTitle) || title.equals(doubleChestTitle) || title.equals("Chest")) {
+                    isContainerOpen = true;
                 }
             }
-            if (abstractContainerMenu instanceof FurnaceMenu || abstractContainerMenu instanceof BrewingStandMenu) {
-                bl = true;
+            if (containerMenu instanceof FurnaceMenu || containerMenu instanceof BrewingStandMenu) {
+                isContainerOpen = true;
             }
-            if (bl || ChestStealer.isRateLimited() || Scaffold.INSTANCE.isEnabled() || (this.inventoryOnlySetting.getValue() != false ? !(mc.screen instanceof InventoryScreen) : !GuiMove.INSTANCE.isEnabled() && this.idleTicks <= 1)) {
+            if (isContainerOpen || ChestStealer.isRateLimited() || Scaffold.INSTANCE.isEnabled() || (this.inventoryOnlySetting.getValue() != false ? !(mc.screen instanceof InventoryScreen) : !GuiMove.INSTANCE.isEnabled() && this.idleTicks <= 1)) {
                 this.pendingOffhandPlace = false;
                 this.sprintWaitTicks = 0;
                 isPerformingAction = false;
                 this.skipNextTick = true;
                 return;
             }
-            object = mc.screen;
-            if (object instanceof AbstractContainerScreen acs) {
+            screen = mc.screen;
+            if (screen instanceof AbstractContainerScreen acs) {
                 if (acs.getMenu().containerId != mc.player.inventoryMenu.containerId) {
                     return;
                 }
@@ -316,12 +313,12 @@ extends Module {
      * Enabled aggressive block sorting
      */
     private boolean performInventoryAction() {
-        Integer n;
-        ItemStack itemStack;
-        ItemStack itemStack2;
-        ItemStack itemStack3;
-        ItemStack itemStack4;
-        ItemStack itemStack5;
+        Integer dropSlot;
+        ItemStack dropStack;
+        ItemStack worstProjectile;
+        ItemStack fishingRodStack;
+        ItemStack bestFoodStack;
+        ItemStack worstBlock;
         if (this.handleAutoArmor()) {
             return true;
         }
@@ -353,95 +350,94 @@ extends Module {
             this.swapItemToSlot(this.goldenAppleSlotSetting.getValue().intValue() - 1, Items.GOLDEN_APPLE);
         }
         if (this.blockSlotSetting.getValue().intValue() != 0) {
-            int n7 = this.blockSlotSetting.getValue().intValue() - 1;
-            ItemStack itemStack11 = mc.player.getInventory().items.get(n7);
-            ItemStack itemStack12 = ItemUtil.getBestBlock();
-            if (!(itemStack12 == null || itemStack12.getCount() <= itemStack11.getCount() && BlockUtil.isPlaceable(itemStack11) || this.offhandItemSetting.getValue().equals("Block") || !this.swapToSlot(n7, itemStack12))) {
+            int blockSlot = this.blockSlotSetting.getValue().intValue() - 1;
+            ItemStack currentBlock = mc.player.getInventory().items.get(blockSlot);
+            ItemStack bestBlock = ItemUtil.getBestBlock();
+            if (!(bestBlock == null || bestBlock.getCount() <= currentBlock.getCount() && BlockUtil.isPlaceable(currentBlock) || this.offhandItemSetting.getValue().equals("Block") || !this.swapToSlot(blockSlot, bestBlock))) {
                 return true;
             }
         }
-        if (ItemUtil.countBlocks() > this.maxBlockSizeSetting.getValue().intValue() && this.throwItem(itemStack5 = ItemUtil.getWorstBlock())) {
+        if (ItemUtil.countBlocks() > this.maxBlockSizeSetting.getValue().intValue() && this.throwItem(worstBlock = ItemUtil.getWorstBlock())) {
             return true;
         }
-        if (ItemUtil.countFood() > this.maxFoodSizeSetting.getValue().intValue() && this.throwItem(itemStack4 = ItemUtil.getBestFoodStack())) {
+        if (ItemUtil.countFood() > this.maxFoodSizeSetting.getValue().intValue() && this.throwItem(bestFoodStack = ItemUtil.getBestFoodStack())) {
             return true;
         }
-        if (ItemUtil.countFishingRods() > this.maxRodSizeSetting.getValue().intValue() && this.throwItem(itemStack3 = ItemUtil.getFishingRodStack())) {
+        if (ItemUtil.countFishingRods() > this.maxRodSizeSetting.getValue().intValue() && this.throwItem(fishingRodStack = ItemUtil.getFishingRodStack())) {
             return true;
         }
-        if (ItemUtil.countItem(Items.EGG) + ItemUtil.countItem(Items.SNOWBALL) > this.maxEggsSnowballsSetting.getValue().intValue() && this.throwItem(itemStack2 = ItemUtil.getWorstProjectile())) {
+        if (ItemUtil.countItem(Items.EGG) + ItemUtil.countItem(Items.SNOWBALL) > this.maxEggsSnowballsSetting.getValue().intValue() && this.throwItem(worstProjectile = ItemUtil.getWorstProjectile())) {
             return true;
         }
         if (this.swordSlotSetting.getValue().intValue() != 0) {
-            ItemStack itemStack13 = ItemUtil.getBestSword();
-            int n8 = this.swordSlotSetting.getValue().intValue() - 1;
-            ItemStack itemStack14 = mc.player.getInventory().items.get(n8);
-            ItemStack itemStack15 = ItemUtil.getBestSharpAxe();
-            if (ItemUtil.getAxeDamage(itemStack15) > ItemUtil.getSwordDamage(itemStack13)) {
-                itemStack13 = itemStack15;
+            ItemStack bestSword = ItemUtil.getBestSword();
+            int swordSlot = this.swordSlotSetting.getValue().intValue() - 1;
+            ItemStack currentSword = mc.player.getInventory().items.get(swordSlot);
+            ItemStack bestSharpAxe = ItemUtil.getBestSharpAxe();
+            if (ItemUtil.getAxeDamage(bestSharpAxe) > ItemUtil.getSwordDamage(bestSword)) {
+                bestSword = bestSharpAxe;
             }
-            if (itemStack13 != null) {
-                float f;
-                float f2 = itemStack14.getItem() instanceof SwordItem ? ItemUtil.getSwordDamage(itemStack14) : ItemUtil.getAxeDamage(itemStack14);
-                float f3 = f = itemStack13.getItem() instanceof SwordItem ? ItemUtil.getSwordDamage(itemStack13) : ItemUtil.getAxeDamage(itemStack13);
-                if (f > f2 && this.swapToSlot(n8, itemStack13)) {
+            if (bestSword != null) {
+                float currentDamage = currentSword.getItem() instanceof SwordItem ? ItemUtil.getSwordDamage(currentSword) : ItemUtil.getAxeDamage(currentSword);
+                float candidateDamage = bestSword.getItem() instanceof SwordItem ? ItemUtil.getSwordDamage(bestSword) : ItemUtil.getAxeDamage(bestSword);
+                if (candidateDamage > currentDamage && this.swapToSlot(swordSlot, bestSword)) {
                     return true;
                 }
             }
         }
         if (this.pickaxeSlotSetting.getValue().intValue() != 0) {
-            int n9 = this.pickaxeSlotSetting.getValue().intValue() - 1;
-            ItemStack itemStack16 = ItemUtil.getBestPickaxe();
-            ItemStack itemStack17 = mc.player.getInventory().items.get(n9);
-            if (itemStack16 != null && itemStack16.getItem() instanceof PickaxeItem && (ItemUtil.getDigSpeed(itemStack16) > ItemUtil.getDigSpeed(itemStack17) || !(itemStack17.getItem() instanceof PickaxeItem)) && this.swapToSlot(n9, itemStack16)) {
+            int pickaxeSlot = this.pickaxeSlotSetting.getValue().intValue() - 1;
+            ItemStack bestPickaxe = ItemUtil.getBestPickaxe();
+            ItemStack currentPickaxe = mc.player.getInventory().items.get(pickaxeSlot);
+            if (bestPickaxe != null && bestPickaxe.getItem() instanceof PickaxeItem && (ItemUtil.getDigSpeed(bestPickaxe) > ItemUtil.getDigSpeed(currentPickaxe) || !(currentPickaxe.getItem() instanceof PickaxeItem)) && this.swapToSlot(pickaxeSlot, bestPickaxe)) {
                 return true;
             }
         }
         if (this.bowSlotSetting.getValue().intValue() != 0) {
-            ItemStack itemStack18;
-            float f;
-            float f4;
-            ItemStack itemStack19;
-            int n10 = this.bowSlotSetting.getValue().intValue() - 1;
-            ItemStack itemStack20 = mc.player.getInventory().items.get(n10);
+            ItemStack arrowStack;
+            float currentScore;
+            float bestScore;
+            ItemStack bestBow;
+            int bowSlot = this.bowSlotSetting.getValue().intValue() - 1;
+            ItemStack currentBow = mc.player.getInventory().items.get(bowSlot);
             if (this.bowPrioritySetting.getValue().equals("Crossbow")) {
-                itemStack19 = ItemUtil.getBestCrossbow();
-                f4 = ItemUtil.getCrossbowScore(itemStack19);
-                f = ItemUtil.getCrossbowScore(itemStack20);
+                bestBow = ItemUtil.getBestCrossbow();
+                bestScore = ItemUtil.getCrossbowScore(bestBow);
+                currentScore = ItemUtil.getCrossbowScore(currentBow);
             } else if (this.bowPrioritySetting.getValue().equals("Power Bow")) {
-                itemStack19 = ItemUtil.getBestBowAlt();
-                f4 = ItemUtil.getBowScoreAlt(itemStack19);
-                f = ItemUtil.getBowScoreAlt(itemStack20);
+                bestBow = ItemUtil.getBestBowAlt();
+                bestScore = ItemUtil.getBowScoreAlt(bestBow);
+                currentScore = ItemUtil.getBowScoreAlt(currentBow);
             } else {
-                itemStack19 = ItemUtil.getBestBow();
-                f4 = ItemUtil.getBowScore(itemStack19);
-                f = ItemUtil.getBowScore(itemStack20);
+                bestBow = ItemUtil.getBestBow();
+                bestScore = ItemUtil.getBowScore(bestBow);
+                currentScore = ItemUtil.getBowScore(currentBow);
             }
-            if (itemStack19 == null) {
-                itemStack19 = ItemUtil.getBestCrossbow();
-                f4 = ItemUtil.getCrossbowScore(itemStack19);
-                f = ItemUtil.getCrossbowScore(itemStack20);
+            if (bestBow == null) {
+                bestBow = ItemUtil.getBestCrossbow();
+                bestScore = ItemUtil.getCrossbowScore(bestBow);
+                currentScore = ItemUtil.getCrossbowScore(currentBow);
             }
-            if (itemStack19 == null) {
-                itemStack19 = ItemUtil.getBestBowAlt();
-                f4 = ItemUtil.getBowScoreAlt(itemStack19);
-                f = ItemUtil.getBowScoreAlt(itemStack20);
+            if (bestBow == null) {
+                bestBow = ItemUtil.getBestBowAlt();
+                bestScore = ItemUtil.getBowScoreAlt(bestBow);
+                currentScore = ItemUtil.getBowScoreAlt(currentBow);
             }
-            if (itemStack19 == null) {
-                itemStack19 = ItemUtil.getBestBow();
-                f4 = ItemUtil.getBowScore(itemStack19);
-                f = ItemUtil.getBowScore(itemStack20);
+            if (bestBow == null) {
+                bestBow = ItemUtil.getBestBow();
+                bestScore = ItemUtil.getBowScore(bestBow);
+                currentScore = ItemUtil.getBowScore(currentBow);
             }
-            if (itemStack19 != null && f4 > f && this.swapToSlot(n10, itemStack19)) {
+            if (bestBow != null && bestScore > currentScore && this.swapToSlot(bowSlot, bestBow)) {
                 return true;
             }
-            if (ItemUtil.countItem(Items.ARROW) > 256 && this.throwItem(itemStack18 = ItemUtil.getArrowStack())) {
+            if (ItemUtil.countItem(Items.ARROW) > 256 && this.throwItem(arrowStack = ItemUtil.getArrowStack())) {
                 return true;
             }
         }
         if (this.axeSlotSetting.getValue().intValue() != 0) {
-            ItemStack itemStack21 = ItemUtil.getBestAxe();
-            if (this.swapToSlot(this.axeSlotSetting.getValue().intValue() - 1, itemStack21)) {
+            ItemStack bestAxe = ItemUtil.getBestAxe();
+            if (this.swapToSlot(this.axeSlotSetting.getValue().intValue() - 1, bestAxe)) {
                 return true;
             }
         }
@@ -460,14 +456,14 @@ extends Module {
         if (this.crystalSlotSetting.getValue().intValue() != 0 && this.swapItemToSlot(this.crystalSlotSetting.getValue().intValue() - 1, Items.END_CRYSTAL)) {
             return true;
         }
-        List<Integer> list = IntStream.range(0, mc.player.getInventory().items.size()).boxed().collect(Collectors.toList());
-        Collections.shuffle(list);
-        Iterator<Integer> iterator = list.iterator();
+        List<Integer> slotIndices = IntStream.range(0, mc.player.getInventory().items.size()).boxed().collect(Collectors.toList());
+        Collections.shuffle(slotIndices);
+        Iterator<Integer> slotIterator = slotIndices.iterator();
         do {
-            if (iterator.hasNext()) continue;
+            if (slotIterator.hasNext()) continue;
             return false;
-        } while ((itemStack = mc.player.getInventory().items.get((n = iterator.next()).intValue())).isEmpty() || this.isUsefulItem(itemStack));
-        this.throwItem(itemStack);
+        } while ((dropStack = mc.player.getInventory().items.get((dropSlot = slotIterator.next()).intValue())).isEmpty() || this.isUsefulItem(dropStack));
+        this.throwItem(dropStack);
         return true;
     }
 
@@ -580,29 +576,29 @@ extends Module {
         return true;
     }
 
-    private void moveToOffhand(int n) {
+    private void moveToOffhand(int slot) {
         if (mc.gameMode == null || mc.player == null) {
             return;
         }
-        if (n < 9) {
-            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n + 36, 40, ClickType.SWAP, mc.player);
+        if (slot < 9) {
+            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, slot + 36, 40, ClickType.SWAP, mc.player);
         } else {
-            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n, 40, ClickType.SWAP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, slot, 40, ClickType.SWAP, mc.player);
         }
         this.didInventoryAction = true;
         actionTimer.reset();
     }
 
     private boolean throwItem(ItemStack itemStack) {
-        int n;
+        int slot;
         if (mc.gameMode == null || mc.player == null) {
             return false;
         }
-        if (this.throwItemsSetting.getValue() && ItemUtil.isUsable(itemStack) && (actionTimer.hasPassed(this.dropDelaySetting.getValue().intValue()) || this.fastThrowSetting.getValue()) && (n = ItemUtil.getSlot(itemStack)) != -1) {
-            if (n < 9) {
-                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n + 36, 1, ClickType.THROW, mc.player);
+        if (this.throwItemsSetting.getValue() && ItemUtil.isUsable(itemStack) && (actionTimer.hasPassed(this.dropDelaySetting.getValue().intValue()) || this.fastThrowSetting.getValue()) && (slot = ItemUtil.getSlot(itemStack)) != -1) {
+            if (slot < 9) {
+                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, slot + 36, 1, ClickType.THROW, mc.player);
             } else {
-                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n, 1, ClickType.THROW, mc.player);
+                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, slot, 1, ClickType.THROW, mc.player);
             }
             this.didInventoryAction = true;
             actionTimer.reset();
@@ -611,17 +607,17 @@ extends Module {
         return false;
     }
 
-    private boolean swapToSlot(int n, ItemStack itemStack) {
-        int n2;
+    private boolean swapToSlot(int targetSlot, ItemStack itemStack) {
+        int sourceSlot;
         if (mc.gameMode == null || mc.player == null) {
             return false;
         }
-        ItemStack itemStack2 = mc.player.getInventory().items.get(n);
-        if (ItemUtil.isUsable(itemStack2) && itemStack != itemStack2 && actionTimer.hasPassed(this.actionDelaySetting.getValue().intValue()) && (n2 = ItemUtil.getSlot(itemStack)) != -1) {
-            if (n2 < 9) {
-                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n2 + 36, n, ClickType.SWAP, mc.player);
+        ItemStack currentStack = mc.player.getInventory().items.get(targetSlot);
+        if (ItemUtil.isUsable(currentStack) && itemStack != currentStack && actionTimer.hasPassed(this.actionDelaySetting.getValue().intValue()) && (sourceSlot = ItemUtil.getSlot(itemStack)) != -1) {
+            if (sourceSlot < 9) {
+                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, sourceSlot + 36, targetSlot, ClickType.SWAP, mc.player);
             } else {
-                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n2, n, ClickType.SWAP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, sourceSlot, targetSlot, ClickType.SWAP, mc.player);
             }
             this.didInventoryAction = true;
             actionTimer.reset();
@@ -630,19 +626,19 @@ extends Module {
         return false;
     }
 
-    private boolean swapItemToSlot(int n, Item item) {
-        int n2;
+    private boolean swapItemToSlot(int targetSlot, Item item) {
+        int sourceSlot;
         if (mc.gameMode == null || mc.player == null) {
             return false;
         }
-        ItemStack itemStack = mc.player.getInventory().items.get(n);
-        if (ItemUtil.isUsable(itemStack) && actionTimer.hasPassed(this.actionDelaySetting.getValue().intValue()) && (n2 = ItemUtil.getSlot(item)) != -1) {
-            ItemStack itemStack2 = mc.player.getInventory().items.get(n2);
-            if (itemStack.getItem() != item || itemStack.getItem() == item && itemStack.getCount() < itemStack2.getCount()) {
-                if (n2 < 9) {
-                    mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n2 + 36, n, ClickType.SWAP, mc.player);
+        ItemStack currentStack = mc.player.getInventory().items.get(targetSlot);
+        if (ItemUtil.isUsable(currentStack) && actionTimer.hasPassed(this.actionDelaySetting.getValue().intValue()) && (sourceSlot = ItemUtil.getSlot(item)) != -1) {
+            ItemStack sourceStack = mc.player.getInventory().items.get(sourceSlot);
+            if (currentStack.getItem() != item || currentStack.getItem() == item && currentStack.getCount() < sourceStack.getCount()) {
+                if (sourceSlot < 9) {
+                    mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, sourceSlot + 36, targetSlot, ClickType.SWAP, mc.player);
                 } else {
-                    mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, n2, n, ClickType.SWAP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, sourceSlot, targetSlot, ClickType.SWAP, mc.player);
                 }
                 this.didInventoryAction = true;
                 actionTimer.reset();
@@ -687,12 +683,12 @@ extends Module {
         }
         Item item = itemStack.getItem();
         if (item instanceof ArmorItem armorItem) {
-            float f = ItemUtil.getArmorScore(itemStack);
-            if (ItemUtil.getEquippedArmorScore(armorItem.getEquipmentSlot()) >= f) {
+            float candidateScore = ItemUtil.getArmorScore(itemStack);
+            if (ItemUtil.getEquippedArmorScore(armorItem.getEquipmentSlot()) >= candidateScore) {
                 return false;
             }
-            float f2 = ItemUtil.getBestArmorScore(armorItem.getEquipmentSlot());
-            return !(f < f2);
+            float bestScore = ItemUtil.getBestArmorScore(armorItem.getEquipmentSlot());
+            return !(candidateScore < bestScore);
         }
         if (itemStack.getItem() instanceof SwordItem) {
             return ItemUtil.getBestSword() == itemStack;

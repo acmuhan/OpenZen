@@ -13,8 +13,8 @@ implements EventMarker {
     private float pitch;
 
     @Generated
-    public RotationEvent(float f, float f2) {
-        this.yaw = f;
-        this.pitch = f2;
+    public RotationEvent(float yaw, float pitch) {
+        this.yaw = yaw;
+        this.pitch = pitch;
     }
 }

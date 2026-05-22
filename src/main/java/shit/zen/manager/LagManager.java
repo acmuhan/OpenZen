@@ -25,17 +25,17 @@ public class LagManager {
         INSTANCE = this;
     }
 
-    public void setBlink(boolean bl) {
-        if (bl) {
+    public void setBlink(boolean enable) {
+        if (enable) {
             ++this.blinkCount;
         } else if (this.blinkCount > 0) {
             --this.blinkCount;
         }
-        boolean bl2 = this.blinkCount > 0;
-        if (this.blinking == bl2) {
+        boolean shouldBlink = this.blinkCount > 0;
+        if (this.blinking == shouldBlink) {
             return;
         }
-        this.blinking = bl2;
+        this.blinking = shouldBlink;
         if (this.blinking) {
             this.packetQueue.clear();
         } else {
@@ -69,8 +69,8 @@ public class LagManager {
         if (!this.blinking || ClientBase.mc.getConnection() == null) {
             return;
         }
-        long l = System.currentTimeMillis();
-        while (!this.packetQueue.isEmpty() && l - this.packetQueue.peek().getRight() >= this.lagTime) {
+        long now = System.currentTimeMillis();
+        while (!this.packetQueue.isEmpty() && now - this.packetQueue.peek().getRight() >= this.lagTime) {
             ClientBase.mc.getConnection().send(this.packetQueue.poll().getLeft());
         }
     }

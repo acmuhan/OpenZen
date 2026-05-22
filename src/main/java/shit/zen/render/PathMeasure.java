@@ -5,99 +5,99 @@ implements AutoCloseable {
     private final float totalLength;
 
     public PathMeasure(Path path) {
-        float f = 0.0f;
-        float f2 = 0.0f;
-        float f3 = 0.0f;
-        float f4 = 0.0f;
-        float f5 = 0.0f;
+        float length = 0.0f;
+        float currX = 0.0f;
+        float currY = 0.0f;
+        float startX = 0.0f;
+        float startY = 0.0f;
         if (path != null) {
             block7: for (Path.PathSegment path$PathSegment : path.getSegments()) {
                 switch (path$PathSegment.type) {
                     case MOVE_TO: {
-                        f2 = path$PathSegment.coords[0];
-                        f3 = path$PathSegment.coords[1];
-                        f4 = f2;
-                        f5 = f3;
+                        currX = path$PathSegment.coords[0];
+                        currY = path$PathSegment.coords[1];
+                        startX = currX;
+                        startY = currY;
                         continue block7;
                     }
                     case LINE_TO: {
-                        float f6 = path$PathSegment.coords[0];
-                        float f7 = path$PathSegment.coords[1];
-                        f += (float)Math.hypot(f6 - f2, f7 - f3);
-                        f2 = f6;
-                        f3 = f7;
+                        float endX = path$PathSegment.coords[0];
+                        float endY = path$PathSegment.coords[1];
+                        length += (float)Math.hypot(endX - currX, endY - currY);
+                        currX = endX;
+                        currY = endY;
                         continue block7;
                     }
                     case QUAD_TO: {
-                        float f6 = path$PathSegment.coords[0];
-                        float f7 = path$PathSegment.coords[1];
-                        float f8 = path$PathSegment.coords[2];
-                        float f9 = path$PathSegment.coords[3];
-                        f += PathMeasure.quadraticBezierLength(f2, f3, f6, f7, f8, f9);
-                        f2 = f8;
-                        f3 = f9;
+                        float ctrlX = path$PathSegment.coords[0];
+                        float ctrlY = path$PathSegment.coords[1];
+                        float endX = path$PathSegment.coords[2];
+                        float endY = path$PathSegment.coords[3];
+                        length += PathMeasure.quadraticBezierLength(currX, currY, ctrlX, ctrlY, endX, endY);
+                        currX = endX;
+                        currY = endY;
                         continue block7;
                     }
                     case CUBIC_TO: {
-                        float f6 = path$PathSegment.coords[0];
-                        float f7 = path$PathSegment.coords[1];
-                        float f8 = path$PathSegment.coords[2];
-                        float f9 = path$PathSegment.coords[3];
-                        float f10 = path$PathSegment.coords[4];
-                        float f11 = path$PathSegment.coords[5];
-                        f += PathMeasure.cubicBezierLength(f2, f3, f6, f7, f8, f9, f10, f11);
-                        f2 = f10;
-                        f3 = f11;
+                        float ctrlX = path$PathSegment.coords[0];
+                        float ctrlY = path$PathSegment.coords[1];
+                        float ctrl2X = path$PathSegment.coords[2];
+                        float ctrl2Y = path$PathSegment.coords[3];
+                        float endX = path$PathSegment.coords[4];
+                        float endY = path$PathSegment.coords[5];
+                        length += PathMeasure.cubicBezierLength(currX, currY, ctrlX, ctrlY, ctrl2X, ctrl2Y, endX, endY);
+                        currX = endX;
+                        currY = endY;
                         continue block7;
                     }
                     case CLOSE: {
-                        f += (float)Math.hypot(f4 - f2, f5 - f3);
-                        f2 = f4;
-                        f3 = f5;
+                        length += (float)Math.hypot(startX - currX, startY - currY);
+                        currX = startX;
+                        currY = startY;
                         continue block7;
                     }
                 }
             }
         }
-        this.totalLength = f;
+        this.totalLength = length;
     }
 
     public float getLength() {
         return this.totalLength;
     }
 
-    private static float quadraticBezierLength(float f, float f2, float f3, float f4, float f5, float f6) {
-        float f7 = 0.0f;
-        float f8 = f;
-        float f9 = f2;
-        int n = 16;
-        for (int i = 1; i <= n; ++i) {
-            float f10 = (float)i / (float)n;
-            float f11 = 1.0f - f10;
-            float f12 = f11 * f11 * f + 2.0f * f11 * f10 * f3 + f10 * f10 * f5;
-            float f13 = f11 * f11 * f2 + 2.0f * f11 * f10 * f4 + f10 * f10 * f6;
-            f7 += (float)Math.hypot(f12 - f8, f13 - f9);
-            f8 = f12;
-            f9 = f13;
+    private static float quadraticBezierLength(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y) {
+        float length = 0.0f;
+        float prevX = p0x;
+        float prevY = p0y;
+        int steps = 16;
+        for (int i = 1; i <= steps; ++i) {
+            float t = (float)i / (float)steps;
+            float oneMinusT = 1.0f - t;
+            float x = oneMinusT * oneMinusT * p0x + 2.0f * oneMinusT * t * p1x + t * t * p2x;
+            float y = oneMinusT * oneMinusT * p0y + 2.0f * oneMinusT * t * p1y + t * t * p2y;
+            length += (float)Math.hypot(x - prevX, y - prevY);
+            prevX = x;
+            prevY = y;
         }
-        return f7;
+        return length;
     }
 
-    private static float cubicBezierLength(float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8) {
-        float f9 = 0.0f;
-        float f10 = f;
-        float f11 = f2;
-        int n = 24;
-        for (int i = 1; i <= n; ++i) {
-            float f12 = (float)i / (float)n;
-            float f13 = 1.0f - f12;
-            float f14 = f13 * f13 * f13 * f + 3.0f * f13 * f13 * f12 * f3 + 3.0f * f13 * f12 * f12 * f5 + f12 * f12 * f12 * f7;
-            float f15 = f13 * f13 * f13 * f2 + 3.0f * f13 * f13 * f12 * f4 + 3.0f * f13 * f12 * f12 * f6 + f12 * f12 * f12 * f8;
-            f9 += (float)Math.hypot(f14 - f10, f15 - f11);
-            f10 = f14;
-            f11 = f15;
+    private static float cubicBezierLength(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y, float p3x, float p3y) {
+        float length = 0.0f;
+        float prevX = p0x;
+        float prevY = p0y;
+        int steps = 24;
+        for (int i = 1; i <= steps; ++i) {
+            float t = (float)i / (float)steps;
+            float oneMinusT = 1.0f - t;
+            float x = oneMinusT * oneMinusT * oneMinusT * p0x + 3.0f * oneMinusT * oneMinusT * t * p1x + 3.0f * oneMinusT * t * t * p2x + t * t * t * p3x;
+            float y = oneMinusT * oneMinusT * oneMinusT * p0y + 3.0f * oneMinusT * oneMinusT * t * p1y + 3.0f * oneMinusT * t * t * p2y + t * t * t * p3y;
+            length += (float)Math.hypot(x - prevX, y - prevY);
+            prevX = x;
+            prevY = y;
         }
-        return f9;
+        return length;
     }
 
     public void close() {

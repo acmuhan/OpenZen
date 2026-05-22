@@ -146,35 +146,34 @@ extends AntiKBMode {
             }
             return;
         }
-        if (packet instanceof ClientboundSetEntityMotionPacket clientboundSetEntityMotionPacket) {
-            if (clientboundSetEntityMotionPacket.getId() != mc.player.getId()) {
+        if (packet instanceof ClientboundSetEntityMotionPacket motionPacket) {
+            if (motionPacket.getId() != mc.player.getId()) {
                 return;
             }
-            double d = -clientboundSetEntityMotionPacket.getXa();
-            double d2 = -clientboundSetEntityMotionPacket.getZa();
-            if (Math.abs(d) > 0.01 || Math.abs(d2) > 0.01) {
+            double dx = -motionPacket.getXa();
+            double dz = -motionPacket.getZa();
+            if (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01) {
                 this.hitCounter = 1;
             }
-            if (clientboundSetEntityMotionPacket.getYa() > 0) {
-                Entity entity;
-                boolean bl;
+            if (motionPacket.getYa() > 0) {
+                Entity target;
                 this.sprintBoostCounter = this.sprintBoostCounter % 100 + 100;
                 if (this.sprintBoostCounter >= 100) {
                     this.shouldJump = true;
                 }
-                boolean bl2 = bl = this.isValidTarget(entity = this.getAttackTarget()) && mc.player.isSprinting();
+                boolean canAttack = this.isValidTarget(target = this.getAttackTarget()) && mc.player.isSprinting();
                 if (!mc.player.onGround()) {
                     this.isSuspending = true;
                     this.suspendTicks = 0;
-                    this.knockbackPacket = clientboundSetEntityMotionPacket;
+                    this.knockbackPacket = motionPacket;
                     receivePacketEvent.setCancelled(true);
-                } else if (bl) {
-                    this.attackTarget = entity;
+                } else if (canAttack) {
+                    this.attackTarget = target;
                     this.attacksRemaining = AntiKB.INSTANCE.attackAmount.getValue().intValue();
                 } else {
                     this.isSuspending = true;
                     this.suspendTicks = 0;
-                    this.knockbackPacket = clientboundSetEntityMotionPacket;
+                    this.knockbackPacket = motionPacket;
                     receivePacketEvent.setCancelled(true);
                     ChatUtil.print("Alink Wait");
                 }
@@ -249,18 +248,18 @@ extends AntiKBMode {
         if (mc.player == null) {
             return Double.MAX_VALUE;
         }
-        Vec3 vec3 = mc.player.getEyePosition(1.0f);
-        AABB aABB = entity.getBoundingBox();
-        double d = Math.max(aABB.minX, Math.min(vec3.x, aABB.maxX));
-        double d2 = Math.max(aABB.minY, Math.min(vec3.y, aABB.maxY));
-        double d3 = Math.max(aABB.minZ, Math.min(vec3.z, aABB.maxZ));
-        return vec3.distanceTo(new Vec3(d, d2, d3));
+        Vec3 eyePos = mc.player.getEyePosition(1.0f);
+        AABB box = entity.getBoundingBox();
+        double clampedX = Math.max(box.minX, Math.min(eyePos.x, box.maxX));
+        double clampedY = Math.max(box.minY, Math.min(eyePos.y, box.maxY));
+        double clampedZ = Math.max(box.minZ, Math.min(eyePos.z, box.maxZ));
+        return eyePos.distanceTo(new Vec3(clampedX, clampedY, clampedZ));
     }
 
     private Entity getHitResultEntity() {
-        Entity entity;
-        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY && (entity = ((EntityHitResult)mc.hitResult).getEntity()) instanceof LivingEntity && entity != mc.player && entity.isAlive() && !entity.isSpectator()) {
-            return entity;
+        Entity hitEntity;
+        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY && (hitEntity = ((EntityHitResult)mc.hitResult).getEntity()) instanceof LivingEntity && hitEntity != mc.player && hitEntity.isAlive() && !hitEntity.isSpectator()) {
+            return hitEntity;
         }
         return null;
     }
@@ -280,8 +279,8 @@ extends AntiKBMode {
         if (entity instanceof LivingEntity && ((livingEntity = (LivingEntity)entity).isDeadOrDying() || livingEntity.getHealth() <= 0.0f)) {
             return false;
         }
-        double d = 3.7f;
-        return !(this.getAABBDistance(entity) > d);
+        double maxReach = 3.7f;
+        return !(this.getAABBDistance(entity) > maxReach);
     }
 
     @Override
@@ -319,32 +318,31 @@ extends AntiKBMode {
             this.clearTarget();
         }
         if (this.isSuspending) {
-            boolean bl;
             ++this.suspendTicks;
-            boolean bl2 = AntiKB.INSTANCE.instantAttack.getValue();
-            if (bl2 && this.instantAttackProgress < 3.0f) {
-                float f;
-                ZenClient.serverTickRate = f = 0.5f;
-                this.instantAttackProgress += 1.0f - f;
+            boolean instantAttackEnabled = AntiKB.INSTANCE.instantAttack.getValue();
+            if (instantAttackEnabled && this.instantAttackProgress < 3.0f) {
+                float tickRate;
+                ZenClient.serverTickRate = tickRate = 0.5f;
+                this.instantAttackProgress += 1.0f - tickRate;
                 this.instantAttackProgress = Math.min(this.instantAttackProgress, 3.0f);
             }
-            boolean bl3 = mc.player.onGround();
-            boolean bl4 = bl = this.suspendTicks >= 12;
-            if (bl3 || bl) {
-                ChatUtil.print(bl ? "Alink Timeout" : "ground");
-                if (bl2) {
+            boolean onGround = mc.player.onGround();
+            boolean isTimeout = this.suspendTicks >= 12;
+            if (onGround || isTimeout) {
+                ChatUtil.print(isTimeout ? "Alink Timeout" : "ground");
+                if (instantAttackEnabled) {
                     ZenClient.serverTickRate = 1.0f;
                 }
-                Entity entity = this.getAttackTarget();
-                boolean bl5 = this.isValidTarget(entity);
-                boolean bl6 = mc.player.isSprinting();
-                if (bl3 && bl5 && bl6) {
+                Entity target = this.getAttackTarget();
+                boolean canAttack = this.isValidTarget(target);
+                boolean sprinting = mc.player.isSprinting();
+                if (onGround && canAttack && sprinting) {
                     this.isFlushing = true;
-                    this.attackTarget = entity;
+                    this.attackTarget = target;
                     this.attacksRemaining = AntiKB.INSTANCE.attackAmount.getValue().intValue();
                     this.sendMovePackets();
                     this.applyKnockbackPacket();
-                    if (bl2 && this.instantAttackProgress > 0.0f) {
+                    if (instantAttackEnabled && this.instantAttackProgress > 0.0f) {
                         this.attacksRemaining = (int)this.instantAttackProgress;
                         this.scheduleMotionFlush();
                         this.isSuspending = false;
@@ -361,10 +359,10 @@ extends AntiKBMode {
                     }
                 } else {
                     this.release();
-                    if (bl2) {
+                    if (instantAttackEnabled) {
                         this.instantAttackProgress = 0.0f;
                     }
-                    if (bl3 && mc.player.isSprinting()) {
+                    if (onGround && mc.player.isSprinting()) {
                         mc.player.setSprinting(false);
                     }
                 }
@@ -407,8 +405,8 @@ extends AntiKBMode {
             this.clearTarget();
             return;
         }
-        double d = 3.7f;
-        if (this.getAABBDistance(this.attackTarget) > d) {
+        double maxReach = 3.7f;
+        if (this.getAABBDistance(this.attackTarget) > maxReach) {
             this.clearTarget();
             return;
         }
@@ -432,15 +430,15 @@ extends AntiKBMode {
             ChatUtil.print("not sprinting");
             return false;
         }
-        boolean bl = mc.player.isSprinting();
-        if (bl) {
+        boolean wasSprinting = mc.player.isSprinting();
+        if (wasSprinting) {
             mc.player.setSprinting(false);
         }
         mc.gameMode.attack(mc.player, entity);
         mc.player.swing(InteractionHand.MAIN_HAND);
-        if (bl) {
-            Vec3 vec3 = mc.player.getDeltaMovement();
-            mc.player.setDeltaMovement(vec3.x * 0.6, vec3.y, vec3.z * 0.6);
+        if (wasSprinting) {
+            Vec3 velocity = mc.player.getDeltaMovement();
+            mc.player.setDeltaMovement(velocity.x * 0.6, velocity.y, velocity.z * 0.6);
         }
         if (!AntiKB.INSTANCE.instantAttack.getValue()) {
             ChatUtil.print("Attack (" + this.attacksRemaining + ")");

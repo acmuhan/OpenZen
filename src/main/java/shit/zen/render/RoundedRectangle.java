@@ -10,30 +10,30 @@ public final class RoundedRectangle {
     public final float bottomRightRadius;
     public final float bottomLeftRadius;
 
-    private RoundedRectangle(float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8) {
-        this.x1 = f;
-        this.y1 = f2;
-        this.x2 = f3;
-        this.y2 = f4;
-        this.topLeftRadius = f5;
-        this.topRightRadius = f6;
-        this.bottomRightRadius = f7;
-        this.bottomLeftRadius = f8;
+    private RoundedRectangle(float x1, float y1, float x2, float y2, float tlRadius, float trRadius, float brRadius, float blRadius) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.topLeftRadius = tlRadius;
+        this.topRightRadius = trRadius;
+        this.bottomRightRadius = brRadius;
+        this.bottomLeftRadius = blRadius;
     }
 
-    public static RoundedRectangle ofXYWHR(float f, float f2, float f3, float f4, float f5) {
-        return new RoundedRectangle(f, f2, f + f3, f2 + f4, f5, f5, f5, f5);
+    public static RoundedRectangle ofXYWHR(float x, float y, float width, float height, float radius) {
+        return new RoundedRectangle(x, y, x + width, y + height, radius, radius, radius, radius);
     }
 
-    public static RoundedRectangle ofXYWHRadii(float f, float f2, float f3, float f4, float[] fArray) {
-        if (fArray.length >= 8) {
-            return new RoundedRectangle(f, f2, f + f3, f2 + f4, fArray[0], fArray[2], fArray[4], fArray[6]);
+    public static RoundedRectangle ofXYWHRadii(float x, float y, float width, float height, float[] radii) {
+        if (radii.length >= 8) {
+            return new RoundedRectangle(x, y, x + width, y + height, radii[0], radii[2], radii[4], radii[6]);
         }
-        if (fArray.length >= 4) {
-            return new RoundedRectangle(f, f2, f + f3, f2 + f4, fArray[0], fArray[1], fArray[2], fArray[3]);
+        if (radii.length >= 4) {
+            return new RoundedRectangle(x, y, x + width, y + height, radii[0], radii[1], radii[2], radii[3]);
         }
-        float f5 = fArray.length > 0 ? fArray[0] : 0.0f;
-        return new RoundedRectangle(f, f2, f + f3, f2 + f4, f5, f5, f5, f5);
+        float radius = radii.length > 0 ? radii[0] : 0.0f;
+        return new RoundedRectangle(x, y, x + width, y + height, radius, radius, radius, radius);
     }
 
     public float getWidth() {

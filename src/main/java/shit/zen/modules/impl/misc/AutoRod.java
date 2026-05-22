@@ -17,7 +17,7 @@ public class AutoRod
 extends Module {
     public static AutoRod INSTANCE;
     private final ModeSetting mouseButton = new ModeSetting("Button", "Middle", "Mouse 4", "Mouse 5").withDefault("Mouse 4");
-    private final NumberSetting delay = new NumberSetting("Delay", Integer.valueOf(2), Integer.valueOf(0), Integer.valueOf(20), Integer.valueOf(1));
+    private final NumberSetting delay = new NumberSetting("Delay", 2, 0, 20, 1);
     private boolean slotSwitched = false;
     private boolean isActive = false;
     private int previousSlot = -1;
@@ -53,8 +53,8 @@ extends Module {
             }
             return;
         }
-        boolean bl = this.isMouseButtonDown();
-        if (!bl) {
+        boolean mouseDown = this.isMouseButtonDown();
+        if (!mouseDown) {
             this.isActive = false;
             return;
         }
@@ -62,34 +62,34 @@ extends Module {
             return;
         }
         this.isActive = true;
-        int n = this.findUsableItemSlot();
-        if (n == -1) {
+        int slot = this.findUsableItemSlot();
+        if (slot == -1) {
             return;
         }
         this.previousSlot = mc.player.getInventory().selected;
-        boolean bl2 = mc.player.getInventory().getItem(n).getItem() == Items.FISHING_ROD;
+        boolean isFishingRod = mc.player.getInventory().getItem(slot).getItem() == Items.FISHING_ROD;
         this.slotSwitched = true;
-        this.selectHotbarSlot(n);
+        this.selectHotbarSlot(slot);
         this.useItem();
-        if (bl2) {
+        if (isFishingRod) {
             this.tickDelay = this.delay.getValue().intValue();
         }
-        if (!bl2 || this.tickDelay <= 0) {
+        if (!isFishingRod || this.tickDelay <= 0) {
             this.restoreSlot();
             this.slotSwitched = false;
         }
     }
 
-    public boolean isCurrentMouseButton(int n) {
-        return this.getMouseButtonCode() == n;
+    public boolean isCurrentMouseButton(int button) {
+        return this.getMouseButtonCode() == button;
     }
 
     public boolean isActiveOrPending() {
         return this.slotSwitched || this.tickDelay > 0;
     }
 
-    public boolean shouldInterceptButton(int n) {
-        return this.isCurrentMouseButton(n) && (this.isActiveOrPending() || this.findUsableItemSlot() != -1);
+    public boolean shouldInterceptButton(int button) {
+        return this.isCurrentMouseButton(button) && (this.isActiveOrPending() || this.findUsableItemSlot() != -1);
     }
 
     private boolean isMidPearlBlocking() {
@@ -110,16 +110,16 @@ extends Module {
     }
 
     private int findUsableItemSlot() {
-        int n = this.findItemInHotbar(Items.FISHING_ROD);
-        return n != -1 ? n : this.findThrowableSlot();
+        int rodSlot = this.findItemInHotbar(Items.FISHING_ROD);
+        return rodSlot != -1 ? rodSlot : this.findThrowableSlot();
     }
 
     private int findItemInHotbar(Item item) {
         if (mc.player == null) {
             return -1;
         }
-        int n = Math.min(9, mc.player.getInventory().items.size());
-        for (int i = 0; i < n; ++i) {
+        int hotbarSize = Math.min(9, mc.player.getInventory().items.size());
+        for (int i = 0; i < hotbarSize; ++i) {
             if (mc.player.getInventory().getItem(i).getItem() != item) continue;
             return i;
         }
@@ -130,16 +130,16 @@ extends Module {
         if (mc.player == null) {
             return -1;
         }
-        int n = Math.min(9, mc.player.getInventory().items.size());
-        for (int i = 0; i < n; ++i) {
+        int hotbarSize = Math.min(9, mc.player.getInventory().items.size());
+        for (int i = 0; i < hotbarSize; ++i) {
             if (!this.isThrowable(mc.player.getInventory().getItem(i).getItem())) continue;
             return i;
         }
         return -1;
     }
 
-    private void selectHotbarSlot(int n) {
-        mc.player.getInventory().selected = n;
+    private void selectHotbarSlot(int slot) {
+        mc.player.getInventory().selected = slot;
         PlayerUtil.sendCarriedItem();
     }
 

@@ -41,22 +41,22 @@ extends Module {
             return;
         }
         Object rawPacket = packetEvent.getPacket();
-        if (rawPacket instanceof ClientboundAddEntityPacket clientboundAddEntityPacket) {
-            if (this.attackOnPacket.getValue() && clientboundAddEntityPacket.getType() == EntityType.END_CRYSTAL) {
-                EndCrystal endCrystal = new EndCrystal(mc.level, clientboundAddEntityPacket.getX(), clientboundAddEntityPacket.getY(), clientboundAddEntityPacket.getZ());
-                endCrystal.setId(clientboundAddEntityPacket.getId());
+        if (rawPacket instanceof ClientboundAddEntityPacket addEntityPacket) {
+            if (this.attackOnPacket.getValue() && addEntityPacket.getType() == EntityType.END_CRYSTAL) {
+                EndCrystal endCrystal = new EndCrystal(mc.level, addEntityPacket.getX(), addEntityPacket.getY(), addEntityPacket.getZ());
+                endCrystal.setId(addEntityPacket.getId());
                 if (mc.player.distanceTo(endCrystal) <= 4.0f) {
                     Rotation rotation = RotationUtil.entityRotation(endCrystal);
                     mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(), mc.player.getZ(), rotation.getYaw(), rotation.getPitch(), mc.player.onGround()));
-                    PacketUtil.sendPredictive(n -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, n));
-                    float f = mc.player.getYRot();
-                    float f2 = mc.player.getXRot();
+                    PacketUtil.sendPredictive(seq -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, seq));
+                    float prevYaw = mc.player.getYRot();
+                    float prevPitch = mc.player.getXRot();
                     mc.player.setYRot(RotationHandler.targetRotation.getYaw());
                     mc.player.setXRot(RotationHandler.targetRotation.getPitch());
                     mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(endCrystal, false));
                     mc.player.swing(InteractionHand.MAIN_HAND);
-                    mc.player.setYRot(f);
-                    mc.player.setXRot(f2);
+                    mc.player.setYRot(prevYaw);
+                    mc.player.setXRot(prevPitch);
                 }
             }
         }
@@ -66,13 +66,13 @@ extends Module {
     public void onTick(TickEvent tickEvent) {
         if (mc.player != null && mc.level != null) {
             Rotation rotation;
-            Entity entity2;
-            double d;
-            Optional<Entity> optional = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), true).filter(entity -> entity instanceof EndCrystal).findAny();
+            Entity crystalEntity;
+            double hitDistance;
+            Optional<Entity> crystalOpt = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), true).filter(entity -> entity instanceof EndCrystal).findAny();
             aimRotation = null;
-            if (optional.isPresent() && (d = RotationUtil.getMinHitDistance(entity2 = optional.get(), rotation = RotationUtil.entityRotation(entity2))) <= 3.0) {
+            if (crystalOpt.isPresent() && (hitDistance = RotationUtil.getMinHitDistance(crystalEntity = crystalOpt.get(), rotation = RotationUtil.entityRotation(crystalEntity))) <= 3.0) {
                 aimRotation = rotation;
-                this.crystalTarget = entity2;
+                this.crystalTarget = crystalEntity;
             }
         }
     }
@@ -80,14 +80,14 @@ extends Module {
     @EventTarget
     public void onPreMotion(PreMotionEvent preMotionEvent) {
         if (this.crystalTarget != null && aimRotation != null && mc.player != null && mc.getConnection() != null) {
-            float f = mc.player.getYRot();
-            float f2 = mc.player.getXRot();
+            float prevYaw = mc.player.getYRot();
+            float prevPitch = mc.player.getXRot();
             mc.player.setYRot(aimRotation.getYaw());
             mc.player.setXRot(aimRotation.getPitch());
             mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(this.crystalTarget, false));
             mc.player.swing(InteractionHand.MAIN_HAND);
-            mc.player.setYRot(f);
-            mc.player.setXRot(f2);
+            mc.player.setYRot(prevYaw);
+            mc.player.setXRot(prevPitch);
             this.crystalTarget = null;
         }
     }

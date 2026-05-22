@@ -35,12 +35,12 @@ class GlyphPage {
     int imageHeight;
     boolean uploaded = false;
 
-    public GlyphPage(char c, char c2, Font font, ResourceLocation resourceLocation, int n) {
-        this.startChar = c;
-        this.endChar = c2;
+    public GlyphPage(char startChar, char endChar, Font font, ResourceLocation textureLocation, int padding) {
+        this.startChar = startChar;
+        this.endChar = endChar;
         this.font = font;
-        this.textureLocation = resourceLocation;
-        this.padding = n;
+        this.textureLocation = textureLocation;
+        this.padding = padding;
     }
 
     public Glyph getGlyph(char c) {
@@ -106,12 +106,12 @@ class GlyphPage {
             curX += width + this.padding;
             ++colCount;
         }
-        BufferedImage bufferedImage = new BufferedImage(
+        BufferedImage atlasImage = new BufferedImage(
                 Math.max(maxWidth + this.padding, 1),
                 Math.max(maxHeight + this.padding, 1), 2);
-        this.imageWidth = bufferedImage.getWidth();
-        this.imageHeight = bufferedImage.getHeight();
-        java.awt.Graphics2D graphics = bufferedImage.createGraphics();
+        this.imageWidth = atlasImage.getWidth();
+        this.imageHeight = atlasImage.getHeight();
+        java.awt.Graphics2D graphics = atlasImage.createGraphics();
         graphics.setColor(new Color(255, 255, 255, 1));
         graphics.fillRect(0, 0, this.imageWidth, this.imageHeight);
         graphics.setColor(Color.WHITE);
@@ -126,39 +126,39 @@ class GlyphPage {
             graphics.drawString(String.valueOf(glyph.value()), glyph.u(), glyph.v() + fontMetrics.getAscent());
             this.glyphMap.put(glyph.value(), glyph);
         }
-        GlyphPage.uploadTexture(this.textureLocation, bufferedImage);
+        GlyphPage.uploadTexture(this.textureLocation, atlasImage);
         this.uploaded = true;
     }
 
-    public static void uploadTexture(ResourceLocation resourceLocation, BufferedImage bufferedImage) {
+    public static void uploadTexture(ResourceLocation resourceLocation, BufferedImage source) {
         try {
-            int n = bufferedImage.getWidth();
-            int n2 = bufferedImage.getHeight();
-            NativeImage nativeImage = new NativeImage(NativeImage.Format.RGBA, n, n2, false);
-            long l = (Long)ReflectionUtil.getStaticField(nativeImage, "pixels", "com/mojang/blaze3d/platform/NativeImage");
-            IntBuffer intBuffer = MemoryUtil.memIntBuffer(l, nativeImage.getWidth() * nativeImage.getHeight());
-            boolean bl = false;
-            WritableRaster writableRaster = bufferedImage.getRaster();
-            ColorModel colorModel = bufferedImage.getColorModel();
-            int n3 = writableRaster.getNumBands();
-            int n4 = writableRaster.getDataBuffer().getDataType();
-            Object pixelData = switch (n4) {
-                case 0 -> new byte[n3];
-                case 1 -> new short[n3];
-                case 3 -> new int[n3];
-                case 4 -> new float[n3];
-                case 5 -> new double[n3];
-                default -> throw new IllegalArgumentException("Unknown data buffer type: " + n4);
+            int width = source.getWidth();
+            int height = source.getHeight();
+            NativeImage nativeImage = new NativeImage(NativeImage.Format.RGBA, width, height, false);
+            long pixelsPtr = (Long)ReflectionUtil.getStaticField(nativeImage, "pixels", "com/mojang/blaze3d/platform/NativeImage");
+            IntBuffer intBuffer = MemoryUtil.memIntBuffer(pixelsPtr, nativeImage.getWidth() * nativeImage.getHeight());
+            boolean unused = false;
+            WritableRaster raster = source.getRaster();
+            ColorModel colorModel = source.getColorModel();
+            int numBands = raster.getNumBands();
+            int dataType = raster.getDataBuffer().getDataType();
+            Object pixelData = switch (dataType) {
+                case 0 -> new byte[numBands];
+                case 1 -> new short[numBands];
+                case 3 -> new int[numBands];
+                case 4 -> new float[numBands];
+                case 5 -> new double[numBands];
+                default -> throw new IllegalArgumentException("Unknown data buffer type: " + dataType);
             };
-            for (int i = 0; i < n2; ++i) {
-                for (int j = 0; j < n; ++j) {
-                    writableRaster.getDataElements(j, i, pixelData);
-                    int n5 = colorModel.getAlpha(pixelData);
-                    int n6 = colorModel.getRed(pixelData);
-                    int n7 = colorModel.getGreen(pixelData);
-                    int n8 = colorModel.getBlue(pixelData);
-                    int n9 = n5 << 24 | n8 << 16 | n7 << 8 | n6;
-                    intBuffer.put(n9);
+            for (int i = 0; i < height; ++i) {
+                for (int j = 0; j < width; ++j) {
+                    raster.getDataElements(j, i, pixelData);
+                    int a = colorModel.getAlpha(pixelData);
+                    int r = colorModel.getRed(pixelData);
+                    int g = colorModel.getGreen(pixelData);
+                    int b = colorModel.getBlue(pixelData);
+                    int abgr = a << 24 | b << 16 | g << 8 | r;
+                    intBuffer.put(abgr);
                 }
             }
             DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);

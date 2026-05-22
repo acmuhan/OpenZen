@@ -4,20 +4,20 @@ import lombok.Generated;
 import shit.zen.utils.math.MathUtil;
 
 public final class CpsUtil {
-    public static long toDelayMs(String string, double d) {
-        if (string.equals("DBC")) {
-            return (long)(500.0 / d + MathUtil.randomDouble(-50.0, 50.0));
+    public static long toDelayMs(String mode, double cps) {
+        if (mode.equals("DBC")) {
+            return (long)(500.0 / cps + MathUtil.randomDouble(-50.0, 50.0));
         }
-        return (long)(1000.0 / d + MathUtil.randomDouble(-25.0, 25.0));
+        return (long)(1000.0 / cps + MathUtil.randomDouble(-25.0, 25.0));
     }
 
-    public static long toDelayMs(double d) {
-        return (long)(1000.0 / d);
+    public static long toDelayMs(double cps) {
+        return (long)(1000.0 / cps);
     }
 
-    public static long toDelayMsWithJitter(double d, double d2) {
-        double d3 = 1000.0 / d;
-        return (long)(d3 + MathUtil.randomDouble(-d2, d2));
+    public static long toDelayMsWithJitter(double cps, double jitter) {
+        double baseDelay = 1000.0 / cps;
+        return (long)(baseDelay + MathUtil.randomDouble(-jitter, jitter));
     }
 
     @Generated

@@ -15,9 +15,9 @@ implements EventMarker {
     private boolean sprinting;
 
     @Generated
-    public StrafeEvent(float f, float f2, boolean bl) {
-        this.forward = f;
-        this.strafe = f2;
-        this.sprinting = bl;
+    public StrafeEvent(float forward, float strafe, boolean sprinting) {
+        this.forward = forward;
+        this.strafe = strafe;
+        this.sprinting = sprinting;
     }
 }

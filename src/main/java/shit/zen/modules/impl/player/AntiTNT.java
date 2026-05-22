@@ -113,16 +113,16 @@ extends Module {
             RenderUtil.drawSolidBox(aABB, poseStack);
             RenderSystem.setShaderColor(1.0f, 0.0f, 0.0f, 0.8f);
             RenderUtil.drawOutlineBox(aABB, poseStack);
-            float f = (float)this.targetTnt.getFuse() / 20.0f;
-            if (f > 0.0f) {
-                String string = String.format("%.1fs", new Object[]{Float.valueOf(f)});
-                BlockPos blockPos = this.targetTnt.blockPosition();
+            float fuseSeconds = (float)this.targetTnt.getFuse() / 20.0f;
+            if (fuseSeconds > 0.0f) {
+                String fuseLabel = String.format("%.1fs", new Object[]{fuseSeconds});
+                BlockPos tntPos = this.targetTnt.blockPosition();
                 poseStack.pushPose();
-                poseStack.translate((double)blockPos.getX() + 0.5 - vec3.x, (double)blockPos.getY() + 1.1 - vec3.y, (double)blockPos.getZ() + 0.5 - vec3.z);
+                poseStack.translate((double)tntPos.getX() + 0.5 - vec3.x, (double)tntPos.getY() + 1.1 - vec3.y, (double)tntPos.getZ() + 0.5 - vec3.z);
                 poseStack.mulPose(mc.gameRenderer.getMainCamera().rotation());
                 poseStack.scale(-0.025f, -0.025f, 0.025f);
-                float f2 = mc.font.width(string);
-                mc.font.drawInBatch(string, -f2 / 2.0f, 0.0f, -1, false, poseStack.last().pose(), mc.renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, 0, 0xF000F0);
+                float textWidth = mc.font.width(fuseLabel);
+                mc.font.drawInBatch(fuseLabel, -textWidth / 2.0f, 0.0f, -1, false, poseStack.last().pose(), mc.renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, 0, 0xF000F0);
                 poseStack.popPose();
             }
         }
@@ -145,26 +145,26 @@ extends Module {
     }
 
     private boolean hasLineOfSight(PrimedTnt primedTnt) {
-        Vec3 vec3;
+        Vec3 eyePos;
         if (mc.player == null || mc.level == null) {
             return false;
         }
-        float f = 8.0f;
+        float maxRange = 8.0f;
         if (primedTnt.distanceToSqr(mc.player) > 64.0) {
             return false;
         }
-        Vec3 vec32 = primedTnt.position();
-        BlockHitResult blockHitResult = mc.level.clip(new ClipContext(vec32, vec3 = mc.player.getEyePosition(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
-        return blockHitResult.getType() == HitResult.Type.MISS;
+        Vec3 tntPos = primedTnt.position();
+        BlockHitResult hit = mc.level.clip(new ClipContext(tntPos, eyePos = mc.player.getEyePosition(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
+        return hit.getType() == HitResult.Type.MISS;
     }
 
     private boolean isMovingTowardsPlayer(PrimedTnt primedTnt) {
-        Vec3 vec3 = mc.player.position().subtract(primedTnt.position()).normalize();
-        return primedTnt.getDeltaMovement().dot(vec3) > 0.05;
+        Vec3 toPlayer = mc.player.position().subtract(primedTnt.position()).normalize();
+        return primedTnt.getDeltaMovement().dot(toPlayer) > 0.05;
     }
 
     private void collectBlockPositions() {
-        BlockPos blockPos;
+        BlockPos sidePos;
         if (!this.blockPositionQueue.isEmpty()) {
             return;
         }
@@ -172,18 +172,18 @@ extends Module {
             mc.player.closeContainer();
             mc.setScreen(null);
         }
-        BlockPos blockPos2 = mc.player.blockPosition();
+        BlockPos playerPos = mc.player.blockPosition();
         for (Direction direction : Direction.Plane.HORIZONTAL) {
-            blockPos = blockPos2.relative(direction);
-            if (!this.canPlaceAt(blockPos)) continue;
-            this.blockPositionQueue.add(blockPos);
+            sidePos = playerPos.relative(direction);
+            if (!this.canPlaceAt(sidePos)) continue;
+            this.blockPositionQueue.add(sidePos);
         }
         for (Direction direction : Direction.Plane.HORIZONTAL) {
-            blockPos = blockPos2.above().relative(direction);
-            if (!this.canPlaceAt(blockPos)) continue;
-            this.blockPositionQueue.add(blockPos);
+            sidePos = playerPos.above().relative(direction);
+            if (!this.canPlaceAt(sidePos)) continue;
+            this.blockPositionQueue.add(sidePos);
         }
-        BlockPos abovePos = blockPos2.above(2);
+        BlockPos abovePos = playerPos.above(2);
         if (this.canPlaceAt(abovePos)) {
             this.blockPositionQueue.add(abovePos);
         }
@@ -197,14 +197,14 @@ extends Module {
         if (this.blockPositionQueue.isEmpty()) {
             return;
         }
-        BlockPos blockPos = this.blockPositionQueue.get(0);
-        BlockHitResult blockHitResult = this.getPlacementHitResult(blockPos);
-        if (blockHitResult == null) {
+        BlockPos placePos = this.blockPositionQueue.get(0);
+        BlockHitResult hit = this.getPlacementHitResult(placePos);
+        if (hit == null) {
             this.blockPositionQueue.remove(0);
             return;
         }
-        int n = this.findBlockSlot();
-        if (n == -1) {
+        int blockSlot = this.findBlockSlot();
+        if (blockSlot == -1) {
             this.blockPositionQueue.clear();
             this.restoreSlot();
             return;
@@ -212,13 +212,13 @@ extends Module {
         if (this.savedHotbarSlot == -1) {
             this.savedHotbarSlot = mc.player.getInventory().selected;
         }
-        mc.player.getInventory().selected = n;
-        targetRotation = RotationUtil.rotationToBlock(blockHitResult.getBlockPos(), 0.0f);
-        InteractionResult interactionResult = mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
+        mc.player.getInventory().selected = blockSlot;
+        targetRotation = RotationUtil.rotationToBlock(hit.getBlockPos(), 0.0f);
+        InteractionResult interactionResult = mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit);
         if (interactionResult.consumesAction()) {
             mc.player.swing(InteractionHand.MAIN_HAND);
         }
-        this.lastPlacedPos = blockPos;
+        this.lastPlacedPos = placePos;
         this.blockPositionQueue.remove(0);
         this.placementTimer.reset();
         if (this.blockPositionQueue.isEmpty()) {
@@ -239,10 +239,10 @@ extends Module {
     }
 
     private int findBlockSlot() {
-        for (int i = 0; i < 9; ++i) {
-            ItemStack itemStack = mc.player.getInventory().getItem(i);
+        for (int slot = 0; slot < 9; ++slot) {
+            ItemStack itemStack = mc.player.getInventory().getItem(slot);
             if (itemStack.isEmpty() || !(itemStack.getItem() instanceof BlockItem) || !BlockUtil.isPlaceable(itemStack)) continue;
-            return i;
+            return slot;
         }
         return -1;
     }
@@ -251,40 +251,40 @@ extends Module {
         return mc.level.getBlockState(blockPos).isSolidRender(mc.level, blockPos);
     }
 
-    private BlockHitResult getPlacementHitResult(BlockPos blockPos) {
-        BlockPos blockPos2 = blockPos.below();
-        if (this.isSolidBlock(blockPos2)) {
-            return new BlockHitResult(this.getHitVec(blockPos2, Direction.UP), Direction.UP, blockPos2, false);
+    private BlockHitResult getPlacementHitResult(BlockPos placePos) {
+        BlockPos belowPos = placePos.below();
+        if (this.isSolidBlock(belowPos)) {
+            return new BlockHitResult(this.getHitVec(belowPos, Direction.UP), Direction.UP, belowPos, false);
         }
         for (Direction direction : Direction.Plane.HORIZONTAL) {
-            BlockPos blockPos3 = blockPos.relative(direction);
-            if (!this.isSolidBlock(blockPos3)) continue;
-            Direction direction2 = direction.getOpposite();
-            return new BlockHitResult(this.getHitVec(blockPos3, direction2), direction2, blockPos3, false);
+            BlockPos sidePos = placePos.relative(direction);
+            if (!this.isSolidBlock(sidePos)) continue;
+            Direction hitFace = direction.getOpposite();
+            return new BlockHitResult(this.getHitVec(sidePos, hitFace), hitFace, sidePos, false);
         }
         return null;
     }
 
     private Vec3 getHitVec(BlockPos blockPos, Direction direction) {
-        double d = (double)blockPos.getX() + 0.5;
-        double d2 = (double)blockPos.getY() + 0.5;
-        double d3 = (double)blockPos.getZ() + 0.5;
+        double hitX = (double)blockPos.getX() + 0.5;
+        double hitY = (double)blockPos.getY() + 0.5;
+        double hitZ = (double)blockPos.getZ() + 0.5;
         if (direction == Direction.UP || direction == Direction.DOWN) {
-            d += MathUtil.randomDouble(-0.3, 0.3);
-            d3 += MathUtil.randomDouble(-0.3, 0.3);
+            hitX += MathUtil.randomDouble(-0.3, 0.3);
+            hitZ += MathUtil.randomDouble(-0.3, 0.3);
         } else {
-            d2 += MathUtil.randomDouble(-0.25, 0.25);
+            hitY += MathUtil.randomDouble(-0.25, 0.25);
         }
         if (direction == Direction.WEST || direction == Direction.EAST) {
-            d3 += MathUtil.randomDouble(-0.3, 0.3);
+            hitZ += MathUtil.randomDouble(-0.3, 0.3);
         }
         if (direction == Direction.SOUTH || direction == Direction.NORTH) {
-            d += MathUtil.randomDouble(-0.3, 0.3);
+            hitX += MathUtil.randomDouble(-0.3, 0.3);
         }
-        double d4 = Math.max(blockPos.getX(), Math.min(blockPos.getX() + 1, d));
-        double d5 = Math.max(blockPos.getY(), Math.min(blockPos.getY() + 1, d2));
-        double d6 = Math.max(blockPos.getZ(), Math.min(blockPos.getZ() + 1, d3));
-        return new Vec3(d4, d5, d6);
+        double clampedX = Math.max(blockPos.getX(), Math.min(blockPos.getX() + 1, hitX));
+        double clampedY = Math.max(blockPos.getY(), Math.min(blockPos.getY() + 1, hitY));
+        double clampedZ = Math.max(blockPos.getZ(), Math.min(blockPos.getZ() + 1, hitZ));
+        return new Vec3(clampedX, clampedY, clampedZ);
     }
 
     static {

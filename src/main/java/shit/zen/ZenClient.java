@@ -3,6 +3,10 @@ package shit.zen;
 import asm.patchify.loader.PatchAgent;
 import asm.patchify.loader.PatchRegistry;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +16,7 @@ import shit.zen.event.EventBus;
 import shit.zen.event.EventTarget;
 import shit.zen.event.impl.TickEvent;
 import shit.zen.gui.BuildSourceScreen;
+import shit.zen.gui.IntroAnimation;
 import shit.zen.manager.CommandManager;
 import shit.zen.manager.ConfigManager;
 import shit.zen.manager.HudManager;
@@ -39,8 +44,6 @@ import shit.zen.patch.MinecraftPatch;
 import shit.zen.patch.PacketUtilsPatch;
 import shit.zen.patch.PlayerPatch;
 import shit.zen.patch.PlayerTabOverlayPatch;
-import shit.zen.patch.TimerPatch;
-import shit.zen.utils.misc.Encryption;
 import shit.zen.utils.rotation.RotationHandler;
 
 @Mod(value = "hey")
@@ -57,6 +60,8 @@ public class ZenClient extends ClientBase {
     public static String configDir = System.getProperty("user.home") + File.separator + ".zen";
     public static String username = "";
 
+    private static final String[] CLOUD_ASSET_NAMES = { "panel.png", "ptr.png", "lie.wav", "truth.wav" };
+
     private EventBus eventBus;
     private RotationHandler rotationHandler;
     private ModuleManager moduleManager;
@@ -65,7 +70,6 @@ public class ZenClient extends ClientBase {
     private HudManager hudManager;
     private LagManager lagManager;
     private TargetManager targetManager;
-    private Encryption encryption;
     private int reconnectAttempts;
 
     public ZenClient() {
@@ -89,15 +93,16 @@ public class ZenClient extends ClientBase {
             this.moduleManager = new ModuleManager();
             this.hudManager = new HudManager();
             this.commandManager = new CommandManager();
-            this.commandManager.initCommands();
             this.configManager = new ConfigManager();
-            this.configManager.loadAll();
+            this.extractCloudAssets();
             this.lagManager = new LagManager();
-            this.eventBus.register(this.lagManager);
             this.targetManager = new TargetManager();
+            this.eventBus.register(this.hudManager);
+            this.eventBus.register(this.lagManager);
             this.eventBus.register(this.targetManager);
             this.eventBus.register(this);
-            this.encryption = new Encryption(Encryption.Algorithm.AES);
+            this.commandManager.initCommands();
+            this.eventBus.register(new IntroAnimation());
             registerPatches();
             if (PatchAgent.getInstrumentation() != null) {
                 PatchAgent.installPatchesAndRetransform();
@@ -123,6 +128,7 @@ public class ZenClient extends ClientBase {
         if (isReady() && !moduleInit) {
             moduleInit = true;
             this.moduleManager.initModules();
+            this.configManager.loadAll();
         }
     }
 
@@ -136,14 +142,33 @@ public class ZenClient extends ClientBase {
                 && mc.player.tickCount > 5;
     }
 
-    public static boolean isOwner(String username) {
-        return false;
-    }
-
-    public void disconnectFromServer() {
+    public void shutdown() {
         isReady = false;
         if (this.configManager != null) {
             this.configManager.saveAll();
+        }
+    }
+
+    private void extractCloudAssets() {
+        File targetDir = ConfigManager.CONFIG_DIR;
+        if (!targetDir.exists() && !targetDir.mkdirs()) {
+            logger.warn("Failed to create config directory at {}", targetDir);
+            return;
+        }
+        for (String name : CLOUD_ASSET_NAMES) {
+            File outFile = new File(targetDir, name);
+            if (outFile.exists()) continue;
+            try (InputStream in = ZenClient.class.getResourceAsStream("/assets/zen/cloud_assets/" + name)) {
+                if (in == null) {
+                    logger.warn("Cloud asset missing on classpath: {}", name);
+                    continue;
+                }
+                try (OutputStream out = new FileOutputStream(outFile)) {
+                    in.transferTo(out);
+                }
+            } catch (IOException ioException) {
+                logger.error("Failed to extract cloud asset {}", name, ioException);
+            }
         }
     }
 

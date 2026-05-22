@@ -13,33 +13,33 @@ extends Event {
     private static final String TO_STRING_PREFIX = "ChatEvent(message=";
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof ChatEvent chatEvent)) {
+        if (!(other instanceof ChatEvent otherEvent)) {
             return false;
         }
-        if (!chatEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        String string = this.getMessage();
-        String string2 = chatEvent.getMessage();
-        return !(!Objects.equals(string, string2));
+        String thisMessage = this.getMessage();
+        String otherMessage = otherEvent.getMessage();
+        return !(!Objects.equals(thisMessage, otherMessage));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof ChatEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof ChatEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        String string = this.getMessage();
-        n2 = n2 * 59 + (string == null ? 43 : string.hashCode());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        String msg = this.getMessage();
+        result = result * 59 + (msg == null ? 43 : msg.hashCode());
+        return result;
     }
 
     @Generated
@@ -48,7 +48,7 @@ extends Event {
     }
 
     @Generated
-    public ChatEvent(String string) {
-        this.message = string;
+    public ChatEvent(String message) {
+        this.message = message;
     }
 }

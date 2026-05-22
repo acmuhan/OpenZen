@@ -106,12 +106,12 @@ extends Module {
         if (this.spawnPosition == null) {
             return;
         }
-        float f = (float)(Math.toDegrees(Math.atan2((double)this.spawnPosition.getZ() - this.renderZ, (double)this.spawnPosition.getX() - this.renderX)) - 90.0 - (double)this.renderYaw);
-        float f2 = (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
-        float f3 = (float)mc.getWindow().getGuiScaledHeight() / 2.0f;
+        float angle = (float)(Math.toDegrees(Math.atan2((double)this.spawnPosition.getZ() - this.renderZ, (double)this.spawnPosition.getX() - this.renderX)) - 90.0 - (double)this.renderYaw);
+        float centerX = (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
+        float centerY = (float)mc.getWindow().getGuiScaledHeight() / 2.0f;
         drawContext.save();
-        drawContext.translate(f2, f3);
-        drawContext.rotate(f);
+        drawContext.translate(centerX, centerY);
+        drawContext.rotate(angle);
         try (Path path = new Path()){
             path.moveTo(-6.0f, -30.0f);
             path.lineTo(0.0f, -36.0f);

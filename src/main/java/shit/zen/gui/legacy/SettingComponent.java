@@ -9,28 +9,28 @@ public class SettingComponent {
     public ModuleButton parentButton;
     public int yOffset;
 
-    public SettingComponent(Setting<?> setting, ModuleButton moduleButton, int n) {
+    public SettingComponent(Setting<?> setting, ModuleButton moduleButton, int yOffset) {
         this.setting = setting;
         this.parentButton = moduleButton;
-        this.yOffset = n;
+        this.yOffset = yOffset;
     }
 
-    public void render(PoseStack poseStack, int n, int n2, float f) {
-        this.renderWithAlpha(poseStack, n, n2, f, 1.0f);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        this.renderWithAlpha(poseStack, mouseX, mouseY, partialTicks, 1.0f);
     }
 
-    public void renderWithAlpha(PoseStack poseStack, int n, int n2, float f, float f2) {
+    public void renderWithAlpha(PoseStack poseStack, int mouseX, int mouseY, float partialTicks, float alpha) {
     }
 
-    public void mouseClicked(double d, double d2, int n) {
+    public void mouseClicked(double mouseX, double mouseY, int button) {
     }
 
-    public void mouseReleased(double d, double d2, int n) {
+    public void mouseReleased(double mouseX, double mouseY, int button) {
     }
 
-    public boolean isHovered(double d, double d2) {
-        int n = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
-        int n2 = this.parentButton.panel.rowHeight;
-        return d >= (double)this.parentButton.panel.x && d <= (double)(this.parentButton.panel.x + this.parentButton.panel.width) && d2 >= (double)n && d2 <= (double)(n + n2);
+    public boolean isHovered(double mouseX, double mouseY) {
+        int rowY = this.parentButton.panel.y + this.parentButton.yOffset + this.parentButton.panel.rowHeight + this.yOffset;
+        int rowHeight = this.parentButton.panel.rowHeight;
+        return mouseX >= (double)this.parentButton.panel.x && mouseX <= (double)(this.parentButton.panel.x + this.parentButton.panel.width) && mouseY >= (double)rowY && mouseY <= (double)(rowY + rowHeight);
     }
 }

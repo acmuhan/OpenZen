@@ -23,14 +23,14 @@ public enum ShaderSource {
     private final String source;
     private static final HashMap<String, ShaderSource> BY_FILENAME;
 
-    public static ShaderSource getByFileName(String string) {
-        return BY_FILENAME.getOrDefault(string, SHADER_0);
+    public static ShaderSource getByFileName(String fileName) {
+        return BY_FILENAME.getOrDefault(fileName, SHADER_0);
     }
 
     @Generated
-    ShaderSource(String string2, String string3) {
-        this.fileName = string2;
-        this.source = string3;
+    ShaderSource(String fileName, String source) {
+        this.fileName = fileName;
+        this.source = source;
     }
 
     static {

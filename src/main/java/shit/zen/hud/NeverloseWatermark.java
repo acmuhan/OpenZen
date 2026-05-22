@@ -30,90 +30,90 @@ public class NeverloseWatermark {
         if (ClientBase.mc.options.renderDebug) {
             return;
         }
-        float f = ClientBase.mc.getWindow().getGuiScaledWidth();
-        float f2 = f / 2.0f - this.getTotalWidth() / 2.0f;
-        float f3 = 10.0f;
-        float f4 = 6.0f;
-        float f5 = 4.5f;
-        float f6 = 15.0f;
-        float f7 = this.measureText("ZEN", this.boldFont);
-        f2 += f7 + f4;
-        f2 = this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getServerName(), this.smallFont, "", f5, f6, f4);
-        f2 = this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getPingText(), this.regularFont, "", f5, f6, f4);
-        f2 = this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getFpsText(), this.regularFont, "", f5, f6, f4);
-        f2 = this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getTimeText(), this.regularFont, "", f5, f6, f4);
-        f2 = this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getCpsText(), this.regularFont, "", f5, f6, f4);
-        this.renderSectionLegacy(render2DEvent.poseStack(), f2, f3, this.getCoordText(), this.regularFont, "", f5, f6, f4);
+        float screenWidth = ClientBase.mc.getWindow().getGuiScaledWidth();
+        float currentX = screenWidth / 2.0f - this.getTotalWidth() / 2.0f;
+        float y = 10.0f;
+        float gap = 6.0f;
+        float cornerRadius = 4.5f;
+        float blurRadius = 15.0f;
+        float zenWidth = this.measureText("ZEN", this.boldFont);
+        currentX += zenWidth + gap;
+        currentX = this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getServerName(), this.smallFont, "", cornerRadius, blurRadius, gap);
+        currentX = this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getPingText(), this.regularFont, "", cornerRadius, blurRadius, gap);
+        currentX = this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getFpsText(), this.regularFont, "", cornerRadius, blurRadius, gap);
+        currentX = this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getTimeText(), this.regularFont, "", cornerRadius, blurRadius, gap);
+        currentX = this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getCpsText(), this.regularFont, "", cornerRadius, blurRadius, gap);
+        this.renderSectionLegacy(render2DEvent.poseStack(), currentX, y, this.getCoordText(), this.regularFont, "", cornerRadius, blurRadius, gap);
     }
 
-    private float renderSectionLegacy(PoseStack poseStack, float f, float f2, String string, FontRenderer fontRenderer, String string2, float f3, float f4, float f5) {
-        float f6 = this.measureTextWithSub(string, fontRenderer, string2);
-        return f + f6 + f5;
+    private float renderSectionLegacy(PoseStack poseStack, float x, float y, String text, FontRenderer fontRenderer, String icon, float cornerRadius, float blurRadius, float gap) {
+        float sectionWidth = this.measureTextWithSub(text, fontRenderer, icon);
+        return x + sectionWidth + gap;
     }
 
     public void onGlRender(GlRenderEvent glRenderEvent) {
         if (ClientBase.mc.options.renderDebug) {
             return;
         }
-        float f = ClientBase.mc.getWindow().getGuiScaledWidth();
-        float f2 = f / 2.0f - this.getTotalWidth() / 2.0f;
-        float f3 = 10.0f;
-        float f4 = 6.0f;
-        float f5 = 4.5f;
-        f2 = this.renderSection(glRenderEvent.drawContext(), f2, f3, "ZEN", this.boldFont, f5, f4);
-        f2 = this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getServerName(), this.smallFont, "", f5, f4);
-        f2 = this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getPingText(), this.regularFont, "", f5, f4);
-        f2 = this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getFpsText(), this.regularFont, "", f5, f4);
-        f2 = this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getTimeText(), this.regularFont, "", f5, f4);
-        f2 = this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getCpsText(), this.regularFont, "", f5, f4);
-        this.renderSectionWithSub(glRenderEvent.drawContext(), f2, f3, this.getCoordText(), this.regularFont, "", f5, f4);
+        float screenWidth = ClientBase.mc.getWindow().getGuiScaledWidth();
+        float currentX = screenWidth / 2.0f - this.getTotalWidth() / 2.0f;
+        float y = 10.0f;
+        float gap = 6.0f;
+        float cornerRadius = 4.5f;
+        currentX = this.renderSection(glRenderEvent.drawContext(), currentX, y, "ZEN", this.boldFont, cornerRadius, gap);
+        currentX = this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getServerName(), this.smallFont, "", cornerRadius, gap);
+        currentX = this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getPingText(), this.regularFont, "", cornerRadius, gap);
+        currentX = this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getFpsText(), this.regularFont, "", cornerRadius, gap);
+        currentX = this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getTimeText(), this.regularFont, "", cornerRadius, gap);
+        currentX = this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getCpsText(), this.regularFont, "", cornerRadius, gap);
+        this.renderSectionWithSub(glRenderEvent.drawContext(), currentX, y, this.getCoordText(), this.regularFont, "", cornerRadius, gap);
     }
 
-    private float renderSection(DrawContext drawContext, float f, float f2, String string, FontRenderer fontRenderer, float f3, float f4) {
-        float f5 = 8.0f;
-        float f6 = (float)GlHelper.getFontAscent(this.boldFont) + 12.0f - 2.0f;
-        float f7 = GlHelper.getStringWidth(string, fontRenderer);
-        float f8 = f5 + f7 + f5 - 5.0f;
-        GlHelper.drawRoundedRect(f, f2, f8, f6, f3, this.backgroundPaint);
-        float f9 = f2 + (f6 - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f + 3.5f;
-        GlHelper.drawTextShadowLegacy(string, f + f5 - 2.0f, f9, fontRenderer, this.textPaint.getColor());
-        return f + f8 + f4;
+    private float renderSection(DrawContext drawContext, float x, float y, String text, FontRenderer fontRenderer, float cornerRadius, float gap) {
+        float padding = 8.0f;
+        float boxHeight = (float)GlHelper.getFontAscent(this.boldFont) + 12.0f - 2.0f;
+        float textWidth = GlHelper.getStringWidth(text, fontRenderer);
+        float boxWidth = padding + textWidth + padding - 5.0f;
+        GlHelper.drawRoundedRect(x, y, boxWidth, boxHeight, cornerRadius, this.backgroundPaint);
+        float textY = y + (boxHeight - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f + 3.5f;
+        GlHelper.drawTextShadowLegacy(text, x + padding - 2.0f, textY, fontRenderer, this.textPaint.getColor());
+        return x + boxWidth + gap;
     }
 
-    private float renderSectionWithSub(DrawContext drawContext, float f, float f2, String string, FontRenderer fontRenderer, String string2, float f3, float f4) {
-        float f5 = 8.0f;
-        float f6 = (float)GlHelper.getFontAscent(fontRenderer) + 12.0f;
-        float f7 = GlHelper.getStringWidth(string, fontRenderer);
-        float f8 = GlHelper.getStringWidth(string2, this.tinyFont);
-        float f9 = f5 + f8 + 5.0f + f7 + f5 - 4.0f;
-        GlHelper.drawRoundedRect(f, f2, f9, f6, f3, this.backgroundPaint);
-        float f10 = f2 + (f6 - (float)GlHelper.getFontAscent(this.tinyFont)) / 2.0f + 3.0f;
-        GlHelper.drawTextShadowLegacy(string2, f + f5 - 1.0f, f10, this.tinyFont, this.accentPaint.getColor());
-        float f11 = f2 + (f6 - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f + 1.0f;
-        GlHelper.drawTextShadowLegacy(string, f + f5 + f8 + 5.0f - 3.0f, f11, fontRenderer, this.textPaint.getColor());
-        return f + f9 + f4;
+    private float renderSectionWithSub(DrawContext drawContext, float x, float y, String text, FontRenderer fontRenderer, String icon, float cornerRadius, float gap) {
+        float padding = 8.0f;
+        float boxHeight = (float)GlHelper.getFontAscent(fontRenderer) + 12.0f;
+        float textWidth = GlHelper.getStringWidth(text, fontRenderer);
+        float iconWidth = GlHelper.getStringWidth(icon, this.tinyFont);
+        float boxWidth = padding + iconWidth + 5.0f + textWidth + padding - 4.0f;
+        GlHelper.drawRoundedRect(x, y, boxWidth, boxHeight, cornerRadius, this.backgroundPaint);
+        float iconY = y + (boxHeight - (float)GlHelper.getFontAscent(this.tinyFont)) / 2.0f + 3.0f;
+        GlHelper.drawTextShadowLegacy(icon, x + padding - 1.0f, iconY, this.tinyFont, this.accentPaint.getColor());
+        float textY = y + (boxHeight - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f + 1.0f;
+        GlHelper.drawTextShadowLegacy(text, x + padding + iconWidth + 5.0f - 3.0f, textY, fontRenderer, this.textPaint.getColor());
+        return x + boxWidth + gap;
     }
 
-    private float measureText(String string, FontRenderer fontRenderer) {
-        float f = 8.0f;
-        return f + GlHelper.getStringWidth(string, fontRenderer) + f - 5.0f;
+    private float measureText(String text, FontRenderer fontRenderer) {
+        float padding = 8.0f;
+        return padding + GlHelper.getStringWidth(text, fontRenderer) + padding - 5.0f;
     }
 
     private float getTotalWidth() {
-        float f = 0.0f;
-        float f2 = 6.0f;
-        f += this.measureText("ZEN", this.boldFont) + f2;
-        f += this.measureTextWithSub(this.getServerName(), this.smallFont, "") + f2;
-        f += this.measureTextWithSub(this.getPingText(), this.regularFont, "") + f2;
-        f += this.measureTextWithSub(this.getFpsText(), this.regularFont, "") + f2;
-        f += this.measureTextWithSub(this.getTimeText(), this.regularFont, "") + f2;
-        f += this.measureTextWithSub(this.getCpsText(), this.regularFont, "") + f2;
-        return f += this.measureTextWithSub(this.getCoordText(), this.regularFont, "");
+        float total = 0.0f;
+        float gap = 6.0f;
+        total += this.measureText("ZEN", this.boldFont) + gap;
+        total += this.measureTextWithSub(this.getServerName(), this.smallFont, "") + gap;
+        total += this.measureTextWithSub(this.getPingText(), this.regularFont, "") + gap;
+        total += this.measureTextWithSub(this.getFpsText(), this.regularFont, "") + gap;
+        total += this.measureTextWithSub(this.getTimeText(), this.regularFont, "") + gap;
+        total += this.measureTextWithSub(this.getCpsText(), this.regularFont, "") + gap;
+        return total += this.measureTextWithSub(this.getCoordText(), this.regularFont, "");
     }
 
-    private float measureTextWithSub(String string, FontRenderer fontRenderer, String string2) {
-        float f = 8.0f;
-        return f + GlHelper.getStringWidth(string2, this.tinyFont) + 5.0f + GlHelper.getStringWidth(string, fontRenderer) + f - 4.0f;
+    private float measureTextWithSub(String text, FontRenderer fontRenderer, String icon) {
+        float padding = 8.0f;
+        return padding + GlHelper.getStringWidth(icon, this.tinyFont) + 5.0f + GlHelper.getStringWidth(text, fontRenderer) + padding - 4.0f;
     }
 
     private String getServerName() {

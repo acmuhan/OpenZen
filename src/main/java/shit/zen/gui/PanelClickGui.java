@@ -81,11 +81,11 @@ extends Screen {
         this.settingsPanel = new SettingsPanel();
     }
 
-    public void setScale(float f) {
-        if (this.currentOpenState == PanelClickGui.ScaleSwitchState.IDLE && f != this.currentScale) {
-            this.targetScale = f;
+    public void setScale(float newScale) {
+        if (this.currentOpenState == PanelClickGui.ScaleSwitchState.IDLE && newScale != this.currentScale) {
+            this.targetScale = newScale;
             this.currentOpenState = PanelClickGui.ScaleSwitchState.FADING_OUT;
-            this.scaleSwitchOverlay.show(this.currentScale, f);
+            this.scaleSwitchOverlay.show(this.currentScale, newScale);
         }
     }
 
@@ -116,46 +116,51 @@ extends Screen {
         }
     }
 
-    private float easeOutCubic(float f) {
-        return (float)(1.0 - Math.pow(1.0f - f, 3.0));
+    private float easeOutCubic(float t) {
+        return (float)(1.0 - Math.pow(1.0f - t, 3.0));
     }
 
-    public void render(@Nonnull GuiGraphics guiGraphics, int n, int n2, float f) {
-        float f2;
+    public void render(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        float eased;
         LerpUtil.update();
         this.updateOpenState();
         if (this.currentScaleSwitchState == PanelClickGui.OpenState.CLOSED && this.openProgress <= 0.0f) {
             return;
         }
-        float f3 = f2 = this.easeOutCubic(this.openProgress);
-        float f4 = 0.98f + 0.02f * f2;
-        guiGraphics.fill(0, 0, this.width, this.height, new Color(0, 0, 0, (int)(80.0f * f3)).getRGB());
+        float dup = eased = this.easeOutCubic(this.openProgress);
+        float scaleFactor = 0.98f + 0.02f * eased;
+        guiGraphics.fill(0, 0, this.width, this.height, new Color(0, 0, 0, (int)(80.0f * dup)).getRGB());
         this.updateScaleSwitchState();
-        int n3 = this.width / 2;
-        int n4 = this.height / 2;
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
         guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate((float)n3, (float)n4, 0.0f);
-        guiGraphics.pose().scale(f4, f4, 1.0f);
-        guiGraphics.pose().translate((float)(-n3), (float)(-n4), 0.0f);
-        float f5 = this.currentOpenState == PanelClickGui.ScaleSwitchState.FADING_OUT || this.currentOpenState == PanelClickGui.ScaleSwitchState.WAITING ? this.targetScale : this.currentScale;
-        int n5 = (int)(600.0f * this.currentScale);
-        int n6 = (int)(400.0f * this.currentScale);
-        int n7 = n3 - n5 / 2;
-        int n8 = n4 - n6 / 2;
-        float f6 = this.panelAlpha * f3;
-        if (f6 > 0.005f) {
-            this.drawPanelGlow(guiGraphics, n7, n8, f, f6);
-            this.categoryBar.render(guiGraphics, n7, n8, n, n2, this.currentScale, f6);
-            this.moduleListPanel.render(guiGraphics, n7, n8, n, n2, this.getSelectedCategory(), this.currentScale, f6);
-            this.settingsPanel.render(guiGraphics, n7, n8, n, n2, this.moduleListPanel.getHoveredModule(), this.currentScale, f6);
-            this.profileWidget.render(guiGraphics, n7, n8, n, n2, this.currentScale, f6);
-            this.drawSearchBar(guiGraphics, n7, n8, n, n2, f6);
-            this.drawToasts(guiGraphics, n7, n8, f6);
+        guiGraphics.pose().translate((float)centerX, (float)centerY, 0.0f);
+        guiGraphics.pose().scale(scaleFactor, scaleFactor, 1.0f);
+        guiGraphics.pose().translate((float)(-centerX), (float)(-centerY), 0.0f);
+        float overlayScale = this.currentOpenState == PanelClickGui.ScaleSwitchState.FADING_OUT || this.currentOpenState == PanelClickGui.ScaleSwitchState.WAITING ? this.targetScale : this.currentScale;
+        int panelWidth = (int)(600.0f * this.currentScale);
+        int panelHeight = (int)(400.0f * this.currentScale);
+        int panelX = centerX - panelWidth / 2;
+        int panelY = centerY - panelHeight / 2;
+        float effectiveAlpha = this.panelAlpha * dup;
+        if (effectiveAlpha > 0.005f) {
+            final float finalAlpha = effectiveAlpha;
+            final int fPanelX = panelX;
+            final int fPanelY = panelY;
+            Renderer.render(guiGraphics, drawContext -> {
+                this.drawPanelGlow(guiGraphics, fPanelX, fPanelY, partialTicks, finalAlpha);
+                this.categoryBar.render(guiGraphics, fPanelX, fPanelY, mouseX, mouseY, this.currentScale, finalAlpha);
+                this.moduleListPanel.render(guiGraphics, fPanelX, fPanelY, mouseX, mouseY, this.getSelectedCategory(), this.currentScale, finalAlpha);
+                this.settingsPanel.render(guiGraphics, fPanelX, fPanelY, mouseX, mouseY, this.moduleListPanel.getHoveredModule(), this.currentScale, finalAlpha);
+                this.profileWidget.render(guiGraphics, fPanelX, fPanelY, mouseX, mouseY, this.currentScale, finalAlpha);
+                this.drawSearchBar(guiGraphics, fPanelX, fPanelY, mouseX, mouseY, finalAlpha);
+                this.drawToasts(guiGraphics, fPanelX, fPanelY, finalAlpha);
+            });
         }
-        super.render(guiGraphics, n, n2, f);
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
         guiGraphics.pose().popPose();
-        this.keybindOverlay.render(guiGraphics, this.width, this.height, f5);
-        this.scaleSwitchOverlay.render(guiGraphics, this.width, this.height, f5);
+        this.keybindOverlay.render(guiGraphics, this.width, this.height, overlayScale);
+        this.scaleSwitchOverlay.render(guiGraphics, this.width, this.height, overlayScale);
     }
 
     private void updateScaleSwitchState() {
@@ -182,38 +187,40 @@ extends Screen {
         }
     }
 
-    private void drawPanelGlow(GuiGraphics guiGraphics, int n, int n2, float f, float f2) {
-        int n3 = (int)(600.0f * this.currentScale);
-        int n4 = (int)(400.0f * this.currentScale);
-        TextGlow.drawBackground(guiGraphics.pose(), n, n2, n3, n4, 12.0f * this.currentScale, f2);
+    private void drawPanelGlow(GuiGraphics guiGraphics, int panelX, int panelY, float partialTicks, float alpha) {
+        int panelWidth = (int)(600.0f * this.currentScale);
+        int panelHeight = (int)(400.0f * this.currentScale);
+        float radius = 12.0f * this.currentScale;
+        RenderUtil.drawBlurredRect(guiGraphics.pose(), panelX, panelY, panelWidth, panelHeight, radius, 8.0f, alpha, 0);
+        TextGlow.drawBackground(guiGraphics.pose(), panelX, panelY, panelWidth, panelHeight, radius, alpha);
     }
 
-    public boolean mouseClicked(double d, double d2, int n) {
-        boolean bl;
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean overSearch;
         if (this.openProgress < 1.0f) {
             return true;
         }
         if (this.keybindOverlay.isVisible()) {
-            if (n == 0) {
+            if (button == 0) {
                 this.keybindOverlay.cancel();
             }
             return true;
         }
-        int n2 = this.width / 2;
-        int n3 = this.height / 2;
-        int n4 = (int)(600.0f * this.currentScale);
-        int n5 = (int)(400.0f * this.currentScale);
-        int n6 = n2 - n4 / 2;
-        int n7 = n3 - n5 / 2;
-        if (this.profileWidget.isPopupOpen() && this.profileWidget.onMouseClick(n6, n7, (int)d, (int)d2, this.currentScale)) {
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+        int panelWidth = (int)(600.0f * this.currentScale);
+        int panelHeight = (int)(400.0f * this.currentScale);
+        int panelX = centerX - panelWidth / 2;
+        int panelY = centerY - panelHeight / 2;
+        if (this.profileWidget.isPopupOpen() && this.profileWidget.onMouseClick(panelX, panelY, (int)mouseX, (int)mouseY, this.currentScale)) {
             return true;
         }
-        int n8 = (int)(200.0f * this.currentScale);
-        int n9 = (int)(20.0f * this.currentScale);
-        int n10 = n6 + (n4 - n8) / 2;
-        int n11 = n7 + n5 + (int)(15.0f * this.currentScale);
-        boolean bl2 = bl = d >= (double)n10 && d <= (double)(n10 + n8) && d2 >= (double)n11 && d2 <= (double)(n11 + n9);
-        if (bl) {
+        int searchWidth = (int)(200.0f * this.currentScale);
+        int searchHeight = (int)(20.0f * this.currentScale);
+        int searchX = panelX + (panelWidth - searchWidth) / 2;
+        int searchY = panelY + panelHeight + (int)(15.0f * this.currentScale);
+        boolean dup = overSearch = mouseX >= (double)searchX && mouseX <= (double)(searchX + searchWidth) && mouseY >= (double)searchY && mouseY <= (double)(searchY + searchHeight);
+        if (overSearch) {
             if (!this.searchActive) {
                 this.searchActive = true;
                 this.searchQuery = "";
@@ -224,78 +231,78 @@ extends Screen {
             return true;
         }
         this.searchFocused = false;
-        boolean bl3 = false;
-        if (n == 0 || n == 1 || n == 2) {
-            if (!bl3 && n == 0 && this.categoryBar.onMouseClick(n6, n7, (int)d, (int)d2, this.currentScale)) {
+        boolean handled = false;
+        if (button == 0 || button == 1 || button == 2) {
+            if (!handled && button == 0 && this.categoryBar.onMouseClick(panelX, panelY, (int)mouseX, (int)mouseY, this.currentScale)) {
                 if (this.searchActive) {
                     this.searchActive = false;
                     this.searchFocused = false;
                     this.searchQuery = "";
                     this.moduleListPanel.setSearchQuery(null);
                 }
-                bl3 = true;
+                handled = true;
             }
-            if (!bl3 && this.moduleListPanel.onMouseClick(n6, n7, (int)d, (int)d2, this.getSelectedCategory(), n, this.currentScale)) {
-                bl3 = true;
+            if (!handled && this.moduleListPanel.onMouseClick(panelX, panelY, (int)mouseX, (int)mouseY, this.getSelectedCategory(), button, this.currentScale)) {
+                handled = true;
             }
-            if (!bl3 && this.profileWidget.onMouseClick(n6, n7, (int)d, (int)d2, this.currentScale)) {
-                bl3 = true;
+            if (!handled && this.profileWidget.onMouseClick(panelX, panelY, (int)mouseX, (int)mouseY, this.currentScale)) {
+                handled = true;
             }
-            if (!bl3 && (n == 0 || n == 1) && this.settingsPanel.onMouseClick(n6, n7, (int)d, (int)d2, n, this.currentScale)) {
-                bl3 = true;
+            if (!handled && (button == 0 || button == 1) && this.settingsPanel.onMouseClick(panelX, panelY, (int)mouseX, (int)mouseY, button, this.currentScale)) {
+                handled = true;
             }
         }
-        if (!bl3) {
+        if (!handled) {
             NumberSettingRenderer.clearEditing();
         }
-        return bl3 || super.mouseClicked(d, d2, n);
+        return handled || super.mouseClicked(mouseX, mouseY, button);
     }
 
-    public boolean mouseReleased(double d, double d2, int n) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.openProgress < 1.0f) {
             return true;
         }
         this.moduleListPanel.onMouseRelease();
-        this.settingsPanel.onMouseRelease(d, d2, n);
+        this.settingsPanel.onMouseRelease(mouseX, mouseY, button);
         this.profileWidget.onMouseRelease();
-        return super.mouseReleased(d, d2, n);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    public boolean mouseScrolled(double d, double d2, double d3) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         if (this.openProgress < 1.0f) {
             return true;
         }
-        int n = this.width / 2;
-        int n2 = n - (int)(600.0f * this.currentScale) / 2;
-        int n3 = this.height / 2;
-        int n4 = n3 - (int)(400.0f * this.currentScale) / 2;
-        if (this.moduleListPanel.isMouseOverPanel(n2, n4, (int)d, (int)d2, this.currentScale)) {
-            this.moduleListPanel.onScroll(d3, this.currentScale);
+        int centerX = this.width / 2;
+        int panelX = centerX - (int)(600.0f * this.currentScale) / 2;
+        int centerY = this.height / 2;
+        int panelY = centerY - (int)(400.0f * this.currentScale) / 2;
+        if (this.moduleListPanel.isMouseOverPanel(panelX, panelY, (int)mouseX, (int)mouseY, this.currentScale)) {
+            this.moduleListPanel.onScroll(scrollDelta, this.currentScale);
             return true;
         }
-        if (this.settingsPanel.isMouseOverPanel(n2, n4, (int)d, (int)d2, this.currentScale)) {
-            this.settingsPanel.onScroll(d3, this.currentScale);
+        if (this.settingsPanel.isMouseOverPanel(panelX, panelY, (int)mouseX, (int)mouseY, this.currentScale)) {
+            this.settingsPanel.onScroll(scrollDelta, this.currentScale);
             return true;
         }
-        return super.mouseScrolled(d, d2, d3);
+        return super.mouseScrolled(mouseX, mouseY, scrollDelta);
     }
 
-    public boolean mouseDragged(double d, double d2, int n, double d3, double d4) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.openProgress < 1.0f) {
             return true;
         }
-        this.moduleListPanel.onMouseDrag(d, d2, this.currentScale);
-        this.settingsPanel.onMouseDrag(d, d2, this.currentScale);
-        this.profileWidget.onMouseDrag((int)d, (int)d2);
-        return super.mouseDragged(d, d2, n, d3, d4);
+        this.moduleListPanel.onMouseDrag(mouseX, mouseY, this.currentScale);
+        this.settingsPanel.onMouseDrag(mouseX, mouseY, this.currentScale);
+        this.profileWidget.onMouseDrag((int)mouseX, (int)mouseY);
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
-    public boolean keyPressed(int n, int n2, int n3) {
-        if (this.keybindOverlay.onKeyPress(n, n2, n3)) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.keybindOverlay.onKeyPress(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (this.searchActive) {
-            if (n == 256) {
+            if (keyCode == 256) {
                 this.searchActive = false;
                 this.searchFocused = false;
                 this.searchQuery = "";
@@ -304,7 +311,7 @@ extends Screen {
             }
             if (this.searchFocused) {
                 this.searchCursorTime = System.currentTimeMillis();
-                if (n == 259) {
+                if (keyCode == 259) {
                     if (!this.searchQuery.isEmpty()) {
                         this.searchQuery = this.searchQuery.substring(0, this.searchQuery.length() - 1);
                         this.moduleListPanel.setSearchQuery(this.searchQuery);
@@ -313,17 +320,17 @@ extends Screen {
                 }
             }
         }
-        if (NumberSettingRenderer.onKeyPress(n, n2, n3)) {
+        if (NumberSettingRenderer.onKeyPress(keyCode, scanCode, modifiers)) {
             return true;
         }
-        if (n == 256 && !this.keybindOverlay.isVisible() && !this.searchActive) {
+        if (keyCode == 256 && !this.keybindOverlay.isVisible() && !this.searchActive) {
             this.onClose();
             return true;
         }
-        return super.keyPressed(n, n2, n3);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    public boolean charTyped(char c, int n) {
+    public boolean charTyped(char c, int modifiers) {
         if (this.searchActive && this.searchFocused) {
             this.searchCursorTime = System.currentTimeMillis();
             this.searchQuery = this.searchQuery + c;
@@ -333,7 +340,7 @@ extends Screen {
         if (NumberSettingRenderer.onCharTyped(c)) {
             return true;
         }
-        return super.charTyped(c, n);
+        return super.charTyped(c, modifiers);
     }
 
     public boolean isPauseScreen() {
@@ -362,43 +369,45 @@ extends Screen {
         return this.settingsPanel;
     }
 
-    private void drawSearchBar(GuiGraphics guiGraphics, int n, int n2, int n3, int n4, float f) {
+    private void drawSearchBar(GuiGraphics guiGraphics, int panelX, int panelY, int mouseX, int mouseY, float alpha) {
         try {
-            int n5 = (int)(600.0f * this.currentScale);
-            int n6 = (int)(400.0f * this.currentScale);
-            int n7 = (int)(200.0f * this.currentScale);
-            int n8 = (int)(20.0f * this.currentScale);
-            int n9 = n + (n5 - n7) / 2;
-            int n10 = n2 + n6 + (int)(15.0f * this.currentScale);
-            TextGlow.drawBackground(guiGraphics.pose(), n9, n10, n7, n8, 8.0f * this.currentScale, f);
+            int panelWidth = (int)(600.0f * this.currentScale);
+            int panelHeight = (int)(400.0f * this.currentScale);
+            int searchWidth = (int)(200.0f * this.currentScale);
+            int searchHeight = (int)(20.0f * this.currentScale);
+            int searchX = panelX + (panelWidth - searchWidth) / 2;
+            int searchY = panelY + panelHeight + (int)(15.0f * this.currentScale);
+            float searchRadius = 8.0f * this.currentScale;
+            RenderUtil.drawBlurredRect(guiGraphics.pose(), searchX, searchY, searchWidth, searchHeight, searchRadius, 8.0f, alpha, 0);
+            TextGlow.drawBackground(guiGraphics.pose(), searchX, searchY, searchWidth, searchHeight, searchRadius, alpha);
             Renderer.renderConsumer((drawContext -> {
-                FontRenderer fontRenderer = FontPresets.materialIcons(20.0f * this.currentScale);
-                String string = "";
-                float f2 = (float)n9 + 12.0f * this.currentScale;
-                float f3 = (float)n10 + (float)n8 / 2.0f + fontRenderer.getMetrics().capHeight() / 2.0f - 12.0f * this.currentScale;
-                int iconColor = new Color(255, 255, 255, (int)(180.0f * f)).getRGB();
-                TextGlow.drawGlowText(string, f2, f3, fontRenderer, -2236963, iconColor, 12.0f * this.currentScale);
-                FontRenderer fontRenderer2 = FontPresets.axiformaRegular(16.0f * this.currentScale);
+                FontRenderer iconFont = FontPresets.materialIcons(20.0f * this.currentScale);
+                String iconText = "\uE8B6";
+                float iconX = (float)searchX + 12.0f * this.currentScale;
+                float iconY = (float)searchY + (float)searchHeight / 2.0f + iconFont.getMetrics().capHeight() / 2.0f - 12.0f * this.currentScale;
+                int iconColor = new Color(255, 255, 255, (int)(180.0f * alpha)).getRGB();
+                TextGlow.drawGlowText(iconText, iconX, iconY, iconFont, -2236963, iconColor, 12.0f * this.currentScale);
+                FontRenderer queryFont = FontPresets.axiformaRegular(16.0f * this.currentScale);
                 if (this.searchActive || !this.searchQuery.isEmpty()) {
-                    float f4 = (float)n9 + 35.0f * this.currentScale;
-                    float f5 = (float)n10 + (float)n8 / 2.0f + fontRenderer2.getMetrics().capHeight() / 2.0f - 9.0f * this.currentScale;
-                    int queryColor = new Color(255, 255, 255, (int)(120.0f * f)).getRGB();
-                    TextGlow.drawGlowText(this.searchQuery, f4, f5, fontRenderer2, -1, queryColor, 8.0f * this.currentScale);
+                    float queryX = (float)searchX + 35.0f * this.currentScale;
+                    float queryY = (float)searchY + (float)searchHeight / 2.0f + queryFont.getMetrics().capHeight() / 2.0f - 9.0f * this.currentScale;
+                    int queryColor = new Color(255, 255, 255, (int)(120.0f * alpha)).getRGB();
+                    TextGlow.drawGlowText(this.searchQuery, queryX, queryY, queryFont, -1, queryColor, 8.0f * this.currentScale);
                     if (this.searchFocused) {
-                        long l = System.currentTimeMillis() - this.searchCursorTime;
-                        float f6 = (float)(Math.sin((double)l / 200.0) * 0.5 + 0.5);
-                        int cursorColor = (int)(f6 * f * 255.0f) << 24 | 0xFFFFFF;
-                        float f7 = f4 + GlHelper.getStringWidth(this.searchQuery, fontRenderer2) + 2.0f * this.currentScale;
-                        float f8 = fontRenderer2.getMetrics().capHeight();
-                        RenderUtil.drawFilledRect(guiGraphics.pose(), f7, f5 - f8 + 11.0f * this.currentScale, this.currentScale, f8 - 3.0f * this.currentScale, cursorColor);
+                        long sinceCursor = System.currentTimeMillis() - this.searchCursorTime;
+                        float blinkAmount = (float)(Math.sin((double)sinceCursor / 200.0) * 0.5 + 0.5);
+                        int cursorColor = (int)(blinkAmount * alpha * 255.0f) << 24 | 0xFFFFFF;
+                        float cursorX = queryX + GlHelper.getStringWidth(this.searchQuery, queryFont) + 2.0f * this.currentScale;
+                        float cursorHeight = queryFont.getMetrics().capHeight();
+                        RenderUtil.drawFilledRect(guiGraphics.pose(), cursorX, queryY - cursorHeight + 11.0f * this.currentScale, this.currentScale, cursorHeight - 3.0f * this.currentScale, cursorColor);
                     }
                 } else {
-                    FontRenderer fontRenderer3 = FontPresets.axiformaBold(14.0f * this.currentScale);
-                    String string2 = "search";
-                    float f9 = GlHelper.getStringWidth(string2, fontRenderer3);
-                    float f10 = (float)n9 + ((float)n7 - f9) / 2.0f;
-                    float f11 = (float)n10 + (float)n8 / 2.0f + fontRenderer3.getMetrics().capHeight() / 2.0f - 8.0f * this.currentScale;
-                    TextGlow.drawGlowText(string2, f10, f11, fontRenderer3, -3355444, new Color(255, 255, 255, (int)(130.0f * f)).getRGB(), 10.0f * this.currentScale);
+                    FontRenderer placeholderFont = FontPresets.axiformaBold(14.0f * this.currentScale);
+                    String placeholder = "search";
+                    float placeholderWidth = GlHelper.getStringWidth(placeholder, placeholderFont);
+                    float placeholderX = (float)searchX + ((float)searchWidth - placeholderWidth) / 2.0f;
+                    float placeholderY = (float)searchY + (float)searchHeight / 2.0f + placeholderFont.getMetrics().capHeight() / 2.0f - 8.0f * this.currentScale;
+                    TextGlow.drawGlowText(placeholder, placeholderX, placeholderY, placeholderFont, -3355444, new Color(255, 255, 255, (int)(130.0f * alpha)).getRGB(), 10.0f * this.currentScale);
                 }
             }));
         } catch (Exception exception) {
@@ -406,48 +415,48 @@ extends Screen {
         }
     }
 
-    public void addToast(String string) {
-        for (PanelClickGui.ToastEntry panelClickGui$ToastEntry : this.toasts) {
-            panelClickGui$ToastEntry.targetY -= 20.0f * this.currentScale;
+    public void addToast(String message) {
+        for (PanelClickGui.ToastEntry toast : this.toasts) {
+            toast.targetY -= 20.0f * this.currentScale;
         }
-        this.toasts.add(new PanelClickGui.ToastEntry(string));
+        this.toasts.add(new PanelClickGui.ToastEntry(message));
     }
 
     public void selectModule(Module module) {
         this.keybindOverlay.startBinding(module);
     }
 
-    private void drawToasts(GuiGraphics guiGraphics, int n, int n2, float f) {
+    private void drawToasts(GuiGraphics guiGraphics, int panelX, int panelY, float alpha) {
         if (this.toasts.isEmpty()) {
             return;
         }
         try {
             Renderer.renderConsumer((drawContext -> {
-                FontRenderer fontRenderer = FontPresets.axiformaBold(18.0f * this.currentScale);
-                for (PanelClickGui.ToastEntry panelClickGui$ToastEntry : this.toasts) {
-                    long l = System.currentTimeMillis() - panelClickGui$ToastEntry.createdAt;
-                    panelClickGui$ToastEntry.currentY = LerpUtil.smoothLerp(panelClickGui$ToastEntry.currentY, panelClickGui$ToastEntry.targetY, 0.2f);
-                    float f2 = 0.0f;
-                    if (l < 2000L) {
-                        f2 = 1.0f;
-                    } else if (l < 2500L) {
-                        long l2 = l - 2000L;
-                        f2 = 1.0f - (float)l2 / 500.0f;
+                FontRenderer toastFont = FontPresets.axiformaBold(18.0f * this.currentScale);
+                for (PanelClickGui.ToastEntry toast : this.toasts) {
+                    long elapsed = System.currentTimeMillis() - toast.createdAt;
+                    toast.currentY = LerpUtil.smoothLerp(toast.currentY, toast.targetY, 0.2f);
+                    float targetAlpha = 0.0f;
+                    if (elapsed < 2000L) {
+                        targetAlpha = 1.0f;
+                    } else if (elapsed < 2500L) {
+                        long fadeMs = elapsed - 2000L;
+                        targetAlpha = 1.0f - (float)fadeMs / 500.0f;
                     }
-                    panelClickGui$ToastEntry.alpha = LerpUtil.smoothLerp(panelClickGui$ToastEntry.alpha, f2, 0.25f);
-                    if (panelClickGui$ToastEntry.alpha < 0.01f && l > 2000L) {
-                        this.toasts.remove(panelClickGui$ToastEntry);
+                    toast.alpha = LerpUtil.smoothLerp(toast.alpha, targetAlpha, 0.25f);
+                    if (toast.alpha < 0.01f && elapsed > 2000L) {
+                        this.toasts.remove(toast);
                         continue;
                     }
-                    float f3 = GlHelper.getStringWidth(panelClickGui$ToastEntry.message, fontRenderer);
-                    int n3 = (int)(600.0f * this.currentScale);
-                    float f4 = (float)n + ((float)n3 - f3) / 2.0f;
-                    float f5 = (float)(n2 - 25) + panelClickGui$ToastEntry.currentY;
-                    int n4 = (int)(255.0f * panelClickGui$ToastEntry.alpha * f);
-                    int n5 = n4 << 24 | 0xFFFFFF;
-                    int n6 = (int)(120.0f * panelClickGui$ToastEntry.alpha * f);
-                    int n7 = n6 << 24 | 0xFFFFFF;
-                    TextGlow.drawGlowText(panelClickGui$ToastEntry.message, f4, f5 + 6.0f * this.currentScale, fontRenderer, n5, n7, 8.0f * this.currentScale);
+                    float toastWidth = GlHelper.getStringWidth(toast.message, toastFont);
+                    int panelWidth = (int)(600.0f * this.currentScale);
+                    float toastX = (float)panelX + ((float)panelWidth - toastWidth) / 2.0f;
+                    float toastY = (float)(panelY - 25) + toast.currentY;
+                    int textAlpha = (int)(255.0f * toast.alpha * alpha);
+                    int textColor = textAlpha << 24 | 0xFFFFFF;
+                    int glowAlpha = (int)(120.0f * toast.alpha * alpha);
+                    int glowColor = glowAlpha << 24 | 0xFFFFFF;
+                    TextGlow.drawGlowText(toast.message, toastX, toastY + 6.0f * this.currentScale, toastFont, textColor, glowColor, 8.0f * this.currentScale);
                 }
             }));
         } catch (Exception exception) {

@@ -44,10 +44,10 @@ extends ClientBase {
     private float transitionProgress = 0.0f;
     private float lastScale = 1.0f;
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, int n3, int n4, Module module, float f, float f2) {
-        if (Math.abs(f - this.lastScale) > 0.001f) {
-            this.rescaleScroll(f);
-            this.lastScale = f;
+    public void render(GuiGraphics guiGraphics, int originX, int originY, int mouseX, int mouseY, Module module, float scale, float alpha) {
+        if (Math.abs(scale - this.lastScale) > 0.001f) {
+            this.rescaleScroll(scale);
+            this.lastScale = scale;
         }
         if (this.currentModule != module) {
             if (this.currentModule != null) {
@@ -84,64 +84,64 @@ extends ClientBase {
             return;
         }
         this.scrollOffset = Math.abs(this.scrollOffset - this.scrollTarget) > 0.01f ? LerpUtil.smoothLerp(this.scrollOffset, this.scrollTarget, 0.35f) : this.scrollTarget;
-        float f3 = this.currentModule != null && this.currentModule.isEnabled() ? 1.0f : 0.0f;
-        this.enabledAlpha = Math.abs(f3 - this.enabledAlpha) > 0.01f ? LerpUtil.smoothLerp(this.enabledAlpha, f3, 0.28f) : f3;
+        float enabledTarget = this.currentModule != null && this.currentModule.isEnabled() ? 1.0f : 0.0f;
+        this.enabledAlpha = Math.abs(enabledTarget - this.enabledAlpha) > 0.01f ? LerpUtil.smoothLerp(this.enabledAlpha, enabledTarget, 0.28f) : enabledTarget;
         try {
-            int n5 = (int)(405.0f * f);
-            int n6 = (int)(20.0f * f);
-            int n7 = (int)(20.0f * f);
-            int n8 = (int)(400.0f * f);
-            int n9 = (int)(30.0f * f);
-            int n10 = (int)(10.0f * f);
-            int n11 = n + (int)(600.0f * f) - n5 - n6 + (int)(8.0f * f);
-            int n12 = n2 + n7 + (int)(23.0f * f);
-            int n13 = n8 - 2 * n6 - (int)(20.0f * f);
-            int n14 = (int)(12.0f * f);
-            int n15 = (int)(15.0f * f);
-            int n16 = n11 + n5 - n14 * 2 - n15;
-            int n17 = n12 + (n9 - n14) / 2;
-            this.checkToggleHover(n16, n17, n3, n4, n14);
-            float f4 = this.isToggleHovered ? 1.0f : 0.0f;
-            this.toggleHoverAlpha = Math.abs(f4 - this.toggleHoverAlpha) > 0.01f ? LerpUtil.smoothLerp(this.toggleHoverAlpha, f4, 0.35f) : f4;
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n11, n12, n5, n13, 4.0f * f, this.applyAlpha(PANEL_BG_COLOR, f2));
-            this.renderToggleButton(guiGraphics, n16, n17, this.enabledAlpha, this.toggleHoverAlpha, this.currentModule != null && this.currentModule.isEnabled(), f, f2);
-            int n18 = n11;
-            int n19 = n12 + n9;
-            int n20 = n5;
-            int n21 = n13 - n9;
+            int panelWidth = (int)(405.0f * scale);
+            int marginX = (int)(20.0f * scale);
+            int marginY = (int)(20.0f * scale);
+            int baseSize = (int)(400.0f * scale);
+            int headerHeight = (int)(30.0f * scale);
+            int bottomPadding = (int)(10.0f * scale);
+            int panelX = originX + (int)(600.0f * scale) - panelWidth - marginX + (int)(8.0f * scale);
+            int panelY = originY + marginY + (int)(23.0f * scale);
+            int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+            int toggleHeight = (int)(12.0f * scale);
+            int toggleRightPadding = (int)(15.0f * scale);
+            int toggleX = panelX + panelWidth - toggleHeight * 2 - toggleRightPadding;
+            int toggleY = panelY + (headerHeight - toggleHeight) / 2;
+            this.checkToggleHover(toggleX, toggleY, mouseX, mouseY, toggleHeight);
+            float toggleHoverTarget = this.isToggleHovered ? 1.0f : 0.0f;
+            this.toggleHoverAlpha = Math.abs(toggleHoverTarget - this.toggleHoverAlpha) > 0.01f ? LerpUtil.smoothLerp(this.toggleHoverAlpha, toggleHoverTarget, 0.35f) : toggleHoverTarget;
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), panelX, panelY, panelWidth, panelHeight, 4.0f * scale, this.applyAlpha(PANEL_BG_COLOR, alpha));
+            this.renderToggleButton(guiGraphics, toggleX, toggleY, this.enabledAlpha, this.toggleHoverAlpha, this.currentModule != null && this.currentModule.isEnabled(), scale, alpha);
+            int stencilX = panelX;
+            int stencilY = panelY + headerHeight;
+            int stencilWidth = panelWidth;
+            int stencilHeight = panelHeight - headerHeight;
             StencilHelper.beginWrite(false);
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n18, n19, n20, n21, 4.0f * f, Color.WHITE.getRGB());
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), stencilX, stencilY, stencilWidth, stencilHeight, 4.0f * scale, Color.WHITE.getRGB());
             StencilHelper.beginRead(true);
             Renderer.renderConsumer(drawContext -> {
-                this.calculateTotalHeight(this.currentModule, f);
+                this.calculateTotalHeight(this.currentModule, scale);
                 drawContext.save();
-                drawContext.clip(Rectangle.ofXYWH(n11, n12, n5, n13));
+                drawContext.clip(Rectangle.ofXYWH(panelX, panelY, panelWidth, panelHeight));
                 Module renderModule = this.animationState == SettingsPanel.AnimationState.FADE_OUT ? this.prevModule : this.currentModule;
-                float titleAlpha = this.animationState == SettingsPanel.AnimationState.FADE_OUT ? (1.0f - this.transitionProgress) * f2 : f2;
+                float titleAlpha = this.animationState == SettingsPanel.AnimationState.FADE_OUT ? (1.0f - this.transitionProgress) * alpha : alpha;
                 if (renderModule != null) {
-                    FontRenderer titleFont = FontPresets.axiformaBold(20.0f * f);
-                    String string = renderModule.getName();
+                    FontRenderer titleFont = FontPresets.axiformaBold(20.0f * scale);
+                    String title = renderModule.getName();
                     if (renderModule.isEnabled()) {
                         int glowColor = this.applyAlpha(new Color(255, 255, 255, 150).getRGB(), titleAlpha);
-                        TextGlow.drawGlowText(string, (float)n11 + 10.0f * f, (float)n12 + 12.0f * f, titleFont, this.applyAlpha(-1, titleAlpha), glowColor, 12.0f * f);
+                        TextGlow.drawGlowText(title, (float)panelX + 10.0f * scale, (float)panelY + 12.0f * scale, titleFont, this.applyAlpha(-1, titleAlpha), glowColor, 12.0f * scale);
                     } else {
-                        GlHelper.drawText(string, (float)n11 + 10.0f * f, (float)n12 + 12.0f * f, titleFont, this.applyAlpha(-1, titleAlpha));
+                        GlHelper.drawText(title, (float)panelX + 10.0f * scale, (float)panelY + 12.0f * scale, titleFont, this.applyAlpha(-1, titleAlpha));
                     }
                 }
                 drawContext.restore();
                 drawContext.save();
-                drawContext.clip(Rectangle.ofXYWH(n11, n12 + n9, n5, n13 - n9));
+                drawContext.clip(Rectangle.ofXYWH(panelX, panelY + headerHeight, panelWidth, panelHeight - headerHeight));
                 float slideY = 0.0f;
-                float bodyAlpha = f2;
+                float bodyAlpha = alpha;
                 Module bodyModule;
                 if (this.animationState == SettingsPanel.AnimationState.FADE_OUT && this.prevModule != null) {
                     bodyModule = this.prevModule;
-                    slideY = this.transitionProgress * 30.0f * f;
-                    bodyAlpha = (1.0f - this.transitionProgress) * f2;
+                    slideY = this.transitionProgress * 30.0f * scale;
+                    bodyAlpha = (1.0f - this.transitionProgress) * alpha;
                 } else if (this.animationState == SettingsPanel.AnimationState.FADE_IN && this.currentModule != null) {
                     bodyModule = this.currentModule;
-                    slideY = (1.0f - this.transitionProgress) * -30.0f * f;
-                    bodyAlpha = this.transitionProgress * f2;
+                    slideY = (1.0f - this.transitionProgress) * -30.0f * scale;
+                    bodyAlpha = this.transitionProgress * alpha;
                 } else {
                     bodyModule = this.currentModule;
                 }
@@ -150,19 +150,19 @@ extends ClientBase {
                     drawContext.translate(0.0f, slideY);
                     guiGraphics.pose().pushPose();
                     guiGraphics.pose().translate(0.0f, slideY, 0.0f);
-                    List<Setting<?>> list = bodyModule.getSettings();
-                    if (list != null && !list.isEmpty()) {
-                        int settingY = n12 + n9 - (int)this.scrollOffset;
-                        for (Setting<?> setting : list) {
+                    List<Setting<?>> settings = bodyModule.getSettings();
+                    if (settings != null && !settings.isEmpty()) {
+                        int settingY = panelY + headerHeight - (int)this.scrollOffset;
+                        for (Setting<?> setting : settings) {
                             if (setting.getVisibility() != null && !setting.getVisibility().displayable()) continue;
-                            int dy = SettingRendererRegistry.getInstance().render(guiGraphics, setting, n11 + (int)(10.0f * f), settingY, n5 - (int)(20.0f * f), n3, n4, bodyAlpha, f);
+                            int dy = SettingRendererRegistry.getInstance().render(guiGraphics, setting, panelX + (int)(10.0f * scale), settingY, panelWidth - (int)(20.0f * scale), mouseX, mouseY, bodyAlpha, scale);
                             settingY += dy;
                         }
                     } else {
-                        String string = this.getModuleDescription(bodyModule);
-                        if (string != null && !string.isEmpty()) {
-                            FontRenderer fontRenderer = FontPresets.axiformaRegular(12.0f * f);
-                            this.renderWrappedText(string, n11 + (int)(10.0f * f), n12 + n9 + (int)(10.0f * f), n5 - (int)(20.0f * f), fontRenderer, -5592406, bodyAlpha, f);
+                        String description = this.getModuleDescription(bodyModule);
+                        if (description != null && !description.isEmpty()) {
+                            FontRenderer descFont = FontPresets.axiformaRegular(12.0f * scale);
+                            this.renderWrappedText(description, panelX + (int)(10.0f * scale), panelY + headerHeight + (int)(10.0f * scale), panelWidth - (int)(20.0f * scale), descFont, -5592406, bodyAlpha, scale);
                         }
                     }
                     guiGraphics.pose().popPose();
@@ -171,116 +171,116 @@ extends ClientBase {
                 drawContext.restore();
             });
             StencilHelper.end();
-            int n22 = n8 - 2 * n6 - (int)(20.0f * f);
-            float f5 = n22 - n9 - n10;
-            if (this.totalContentHeight > f5) {
-                float f6 = this.totalContentHeight - f5;
-                if (this.scrollOffset > f6) {
-                    this.scrollOffset = f6;
-                    this.scrollTarget = f6;
+            int contentHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+            float visibleHeight = contentHeight - headerHeight - bottomPadding;
+            if (this.totalContentHeight > visibleHeight) {
+                float maxScroll = this.totalContentHeight - visibleHeight;
+                if (this.scrollOffset > maxScroll) {
+                    this.scrollOffset = maxScroll;
+                    this.scrollTarget = maxScroll;
                 }
-                if (this.scrollTarget > f6) {
-                    this.scrollTarget = f6;
+                if (this.scrollTarget > maxScroll) {
+                    this.scrollTarget = maxScroll;
                 }
             } else {
                 this.scrollOffset = 0.0f;
                 this.scrollTarget = 0.0f;
             }
-            this.renderScrollbar(guiGraphics, n11, n12, n13, f, f2);
+            this.renderScrollbar(guiGraphics, panelX, panelY, panelHeight, scale, alpha);
         } catch (Exception exception) {
             // empty catch block
         }
     }
 
-    private void renderScrollbar(GuiGraphics guiGraphics, int n, int n2, int n3, float f, float f2) {
-        float f3;
-        int n4 = (int)(30.0f * f);
-        int n5 = (int)(10.0f * f);
-        float f4 = n3 - n4 - n5;
-        if (this.totalContentHeight <= f4) {
-            f3 = 0.0f;
+    private void renderScrollbar(GuiGraphics guiGraphics, int panelX, int panelY, int panelHeight, float scale, float alpha) {
+        float targetAlpha;
+        int headerHeight = (int)(30.0f * scale);
+        int bottomPadding = (int)(10.0f * scale);
+        float visibleHeight = panelHeight - headerHeight - bottomPadding;
+        if (this.totalContentHeight <= visibleHeight) {
+            targetAlpha = 0.0f;
         } else {
-            long l = System.currentTimeMillis() - this.lastScrollTime;
-            if (this.isDraggingScrollbar || l < 500L) {
-                f3 = 1.0f;
-            } else if (l < 1000L) {
-                long l2 = l - 500L;
-                f3 = 1.0f - (float)l2 / 500.0f;
+            long sinceScroll = System.currentTimeMillis() - this.lastScrollTime;
+            if (this.isDraggingScrollbar || sinceScroll < 500L) {
+                targetAlpha = 1.0f;
+            } else if (sinceScroll < 1000L) {
+                long fadeMs = sinceScroll - 500L;
+                targetAlpha = 1.0f - (float)fadeMs / 500.0f;
             } else {
-                f3 = 0.0f;
+                targetAlpha = 0.0f;
             }
         }
-        this.scrollbarAlpha = Math.abs(this.scrollbarAlpha - f3) > 0.01f ? LerpUtil.smoothLerp(this.scrollbarAlpha, f3, 0.35f) : f3;
+        this.scrollbarAlpha = Math.abs(this.scrollbarAlpha - targetAlpha) > 0.01f ? LerpUtil.smoothLerp(this.scrollbarAlpha, targetAlpha, 0.35f) : targetAlpha;
         if (this.scrollbarAlpha <= 0.01f) {
             return;
         }
-        float f5 = this.totalContentHeight - f4;
-        if (f5 <= 0.0f) {
+        float maxScroll = this.totalContentHeight - visibleHeight;
+        if (maxScroll <= 0.0f) {
             return;
         }
-        float f6 = Math.max(20.0f * f, f4 / this.totalContentHeight * f4);
-        float f7 = (float)(n2 + n4) + this.scrollOffset / f5 * (f4 - f6);
-        int n6 = n + (int)(405.0f * f) - (int)(4.0f * f) - 2;
-        float f8 = 4.0f * f;
-        int n7 = new Color(1.0f, 1.0f, 1.0f, this.scrollbarAlpha * f2).getRGB();
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n6, f7, f8, f6, f8 / 2.0f, n7);
+        float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+        float thumbY = (float)(panelY + headerHeight) + this.scrollOffset / maxScroll * (visibleHeight - thumbHeight);
+        int thumbX = panelX + (int)(405.0f * scale) - (int)(4.0f * scale) - 2;
+        float thumbWidth = 4.0f * scale;
+        int thumbColor = new Color(1.0f, 1.0f, 1.0f, this.scrollbarAlpha * alpha).getRGB();
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), thumbX, thumbY, thumbWidth, thumbHeight, thumbWidth / 2.0f, thumbColor);
     }
 
-    private void checkToggleHover(int n, int n2, int n3, int n4, int n5) {
-        this.isToggleHovered = n3 >= n && n3 <= n + n5 * 2 && n4 >= n2 && n4 <= n2 + n5;
+    private void checkToggleHover(int toggleX, int toggleY, int mouseX, int mouseY, int toggleHeight) {
+        this.isToggleHovered = mouseX >= toggleX && mouseX <= toggleX + toggleHeight * 2 && mouseY >= toggleY && mouseY <= toggleY + toggleHeight;
     }
 
-    private void renderToggleButton(GuiGraphics guiGraphics, int n, int n2, float f, float f2, boolean bl, float f3, float f4) {
-        int n3;
-        int n4 = (int)(12.0f * f3);
-        int n5 = n4 * 2;
-        int n6 = n4;
-        int n7 = this.lerpColor(TOGGLE_OFF_COLOR, TOGGLE_ON_COLOR, f);
-        if (f2 > 0.0f) {
-            float f5 = 1.0f + 0.3f * f2;
-            n7 = this.brightenColor(n7, f5);
+    private void renderToggleButton(GuiGraphics guiGraphics, int toggleX, int toggleY, float enabledFactor, float hoverFactor, boolean enabled, float scale, float alpha) {
+        int overlayColor;
+        int unit = (int)(12.0f * scale);
+        int toggleWidth = unit * 2;
+        int toggleHeight = unit;
+        int trackColor = this.lerpColor(TOGGLE_OFF_COLOR, TOGGLE_ON_COLOR, enabledFactor);
+        if (hoverFactor > 0.0f) {
+            float brightness = 1.0f + 0.3f * hoverFactor;
+            trackColor = this.brightenColor(trackColor, brightness);
         }
-        int n8 = this.applyAlpha(n7, f4);
-        if (bl) {
-            n3 = this.applyAlpha(new Color(76, 175, 80, 70).getRGB(), f4);
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)n - f3, (float)n2 - f3, (float)n5 + 2.0f * f3, (float)n6 + 2.0f * f3, (float)n6 / 2.0f, n3);
+        int trackColorAlpha = this.applyAlpha(trackColor, alpha);
+        if (enabled) {
+            overlayColor = this.applyAlpha(new Color(76, 175, 80, 70).getRGB(), alpha);
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), (float)toggleX - scale, (float)toggleY - scale, (float)toggleWidth + 2.0f * scale, (float)toggleHeight + 2.0f * scale, (float)toggleHeight / 2.0f, overlayColor);
         }
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n, n2, n5, n6, (float)n6 / 2.0f, n8);
-        n3 = n4 - (int)(4.0f * f3);
-        int n9 = (n6 - n3) / 2;
-        int n10 = n + n9;
-        int n11 = n + n5 - n3 - n9;
-        int n12 = n10 + (int)((float)(n11 - n10) * f);
-        int n13 = n2 + n9;
-        if (f2 > 0.0f) {
-            int n14 = (int)(50.0f * f2);
-            int n15 = n14 << 24 | 0xFFFFFF;
-            float f6 = (float)n3 + 2.0f * f3;
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n12 - 1, n13 - 1, f6, f6, f6 / 2.0f, this.applyAlpha(n15, f4));
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), toggleX, toggleY, toggleWidth, toggleHeight, (float)toggleHeight / 2.0f, trackColorAlpha);
+        overlayColor = unit - (int)(4.0f * scale);
+        int knobInset = (toggleHeight - overlayColor) / 2;
+        int knobMinX = toggleX + knobInset;
+        int knobMaxX = toggleX + toggleWidth - overlayColor - knobInset;
+        int knobX = knobMinX + (int)((float)(knobMaxX - knobMinX) * enabledFactor);
+        int knobY = toggleY + knobInset;
+        if (hoverFactor > 0.0f) {
+            int highlightAlpha = (int)(50.0f * hoverFactor);
+            int highlightColor = highlightAlpha << 24 | 0xFFFFFF;
+            float highlightSize = (float)overlayColor + 2.0f * scale;
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), knobX - 1, knobY - 1, highlightSize, highlightSize, highlightSize / 2.0f, this.applyAlpha(highlightColor, alpha));
         }
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n12, n13, n3, n3, (float)n3 / 2.0f, this.applyAlpha(-1, f4));
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), knobX, knobY, overlayColor, overlayColor, (float)overlayColor / 2.0f, this.applyAlpha(-1, alpha));
     }
 
-    private int renderWrappedText(String string, int n, int n2, int n3, FontRenderer fontRenderer, int n4, float f, float f2) {
-        String[] stringArray = string.split(" ");
-        StringBuilder stringBuilder = new StringBuilder();
-        int n5 = n2;
-        int n6 = (int)(16.0f * f2);
-        for (String string2 : stringArray) {
-            String string3 = stringBuilder.length() == 0 ? string2 : stringBuilder + " " + string2;
-            float f3 = GlHelper.getStringWidth(string3, fontRenderer);
-            if (f3 > (float)n3 && stringBuilder.length() > 0) {
-                GlHelper.drawText(stringBuilder.toString(), n, n5, fontRenderer, this.applyAlpha(n4, f));
-                stringBuilder = new StringBuilder(string2);
-                n5 += n6;
+    private int renderWrappedText(String text, int x, int y, int maxWidth, FontRenderer fontRenderer, int textColor, float alpha, float scale) {
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        int currentY = y;
+        int lineHeight = (int)(16.0f * scale);
+        for (String word : words) {
+            String candidate = line.length() == 0 ? word : line + " " + word;
+            float candidateWidth = GlHelper.getStringWidth(candidate, fontRenderer);
+            if (candidateWidth > (float)maxWidth && line.length() > 0) {
+                GlHelper.drawText(line.toString(), x, currentY, fontRenderer, this.applyAlpha(textColor, alpha));
+                line = new StringBuilder(word);
+                currentY += lineHeight;
                 continue;
             }
-            stringBuilder = new StringBuilder(string3);
+            line = new StringBuilder(candidate);
         }
-        if (stringBuilder.length() > 0) {
-            GlHelper.drawText(stringBuilder.toString(), n, n5, fontRenderer, this.applyAlpha(n4, f));
+        if (line.length() > 0) {
+            GlHelper.drawText(line.toString(), x, currentY, fontRenderer, this.applyAlpha(textColor, alpha));
         }
-        return n5 - n2 + n6;
+        return currentY - y + lineHeight;
     }
 
     private String getModuleDescription(Module module) {
@@ -291,162 +291,162 @@ extends ClientBase {
         }
     }
 
-    private void calculateTotalHeight(Module module, float f) {
+    private void calculateTotalHeight(Module module, float scale) {
         if (module == null) {
             this.totalContentHeight = 0.0f;
             return;
         }
-        List<Setting<?>> list = module.getSettings();
-        if (list != null && !list.isEmpty()) {
-            int n = 0;
-            for (Setting setting : list) {
+        List<Setting<?>> settings = module.getSettings();
+        if (settings != null && !settings.isEmpty()) {
+            int total = 0;
+            for (Setting setting : settings) {
                 if (setting.getVisibility() != null && !setting.getVisibility().displayable()) continue;
-                n += SettingRendererRegistry.getInstance().getHeightForScroll(setting, f);
+                total += SettingRendererRegistry.getInstance().getHeightForScroll(setting, scale);
             }
-            this.totalContentHeight = n;
+            this.totalContentHeight = total;
         } else {
-            String string = this.getModuleDescription(module);
-            if (string != null && !string.isEmpty()) {
-                FontRenderer fontRenderer = FontPresets.axiformaRegular(12.0f * f);
-                this.totalContentHeight = this.calcWrappedTextHeight(string, (int)(385.0f * f), fontRenderer, f);
+            String description = this.getModuleDescription(module);
+            if (description != null && !description.isEmpty()) {
+                FontRenderer fontRenderer = FontPresets.axiformaRegular(12.0f * scale);
+                this.totalContentHeight = this.calcWrappedTextHeight(description, (int)(385.0f * scale), fontRenderer, scale);
             } else {
                 this.totalContentHeight = 0.0f;
             }
         }
     }
 
-    private int calcWrappedTextHeight(String string, int n, FontRenderer fontRenderer, float f) {
-        if (string == null || string.isEmpty()) {
+    private int calcWrappedTextHeight(String text, int maxWidth, FontRenderer fontRenderer, float scale) {
+        if (text == null || text.isEmpty()) {
             return 0;
         }
-        String[] stringArray = string.split(" ");
-        StringBuilder stringBuilder = new StringBuilder();
-        int n2 = 1;
-        int n3 = (int)(16.0f * f);
-        for (String string2 : stringArray) {
-            String string3;
-            String string4 = string3 = stringBuilder.length() == 0 ? string2 : stringBuilder + " " + string2;
-            if (GlHelper.getStringWidth(string3, fontRenderer) > (float)n && stringBuilder.length() > 0) {
-                ++n2;
-                stringBuilder = new StringBuilder(string2);
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        int lines = 1;
+        int lineHeight = (int)(16.0f * scale);
+        for (String word : words) {
+            String candidate;
+            String dup = candidate = line.length() == 0 ? word : line + " " + word;
+            if (GlHelper.getStringWidth(candidate, fontRenderer) > (float)maxWidth && line.length() > 0) {
+                ++lines;
+                line = new StringBuilder(word);
                 continue;
             }
-            stringBuilder = new StringBuilder(string3);
+            line = new StringBuilder(candidate);
         }
-        return n2 * n3;
+        return lines * lineHeight;
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private int brightenColor(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = n >> 16 & 0xFF;
-        int n4 = n >> 8 & 0xFF;
-        int n5 = n & 0xFF;
-        n3 = Math.min(255, (int)((float)n3 * f));
-        n4 = Math.min(255, (int)((float)n4 * f));
-        n5 = Math.min(255, (int)((float)n5 * f));
-        return n2 << 24 | n3 << 16 | n4 << 8 | n5;
+    private int brightenColor(int color, float factor) {
+        int a = color >> 24 & 0xFF;
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
+        int b = color & 0xFF;
+        r = Math.min(255, (int)((float)r * factor));
+        g = Math.min(255, (int)((float)g * factor));
+        b = Math.min(255, (int)((float)b * factor));
+        return a << 24 | r << 16 | g << 8 | b;
     }
 
-    public boolean onMouseClick(int n, int n2, int n3, int n4, int n5, float f) {
+    public boolean onMouseClick(int originX, int originY, int mouseX, int mouseY, int button, float scale) {
         if (this.animationState != SettingsPanel.AnimationState.NONE) {
             return true;
         }
         if (this.currentModule == null) {
             return false;
         }
-        int n6 = (int)(405.0f * f);
-        int n7 = (int)(20.0f * f);
-        int n8 = (int)(20.0f * f);
-        int n9 = (int)(400.0f * f);
-        int n10 = (int)(30.0f * f);
-        int n11 = (int)(10.0f * f);
-        int n12 = n + (int)(600.0f * f) - n6 - n7 + (int)(8.0f * f);
-        int n13 = n2 + n8 + (int)(23.0f * f);
-        int n14 = n9 - 2 * n7 - (int)(20.0f * f);
-        float f2 = n14 - n10 - n11;
-        if (this.totalContentHeight > f2) {
-            float f3 = this.totalContentHeight - f2;
-            float f4 = Math.max(20.0f * f, f2 / this.totalContentHeight * f2);
-            float f5 = (float)(n13 + n10) + this.scrollOffset / f3 * (f2 - f4);
-            float f6 = 4.0f * f;
-            int n15 = n12 + n6 - (int)f6 - 2;
-            if (n3 >= n15 && (float)n3 <= (float)n15 + f6 && (float)n4 >= f5 && (float)n4 <= f5 + f4) {
+        int panelWidth = (int)(405.0f * scale);
+        int marginX = (int)(20.0f * scale);
+        int marginY = (int)(20.0f * scale);
+        int baseSize = (int)(400.0f * scale);
+        int headerHeight = (int)(30.0f * scale);
+        int bottomPadding = (int)(10.0f * scale);
+        int panelX = originX + (int)(600.0f * scale) - panelWidth - marginX + (int)(8.0f * scale);
+        int panelY = originY + marginY + (int)(23.0f * scale);
+        int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+        float visibleHeight = panelHeight - headerHeight - bottomPadding;
+        if (this.totalContentHeight > visibleHeight) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+            float thumbY = (float)(panelY + headerHeight) + this.scrollOffset / maxScroll * (visibleHeight - thumbHeight);
+            float thumbWidth = 4.0f * scale;
+            int thumbX = panelX + panelWidth - (int)thumbWidth - 2;
+            if (mouseX >= thumbX && (float)mouseX <= (float)thumbX + thumbWidth && (float)mouseY >= thumbY && (float)mouseY <= thumbY + thumbHeight) {
                 this.isDraggingScrollbar = true;
-                this.scrollbarDragStartY = n4;
+                this.scrollbarDragStartY = mouseY;
                 this.scrollOffsetAtDragStart = this.scrollOffset;
                 this.lastScrollTime = System.currentTimeMillis();
                 return true;
             }
         }
-        int n16 = (int)(12.0f * f);
-        int n17 = (int)(15.0f * f);
-        int n18 = n12 + n6 - n16 * 2 - n17;
-        int n19 = n13 + (n10 - n16) / 2;
-        if (n5 == 0 && n3 >= n18 && n3 <= n18 + n16 * 2 && n4 >= n19 && n4 <= n19 + n16) {
+        int toggleHeight = (int)(12.0f * scale);
+        int toggleRightPadding = (int)(15.0f * scale);
+        int toggleX = panelX + panelWidth - toggleHeight * 2 - toggleRightPadding;
+        int toggleY = panelY + (headerHeight - toggleHeight) / 2;
+        if (button == 0 && mouseX >= toggleX && mouseX <= toggleX + toggleHeight * 2 && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
             this.currentModule.toggle();
-            String string = this.currentModule.isEnabled() ? "On" : "Off";
-            PanelClickGui.panelClickGui.addToast(this.currentModule.getName() + " Module " + string);
+            String stateLabel = this.currentModule.isEnabled() ? "On" : "Off";
+            PanelClickGui.panelClickGui.addToast(this.currentModule.getName() + " Module " + stateLabel);
             return true;
         }
-        List<Setting<?>> list = this.currentModule.getSettings();
-        if (list != null && !list.isEmpty()) {
-            int n20 = n13 + n10;
-            int n21 = n4 + (int)this.scrollOffset;
-            for (Setting setting : list) {
+        List<Setting<?>> settings = this.currentModule.getSettings();
+        if (settings != null && !settings.isEmpty()) {
+            int settingY = panelY + headerHeight;
+            int adjustedMouseY = mouseY + (int)this.scrollOffset;
+            for (Setting setting : settings) {
                 if (setting.getVisibility() != null && !setting.getVisibility().displayable()) continue;
-                int n22 = SettingRendererRegistry.getInstance().getHeightForScroll(setting, f);
-                if (n21 >= n20 && n21 <= n20 + n22 && SettingRendererRegistry.getInstance().onClick(setting, n12 + (int)(10.0f * f), n20 - (int)this.scrollOffset, n6 - (int)(20.0f * f), n3, n4, n5, f)) {
+                int settingHeight = SettingRendererRegistry.getInstance().getHeightForScroll(setting, scale);
+                if (adjustedMouseY >= settingY && adjustedMouseY <= settingY + settingHeight && SettingRendererRegistry.getInstance().onClick(setting, panelX + (int)(10.0f * scale), settingY - (int)this.scrollOffset, panelWidth - (int)(20.0f * scale), mouseX, mouseY, button, scale)) {
                     return true;
                 }
-                n20 += n22;
+                settingY += settingHeight;
             }
         }
         return false;
     }
 
-    public boolean isMouseOverPanel(int n, int n2, int n3, int n4, float f) {
+    public boolean isMouseOverPanel(int originX, int originY, int mouseX, int mouseY, float scale) {
         if (this.currentModule == null) {
             return false;
         }
-        int n5 = (int)(405.0f * f);
-        int n6 = (int)(20.0f * f);
-        int n7 = (int)(20.0f * f);
-        int n8 = (int)(400.0f * f);
-        int n9 = n + (int)(600.0f * f) - n5 - n6 + (int)(8.0f * f);
-        int n10 = n2 + n7 + (int)(23.0f * f);
-        int n11 = n8 - 2 * n6 - (int)(20.0f * f);
-        return n3 >= n9 && n3 <= n9 + n5 && n4 >= n10 && n4 <= n10 + n11;
+        int panelWidth = (int)(405.0f * scale);
+        int marginX = (int)(20.0f * scale);
+        int marginY = (int)(20.0f * scale);
+        int baseSize = (int)(400.0f * scale);
+        int panelX = originX + (int)(600.0f * scale) - panelWidth - marginX + (int)(8.0f * scale);
+        int panelY = originY + marginY + (int)(23.0f * scale);
+        int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+        return mouseX >= panelX && mouseX <= panelX + panelWidth && mouseY >= panelY && mouseY <= panelY + panelHeight;
     }
 
-    public void onScroll(double d, float f) {
-        int n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f);
-        float f2 = (float)n - 30.0f * f - 10.0f * f;
-        if (this.totalContentHeight > f2) {
-            float f3 = this.totalContentHeight - f2;
-            this.scrollTarget -= (float)d * 18.0f * f;
-            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, f3));
+    public void onScroll(double scrollDelta, float scale) {
+        int contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale);
+        float visibleHeight = (float)contentHeight - 30.0f * scale - 10.0f * scale;
+        if (this.totalContentHeight > visibleHeight) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            this.scrollTarget -= (float)scrollDelta * 18.0f * scale;
+            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, maxScroll));
             this.lastScrollTime = System.currentTimeMillis();
         }
     }
 
-    public void onMouseDrag(double d, double d2, float f) {
+    public void onMouseDrag(double mouseX, double mouseY, float scale) {
         if (this.isDraggingScrollbar) {
-            int n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f);
-            float f2 = (float)n - 30.0f * f - 10.0f * f;
-            float f3 = this.totalContentHeight - f2;
-            float f4 = Math.max(20.0f * f, f2 / this.totalContentHeight * f2);
-            float f5 = f2 - f4;
-            if (f5 > 0.0f) {
-                float f6 = (float)d2 - this.scrollbarDragStartY;
-                float f7 = f6 / f5 * f3;
-                this.scrollOffset = this.scrollOffsetAtDragStart + f7;
-                this.scrollTarget = this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, f3));
+            int contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale);
+            float visibleHeight = (float)contentHeight - 30.0f * scale - 10.0f * scale;
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+            float trackHeight = visibleHeight - thumbHeight;
+            if (trackHeight > 0.0f) {
+                float dragDeltaY = (float)mouseY - this.scrollbarDragStartY;
+                float scrollDelta = dragDeltaY / trackHeight * maxScroll;
+                this.scrollOffset = this.scrollOffsetAtDragStart + scrollDelta;
+                this.scrollTarget = this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, maxScroll));
             }
             this.lastScrollTime = System.currentTimeMillis();
         }
@@ -454,19 +454,19 @@ extends ClientBase {
             for (Setting setting : this.currentModule.getSettings()) {
                 SettingRenderer settingRenderer;
                 if (setting.getVisibility() != null && !setting.getVisibility().displayable() || (settingRenderer = SettingRendererRegistry.getInstance().findRenderer(setting)) == null) continue;
-                settingRenderer.onMouseMove(d, d2);
+                settingRenderer.onMouseMove(mouseX, mouseY);
             }
         }
     }
 
-    public void onMouseRelease(double d, double d2, int n) {
+    public void onMouseRelease(double mouseX, double mouseY, int button) {
         this.isDraggingScrollbar = false;
         this.lastScrollTime = System.currentTimeMillis();
         if (this.currentModule != null) {
             for (Setting setting : this.currentModule.getSettings()) {
                 SettingRenderer settingRenderer;
                 if (setting.getVisibility() != null && !setting.getVisibility().displayable() || (settingRenderer = SettingRendererRegistry.getInstance().findRenderer(setting)) == null) continue;
-                settingRenderer.onMouseRelease(d, d2, n);
+                settingRenderer.onMouseRelease(mouseX, mouseY, button);
             }
         }
     }
@@ -479,40 +479,40 @@ extends ClientBase {
         this.currentModule = module;
     }
 
-    private int lerpColor(int n, int n2, float f) {
-        float f2 = 1.0f - f;
-        int n3 = n >> 24 & 0xFF;
-        int n4 = n >> 16 & 0xFF;
-        int n5 = n >> 8 & 0xFF;
-        int n6 = n & 0xFF;
-        int n7 = n2 >> 24 & 0xFF;
-        int n8 = n2 >> 16 & 0xFF;
-        int n9 = n2 >> 8 & 0xFF;
-        int n10 = n2 & 0xFF;
-        int n11 = (int)((float)n3 * f2 + (float)n7 * f);
-        int n12 = (int)((float)n4 * f2 + (float)n8 * f);
-        int n13 = (int)((float)n5 * f2 + (float)n9 * f);
-        int n14 = (int)((float)n6 * f2 + (float)n10 * f);
-        return n11 << 24 | n12 << 16 | n13 << 8 | n14;
+    private int lerpColor(int fromColor, int toColor, float t) {
+        float inv = 1.0f - t;
+        int aFrom = fromColor >> 24 & 0xFF;
+        int rFrom = fromColor >> 16 & 0xFF;
+        int gFrom = fromColor >> 8 & 0xFF;
+        int bFrom = fromColor & 0xFF;
+        int aTo = toColor >> 24 & 0xFF;
+        int rTo = toColor >> 16 & 0xFF;
+        int gTo = toColor >> 8 & 0xFF;
+        int bTo = toColor & 0xFF;
+        int a = (int)((float)aFrom * inv + (float)aTo * t);
+        int r = (int)((float)rFrom * inv + (float)rTo * t);
+        int g = (int)((float)gFrom * inv + (float)gTo * t);
+        int b = (int)((float)bFrom * inv + (float)bTo * t);
+        return a << 24 | r << 16 | g << 8 | b;
     }
 
-    private void rescaleScroll(float f) {
-        float f2;
-        int n;
-        float f3;
+    private void rescaleScroll(float scale) {
+        float headerHeight;
+        int contentHeight;
+        float visibleHeight;
         if (this.lastScale <= 0.0f) {
             return;
         }
-        float f4 = f / this.lastScale;
-        this.scrollOffset *= f4;
-        this.scrollTarget *= f4;
+        float scaleRatio = scale / this.lastScale;
+        this.scrollOffset *= scaleRatio;
+        this.scrollTarget *= scaleRatio;
         if (this.currentModule != null) {
-            this.calculateTotalHeight(this.currentModule, f);
+            this.calculateTotalHeight(this.currentModule, scale);
         }
-        if (this.totalContentHeight > (f3 = (float)(n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f)) - (f2 = 30.0f * f))) {
-            float f5 = this.totalContentHeight - f3;
-            this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, f5));
-            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, f5));
+        if (this.totalContentHeight > (visibleHeight = (float)(contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale)) - (headerHeight = 30.0f * scale))) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, maxScroll));
+            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, maxScroll));
         } else {
             this.scrollOffset = 0.0f;
             this.scrollTarget = 0.0f;

@@ -29,55 +29,55 @@ public record GlRenderEvent(GuiGraphics guiGraphics, PoseStack poseStack, DrawCo
     }
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof GlRenderEvent glRenderEvent)) {
+        if (!(other instanceof GlRenderEvent otherEvent)) {
             return false;
         }
-        if (!glRenderEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        GuiGraphics guiGraphics = this.guiGraphics();
-        GuiGraphics guiGraphics2 = glRenderEvent.guiGraphics();
-        if (!Objects.equals(guiGraphics, guiGraphics2)) {
+        GuiGraphics thisGui = this.guiGraphics();
+        GuiGraphics otherGui = otherEvent.guiGraphics();
+        if (!Objects.equals(thisGui, otherGui)) {
             return false;
         }
-        PoseStack poseStack = this.poseStack();
-        PoseStack poseStack2 = glRenderEvent.poseStack();
-        if (!Objects.equals(poseStack, poseStack2)) {
+        PoseStack thisPose = this.poseStack();
+        PoseStack otherPose = otherEvent.poseStack();
+        if (!Objects.equals(thisPose, otherPose)) {
             return false;
         }
-        DrawContext drawContext = this.drawContext();
-        DrawContext drawContext2 = glRenderEvent.drawContext();
-        return !(!Objects.equals(drawContext, drawContext2));
+        DrawContext thisCtx = this.drawContext();
+        DrawContext otherCtx = otherEvent.drawContext();
+        return !(!Objects.equals(thisCtx, otherCtx));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof GlRenderEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof GlRenderEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        GuiGraphics guiGraphics = this.guiGraphics();
-        n2 = n2 * 59 + (guiGraphics == null ? 43 : guiGraphics.hashCode());
-        PoseStack poseStack = this.poseStack();
-        n2 = n2 * 59 + (poseStack == null ? 43 : poseStack.hashCode());
-        DrawContext drawContext = this.drawContext();
-        n2 = n2 * 59 + (drawContext == null ? 43 : drawContext.hashCode());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        GuiGraphics gui = this.guiGraphics();
+        result = result * 59 + (gui == null ? 43 : gui.hashCode());
+        PoseStack pose = this.poseStack();
+        result = result * 59 + (pose == null ? 43 : pose.hashCode());
+        DrawContext ctx = this.drawContext();
+        result = result * 59 + (ctx == null ? 43 : ctx.hashCode());
+        return result;
     }
 
     @Generated
     public String toString() {
-        String string = String.valueOf(this.drawContext());
-        String string2 = String.valueOf(this.poseStack());
-        String string3 = String.valueOf(this.guiGraphics());
-        return "GlRenderEvent(guiGraphics=" + string3 + ", stack=" + string2 + ", context=" + string + ")";
+        String ctxStr = String.valueOf(this.drawContext());
+        String poseStr = String.valueOf(this.poseStack());
+        String guiStr = String.valueOf(this.guiGraphics());
+        return "GlRenderEvent(guiGraphics=" + guiStr + ", stack=" + poseStr + ", context=" + ctxStr + ")";
     }
 
     @Generated

@@ -77,77 +77,74 @@ extends UIElement {
     private float savedHeight;
 
     public CategoryPanel(Category category) {
-        System.out.println("15");
         this.category = category;
         for (Module module : ZenClient.getInstance().getModuleManager().getModulesByCategory(category)) {
             this.moduleElements.add(new ModuleElement(this, module));
         }
-        System.out.println("15.5");
         this.panelHeight = 20.0f + Math.min(240.0f, 20.0f * (float)this.moduleElements.size());
-        System.out.println("16");
     }
 
     @Override
-    public void render(NewClickGui newClickGui, GuiGraphics guiGraphics, PoseStack poseStack, int n, int n2, float f, float f2) {
-        this.isHovered = CursorUtil.isInBounds(n, n2, this.posX, this.posY, 120.0f, this.panelHeight);
+    public void render(NewClickGui clickGui, GuiGraphics guiGraphics, PoseStack poseStack, int mouseX, int mouseY, float alpha, float partialTicks) {
+        this.isHovered = CursorUtil.isInBounds(mouseX, mouseY, this.posX, this.posY, 120.0f, this.panelHeight);
         if (this.isHovered) {
             NewClickGui.focusedPanel = this;
         }
-        this.scaleTimer.animate(newClickGui.isClosing() ? 0.0 : 1.0, newClickGui.isClosing() ? 0.22 : 0.32, Easings.BACK_OUT);
+        this.scaleTimer.animate(clickGui.isClosing() ? 0.0 : 1.0, clickGui.isClosing() ? 0.22 : 0.32, Easings.BACK_OUT);
         this.scaleTimer.tick();
-        float f3 = 0.0f;
+        float totalContentHeight = 0.0f;
         for (ModuleElement moduleElement : this.moduleElements) {
-            f3 += moduleElement.getHeight();
+            totalContentHeight += moduleElement.getHeight();
         }
         if (this.moduleElements.size() < 10) {
-            this.panelHeight = Math.min(f3, 240.0f) + 20.0f;
+            this.panelHeight = Math.min(totalContentHeight, 240.0f) + 20.0f;
         }
-        this.scrollAmount = Mth.clamp(this.scrollAmount, 0.0f, f3 - this.panelHeight + 20.0f);
+        this.scrollAmount = Mth.clamp(this.scrollAmount, 0.0f, totalContentHeight - this.panelHeight + 20.0f);
         this.scrollTimer.animate(this.scrollAmount, 0.22, Easings.EASE_OUT_POW2);
         this.scrollTimer.tick();
         this.tooltipTimer.animate(this.showTooltip ? 1.0 : 0.0, 0.3, Easings.EASE_OUT_POW2);
         this.tooltipTimer.tick();
         if (this.isDragging) {
-            this.posX = (float)n + this.dragOffsetX;
-            this.posY = (float)n2 + this.dragOffsetY;
+            this.posX = (float)mouseX + this.dragOffsetX;
+            this.posY = (float)mouseY + this.dragOffsetY;
         }
         this.collapseTimer.animate(this.isCollapsed ? 0.0 : 1.0, 0.2, Easings.EASE_OUT_POW2);
         this.collapseTimer.tick();
-        float f4 = this.collapseTimer.getValueF();
+        float collapseAmount = this.collapseTimer.getValueF();
         if (!this.isCollapsed) {
             this.prevHeight = this.panelHeight;
         }
-        float f5 = this.scaleTimer.getValueF();
-        RenderHelper.pushScaleAround(poseStack, this.posX + 60.0f, this.posY + this.panelHeight / 2.0f, 0.4f + 0.6f * f5);
-        float f6 = 12.0f;
-        RenderUtil.drawRoundedRect(poseStack, this.posX - f6, this.posY - f6, 120.0f + f6 * 2.0f, this.panelHeight + f6 * 2.0f, 6.0f + f6 / 2.0f, f6, ColorUtil.fromARGB(0, 0, 0, (int)(80.0f * f * 1.0f)));
-        RenderUtil.drawRoundedRect(poseStack, this.posX, this.posY, 120.0f, this.panelHeight, 6.0f, ColorUtil.withAlpha(BG_COLOR, f));
+        float scaleAmount = this.scaleTimer.getValueF();
+        RenderHelper.pushScaleAround(poseStack, this.posX + 60.0f, this.posY + this.panelHeight / 2.0f, 0.4f + 0.6f * scaleAmount);
+        float shadowSize = 12.0f;
+        RenderUtil.drawRoundedRect(poseStack, this.posX - shadowSize, this.posY - shadowSize, 120.0f + shadowSize * 2.0f, this.panelHeight + shadowSize * 2.0f, 6.0f + shadowSize / 2.0f, shadowSize, ColorUtil.fromARGB(0, 0, 0, (int)(80.0f * alpha * 1.0f)));
+        RenderUtil.drawRoundedRect(poseStack, this.posX, this.posY, 120.0f, this.panelHeight, 6.0f, ColorUtil.withAlpha(BG_COLOR, alpha));
         StencilHelper.beginWrite(false);
         RenderUtil.drawRoundedRect(poseStack, this.posX + 0.5f, this.posY, 118.0f, 20.0f, 6.0f, -1);
         StencilHelper.beginRead(true);
-        RenderUtil.drawGradientH(poseStack, this.posX, this.posY, 120.0f, 1.0f, ColorUtil.withAlpha(ColorUtil.animateColorOffset(-13768502, ACCENT_COLOR_DARK, 100L), f), ColorUtil.withAlpha(ColorUtil.animateColorOffset(-13768502, ACCENT_COLOR_DARK, 2000L), f));
+        RenderUtil.drawGradientH(poseStack, this.posX, this.posY, 120.0f, 1.0f, ColorUtil.withAlpha(ColorUtil.animateColorOffset(-13768502, ACCENT_COLOR_DARK, 100L), alpha), ColorUtil.withAlpha(ColorUtil.animateColorOffset(-13768502, ACCENT_COLOR_DARK, 2000L), alpha));
         StencilHelper.end();
-        FontStore.AXIFORMA_EXTRABOLD_18.drawString(poseStack, this.category.displayName, this.posX + 8.0f, this.posY + (20.0f - FontStore.AXIFORMA_EXTRABOLD_18.getFontHeight()) / 2.0f + 3.0f, ColorUtil.withAlpha(-1, f));
-        float f7 = this.scrollTimer.getValueF();
-        float f8 = this.posY + 20.0f - f7;
+        FontStore.AXIFORMA_EXTRABOLD_18.drawString(poseStack, this.category.displayName, this.posX + 8.0f, this.posY + (20.0f - FontStore.AXIFORMA_EXTRABOLD_18.getFontHeight()) / 2.0f + 3.0f, ColorUtil.withAlpha(-1, alpha));
+        float scrollOffset = this.scrollTimer.getValueF();
+        float elementY = this.posY + 20.0f - scrollOffset;
         StencilHelper.beginWrite(false);
         RenderUtil.drawFilledRect(poseStack, this.posX + 0.5f, this.posY + 20.0f, 119.0f, 6.0f, -1);
         RenderUtil.drawRoundedRect(poseStack, this.posX, this.posY + 20.0f, 120.0f, this.panelHeight - 20.0f - 0.5f, 6.0f, -1);
         StencilHelper.beginRead(true);
         for (ModuleElement moduleElement : this.moduleElements) {
             moduleElement.setX(this.posX);
-            moduleElement.setY(f8);
-            moduleElement.render(newClickGui, guiGraphics, poseStack, n, n2, f, f2);
-            f8 += moduleElement.getHeight();
+            moduleElement.setY(elementY);
+            moduleElement.render(clickGui, guiGraphics, poseStack, mouseX, mouseY, alpha, partialTicks);
+            elementY += moduleElement.getHeight();
         }
-        RenderUtil.drawGradientV(poseStack, this.posX + 0.5f, this.posY + 20.0f - 0.5f, 119.0f, 6.0f, ColorUtil.withAlpha(-16777216, 0.36f * f), ColorUtil.withAlpha(-16777216, 0.0f));
+        RenderUtil.drawGradientV(poseStack, this.posX + 0.5f, this.posY + 20.0f - 0.5f, 119.0f, 6.0f, ColorUtil.withAlpha(-16777216, 0.36f * alpha), ColorUtil.withAlpha(-16777216, 0.0f));
         StencilHelper.end();
-        float f9 = this.tooltipTimer.getValueF();
-        if (f9 > 0.0f) {
-            float f10 = FontStore.AXIFORMA_REGULAR_16.getStringWidth(this.tooltipText);
-            RenderUtil.drawShadow(poseStack, n + 5, n2 + 5, f10 + 6.0f, FontStore.AXIFORMA_REGULAR_16.getFontHeight() + 4.0f, 12, ColorUtil.withAlpha(BG_COLOR, f * f9 * 0.66f));
-            RenderUtil.drawRoundedRect(poseStack, n + 5, n2 + 5, f10 + 6.0f, FontStore.AXIFORMA_REGULAR_16.getFontHeight() + 4.0f, 3.0f, ColorUtil.withAlpha(BG_COLOR, f * f9));
-            FontStore.AXIFORMA_REGULAR_16.drawString(poseStack, this.tooltipText, n + 5 + 3, n2 + 5 + 1, ColorUtil.withAlpha(-1, f * f9));
+        float tooltipAmount = this.tooltipTimer.getValueF();
+        if (tooltipAmount > 0.0f) {
+            float tooltipWidth = FontStore.AXIFORMA_REGULAR_16.getStringWidth(this.tooltipText);
+            RenderUtil.drawShadow(poseStack, mouseX + 5, mouseY + 5, tooltipWidth + 6.0f, FontStore.AXIFORMA_REGULAR_16.getFontHeight() + 4.0f, 12, ColorUtil.withAlpha(BG_COLOR, alpha * tooltipAmount * 0.66f));
+            RenderUtil.drawRoundedRect(poseStack, mouseX + 5, mouseY + 5, tooltipWidth + 6.0f, FontStore.AXIFORMA_REGULAR_16.getFontHeight() + 4.0f, 3.0f, ColorUtil.withAlpha(BG_COLOR, alpha * tooltipAmount));
+            FontStore.AXIFORMA_REGULAR_16.drawString(poseStack, this.tooltipText, mouseX + 5 + 3, mouseY + 5 + 1, ColorUtil.withAlpha(-1, alpha * tooltipAmount));
         }
         RenderHelper.popPose(poseStack);
     }
@@ -159,15 +156,15 @@ extends UIElement {
     }
 
     @Override
-    public boolean mouseClicked(double d, double d2, int n) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.isHovered) {
-            if (CursorUtil.isInBounds((float)d, (float)d2, this.posX, this.posY, 120.0f, 20.0f)) {
+            if (CursorUtil.isInBounds((float)mouseX, (float)mouseY, this.posX, this.posY, 120.0f, 20.0f)) {
                 this.isDragging = true;
-                this.dragOffsetX = this.posX - (float)d;
-                this.dragOffsetY = this.posY - (float)d2;
-            } else if (CursorUtil.isInBounds((float)d, (float)d2, this.posX, this.posY + 20.0f, 120.0f, this.panelHeight - 20.0f)) {
+                this.dragOffsetX = this.posX - (float)mouseX;
+                this.dragOffsetY = this.posY - (float)mouseY;
+            } else if (CursorUtil.isInBounds((float)mouseX, (float)mouseY, this.posX, this.posY + 20.0f, 120.0f, this.panelHeight - 20.0f)) {
                 for (ModuleElement moduleElement : this.moduleElements) {
-                    if (!moduleElement.mouseClicked(d, d2, n)) continue;
+                    if (!moduleElement.mouseClicked(mouseX, mouseY, button)) continue;
                     return true;
                 }
             }
@@ -177,10 +174,10 @@ extends UIElement {
     }
 
     @Override
-    public boolean mouseReleased(double d, double d2, int n) {
-        if (CursorUtil.isInBounds((float)d, (float)d2, this.posX, this.posY + 20.0f, 120.0f, this.panelHeight - 20.0f)) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (CursorUtil.isInBounds((float)mouseX, (float)mouseY, this.posX, this.posY + 20.0f, 120.0f, this.panelHeight - 20.0f)) {
             for (ModuleElement moduleElement : this.moduleElements) {
-                if (!moduleElement.mouseReleased(d, d2, n)) continue;
+                if (!moduleElement.mouseReleased(mouseX, mouseY, button)) continue;
                 return true;
             }
         }
@@ -189,9 +186,9 @@ extends UIElement {
     }
 
     @Override
-    public boolean mouseScrolled(double d, double d2, double d3) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         if (this.isHovered) {
-            this.scrollAmount -= (float)d3 * 50.0f;
+            this.scrollAmount -= (float)scrollDelta * 50.0f;
             return true;
         }
         return false;
@@ -217,20 +214,20 @@ extends UIElement {
 
     @Override
     @Generated
-    public void setX(float f) {
-        this.posX = f;
+    public void setX(float x) {
+        this.posX = x;
     }
 
     @Override
     @Generated
-    public void setY(float f) {
-        this.posY = f;
+    public void setY(float y) {
+        this.posY = y;
     }
 
     @Override
     @Generated
-    public void setHeight(float f) {
-        this.panelHeight = f;
+    public void setHeight(float height) {
+        this.panelHeight = height;
     }
 
     }

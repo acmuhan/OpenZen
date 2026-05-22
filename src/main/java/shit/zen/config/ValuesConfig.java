@@ -96,8 +96,8 @@ extends Config {
     public void save(BufferedWriter bufferedWriter) throws IOException {
         for (Module module : ZenClient.getInstance().getModuleManager().getModules()) {
             if (module instanceof HudElement hudElement) {
-                bufferedWriter.write(String.format((String)"P:%s:X:%s\n", (Object[])new Object[]{module.getName(), Float.valueOf(hudElement.getX())}));
-                bufferedWriter.write(String.format((String)"P:%s:Y:%s\n", (Object[])new Object[]{module.getName(), Float.valueOf(hudElement.getY())}));
+                bufferedWriter.write(String.format((String)"P:%s:X:%s\n", (Object[])new Object[]{module.getName(), hudElement.getX()}));
+                bufferedWriter.write(String.format((String)"P:%s:Y:%s\n", (Object[])new Object[]{module.getName(), hudElement.getY()}));
             }
             module.getSettings().forEach(setting -> {
                 try {

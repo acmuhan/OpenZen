@@ -22,85 +22,85 @@ extends ClientBase {
         return mc.options.keyUp.isDown() || mc.options.keyDown.isDown() || mc.options.keyLeft.isDown() || mc.options.keyRight.isDown();
     }
 
-    public static void strafeWithYaw(double d, double d2) {
+    public static void strafeWithYaw(double yawRad, double speed) {
         if (!MovementUtil.isInputActive()) {
             return;
         }
-        Vec3 vec3 = mc.player.getDeltaMovement();
-        mc.player.setDeltaMovement(vec3.x + (double)(-Mth.sin((float)d)) * d2, vec3.y, vec3.z + (double)Mth.cos((float)d) * d2);
+        Vec3 deltaMovement = mc.player.getDeltaMovement();
+        mc.player.setDeltaMovement(deltaMovement.x + (double)(-Mth.sin((float)yawRad)) * speed, deltaMovement.y, deltaMovement.z + (double)Mth.cos((float)yawRad) * speed);
     }
 
-    public static void strafeForward(double d) {
+    public static void strafeForward(double speed) {
         if (!MovementUtil.isInputActive()) {
             return;
         }
-        double d2 = MovementUtil.getMovementYaw();
-        Vec3 vec3 = mc.player.getDeltaMovement();
-        mc.player.setDeltaMovement(vec3.x + (double)(-Mth.sin((float)d2)) * d, vec3.y, vec3.z + (double)Mth.cos((float)d2) * d);
+        double movementYaw = MovementUtil.getMovementYaw();
+        Vec3 deltaMovement = mc.player.getDeltaMovement();
+        mc.player.setDeltaMovement(deltaMovement.x + (double)(-Mth.sin((float)movementYaw)) * speed, deltaMovement.y, deltaMovement.z + (double)Mth.cos((float)movementYaw) * speed);
     }
 
     public static double getMovementYaw() {
-        float f = mc.player.getYRot();
+        float yaw = mc.player.getYRot();
         if (mc.player.zza < 0.0f) {
-            f += 180.0f;
+            yaw += 180.0f;
         }
-        float f2 = 1.0f;
+        float strafeFactor = 1.0f;
         if (mc.player.zza < 0.0f) {
-            f2 = -0.5f;
+            strafeFactor = -0.5f;
         } else if (mc.player.zza > 0.0f) {
-            f2 = 0.5f;
+            strafeFactor = 0.5f;
         }
         if (mc.player.xxa > 0.0f) {
-            f -= 90.0f * f2;
+            yaw -= 90.0f * strafeFactor;
         } else if (mc.player.xxa < 0.0f) {
-            f += 90.0f * f2;
+            yaw += 90.0f * strafeFactor;
         }
-        return Math.toRadians(f);
+        return Math.toRadians(yaw);
     }
 
     public static double getBaseSpeed() {
-        double d = 0.2875;
+        double baseSpeed = 0.2875;
         if (mc.player.hasEffect(MobEffects.MOVEMENT_SPEED)) {
-            int n = mc.player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier();
-            d *= 1.0 + 0.2 * (double)(n + 1);
+            int amplifier = mc.player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier();
+            baseSpeed *= 1.0 + 0.2 * (double)(amplifier + 1);
         }
-        return d;
+        return baseSpeed;
     }
 
-    public static double hypot(double d, double d2) {
-        return Math.sqrt(d * d + d2 * d2);
+    public static double hypot(double x, double z) {
+        return Math.sqrt(x * x + z * z);
     }
 
     public static double getSpeed() {
         return MovementUtil.hypot(mc.player.getDeltaMovement().x, mc.player.getDeltaMovement().z);
     }
 
-    public static void setSpeed(double d) {
-        float f = mc.player.input.forwardImpulse;
-        float f2 = mc.player.input.leftImpulse;
-        float f3 = mc.player.getYRot();
-        if (f == 0.0f && f2 == 0.0f) {
+    public static void setSpeed(double speed) {
+        float forward = mc.player.input.forwardImpulse;
+        float strafe = mc.player.input.leftImpulse;
+        float yaw = mc.player.getYRot();
+        if (forward == 0.0f && strafe == 0.0f) {
             mc.player.setDeltaMovement(0.0, mc.player.getDeltaMovement().y, 0.0);
             return;
         }
-        if (f != 0.0f && f2 != 0.0f) {
-            f = (float)((double)f * Math.sin(0.7853981633974483));
-            f2 = (float)((double)f2 * Math.cos(0.7853981633974483));
+        if (forward != 0.0f && strafe != 0.0f) {
+            forward = (float)((double)forward * Math.sin(0.7853981633974483));
+            strafe = (float)((double)strafe * Math.cos(0.7853981633974483));
         }
-        double d2 = (double)f * d * -Math.sin(Math.toRadians(f3)) + (double)f2 * d * Math.cos(Math.toRadians(f3));
-        double d3 = (double)f * d * Math.cos(Math.toRadians(f3)) - (double)f2 * d * -Math.sin(Math.toRadians(f3));
-        mc.player.setDeltaMovement(d2, mc.player.getDeltaMovement().y, d3);
+        double motionX = (double)forward * speed * -Math.sin(Math.toRadians(yaw)) + (double)strafe * speed * Math.cos(Math.toRadians(yaw));
+        double motionZ = (double)forward * speed * Math.cos(Math.toRadians(yaw)) - (double)strafe * speed * -Math.sin(Math.toRadians(yaw));
+        mc.player.setDeltaMovement(motionX, mc.player.getDeltaMovement().y, motionZ);
     }
 
-    public static boolean isAboveVoid(double d, double d2, double d3) {
-        while (d2 > 0.0) {
-            Vec3 vec3 = new Vec3(d, d2, d3);
-            Vec3 vec32 = new Vec3(d, d2 - 1.0, d3);
-            BlockHitResult blockHitResult = mc.level.clip(new ClipContext(vec3, vec32, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
+    public static boolean isAboveVoid(double x, double y, double z) {
+        while (y > 0.0) {
+            Vec3 startPos = new Vec3(x, y, z);
+            Vec3 endPos = new Vec3(x, y - 1.0, z);
+            BlockHitResult blockHitResult = mc.level.clip(new ClipContext(startPos, endPos, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
             if (blockHitResult != null && blockHitResult.getType() != HitResult.Type.MISS) {
                 return false;
             }
-            d2 -= 1.0;
+            y -= 1.0;
         }
         return true;
     }
@@ -113,96 +113,96 @@ extends ClientBase {
         return Math.hypot(mc.player.getDeltaMovement().x, mc.player.getDeltaMovement().z);
     }
 
-    public static void handleStrafe(StrafeEvent strafeEvent, float f) {
-        float f2 = strafeEvent.getForward();
-        float f3 = strafeEvent.getStrafe();
-        float f4 = mc.player.getYRot();
+    public static void handleStrafe(StrafeEvent strafeEvent, float partialTicks) {
+        float forward = strafeEvent.getForward();
+        float strafe = strafeEvent.getStrafe();
+        float yaw = mc.player.getYRot();
         if (TargetStrafe.strafeTarget != null && TargetStrafe.INSTANCE.isEnabled() && (!TargetStrafe.isSmartStrafe() || mc.options.keyJump.isDown())) {
-            float f5 = (float)(MovementUtil.getBaseSpeed() / ((double)TargetStrafe.getRange() * Math.PI * 2.0) * 360.0) * (float)TargetStrafe.strafeDirectionSign;
+            float yawOffset = (float)(MovementUtil.getBaseSpeed() / ((double)TargetStrafe.getRange() * Math.PI * 2.0) * 360.0) * (float)TargetStrafe.strafeDirectionSign;
             Rotation rotation = RotationUtil.rotationToForBow(new Vec3(TargetStrafe.strafeTarget.getX(), TargetStrafe.strafeTarget.getY(), TargetStrafe.strafeTarget.getZ()), new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()));
-            rotation.setYaw(rotation.getYaw() + f5);
-            float f6 = rotation.getYaw() * ((float)Math.PI / 180);
-            double d = TargetStrafe.strafeTarget.getX() - Math.sin(f6) * (double)TargetStrafe.getRange();
-            double d2 = TargetStrafe.strafeTarget.getZ() + Math.cos(f6) * (double)TargetStrafe.getRange();
-            f4 = (float)Math.toDegrees(RotationUtil.rotationToForBow(new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()), new Vec3(d, TargetStrafe.strafeTarget.getY(), d2)).getYaw() * ((float)Math.PI / 180));
+            rotation.setYaw(rotation.getYaw() + yawOffset);
+            float yawRad = rotation.getYaw() * ((float)Math.PI / 180);
+            double circleX = TargetStrafe.strafeTarget.getX() - Math.sin(yawRad) * (double)TargetStrafe.getRange();
+            double circleZ = TargetStrafe.strafeTarget.getZ() + Math.cos(yawRad) * (double)TargetStrafe.getRange();
+            yaw = (float)Math.toDegrees(RotationUtil.rotationToForBow(new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ()), new Vec3(circleX, TargetStrafe.strafeTarget.getY(), circleZ)).getYaw() * ((float)Math.PI / 180));
         }
-        double d = Mth.wrapDegrees(Math.toDegrees(MovementUtil.getDirectionYaw(f4, f2, f3)));
-        if (f2 == 0.0f && f3 == 0.0f) {
+        double targetDirection = Mth.wrapDegrees(Math.toDegrees(MovementUtil.getDirectionYaw(yaw, forward, strafe)));
+        if (forward == 0.0f && strafe == 0.0f) {
             return;
         }
-        int n = 0;
-        int n2 = 0;
-        float f7 = Float.MAX_VALUE;
+        int bestForward = 0;
+        int bestStrafe = 0;
+        float bestDiff = Float.MAX_VALUE;
         for (int i = -1; i <= 1; ++i) {
             for (int j = -1; j <= 1; ++j) {
-                double d3;
-                double d4;
-                if (j == 0 && i == 0 || !((d4 = Math.abs(d - (d3 = Mth.wrapDegrees(Math.toDegrees(MovementUtil.getDirectionYaw(f, i, j)))))) < (double)f7)) continue;
-                f7 = (float)d4;
-                n = i;
-                n2 = j;
+                double candidateDir;
+                double diff;
+                if (j == 0 && i == 0 || !((diff = Math.abs(targetDirection - (candidateDir = Mth.wrapDegrees(Math.toDegrees(MovementUtil.getDirectionYaw(partialTicks, i, j)))))) < (double)bestDiff)) continue;
+                bestDiff = (float)diff;
+                bestForward = i;
+                bestStrafe = j;
             }
         }
-        strafeEvent.setForward(n);
-        strafeEvent.setStrafe(n2);
+        strafeEvent.setForward(bestForward);
+        strafeEvent.setStrafe(bestStrafe);
     }
 
     public static boolean isInputActive() {
         return mc.player != null && mc.level != null && ((double)mc.player.input.forwardImpulse != 0.0 || (double)mc.player.input.leftImpulse != 0.0);
     }
 
-    public static double getDirectionYaw(float f, double d, double d2) {
-        if (d < 0.0) {
-            f += 180.0f;
+    public static double getDirectionYaw(float yaw, double forward, double strafe) {
+        if (forward < 0.0) {
+            yaw += 180.0f;
         }
-        float f2 = 1.0f;
-        if (d < 0.0) {
-            f2 = -0.5f;
-        } else if (d > 0.0) {
-            f2 = 0.5f;
+        float strafeFactor = 1.0f;
+        if (forward < 0.0) {
+            strafeFactor = -0.5f;
+        } else if (forward > 0.0) {
+            strafeFactor = 0.5f;
         }
-        if (d2 > 0.0) {
-            f -= 90.0f * f2;
+        if (strafe > 0.0) {
+            yaw -= 90.0f * strafeFactor;
         }
-        if (d2 < 0.0) {
-            f += 90.0f * f2;
+        if (strafe < 0.0) {
+            yaw += 90.0f * strafeFactor;
         }
-        return Math.toRadians(f);
+        return Math.toRadians(yaw);
     }
 
-    private static float getDirectionAngle(float f, float f2) {
-        boolean bl;
-        float f3 = mc.player.getYRot();
-        boolean bl2 = f > 0.0f;
-        boolean bl3 = f < 0.0f;
-        boolean bl4 = f2 > 0.0f;
-        boolean bl5 = f2 < 0.0f;
-        boolean bl6 = bl4 || bl5;
-        boolean bl7 = bl = bl2 || bl3;
-        if (f != 0.0f || f2 != 0.0f) {
-            if (bl3 && !bl6) {
-                return f3 + 180.0f;
+    private static float getDirectionAngle(float forward, float strafe) {
+        boolean hasForward;
+        float yaw = mc.player.getYRot();
+        boolean forwardPositive = forward > 0.0f;
+        boolean forwardNegative = forward < 0.0f;
+        boolean strafePositive = strafe > 0.0f;
+        boolean strafeNegative = strafe < 0.0f;
+        boolean hasStrafe = strafePositive || strafeNegative;
+        boolean hasForwardTmp = hasForward = forwardPositive || forwardNegative;
+        if (forward != 0.0f || strafe != 0.0f) {
+            if (forwardNegative && !hasStrafe) {
+                return yaw + 180.0f;
             }
-            if (bl2 && bl5) {
-                return f3 + 45.0f;
+            if (forwardPositive && strafeNegative) {
+                return yaw + 45.0f;
             }
-            if (bl2 && bl4) {
-                return f3 - 45.0f;
+            if (forwardPositive && strafePositive) {
+                return yaw - 45.0f;
             }
-            if (!bl && bl5) {
-                return f3 + 90.0f;
+            if (!hasForward && strafeNegative) {
+                return yaw + 90.0f;
             }
-            if (!bl && bl4) {
-                return f3 - 90.0f;
+            if (!hasForward && strafePositive) {
+                return yaw - 90.0f;
             }
-            if (bl3 && bl5) {
-                return f3 + 135.0f;
+            if (forwardNegative && strafeNegative) {
+                return yaw + 135.0f;
             }
-            if (bl3) {
-                return f3 - 135.0f;
+            if (forwardNegative) {
+                return yaw - 135.0f;
             }
         }
-        return f3;
+        return yaw;
     }
 
     public static double getEntitySpeed(Entity entity) {

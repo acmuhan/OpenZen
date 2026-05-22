@@ -12,14 +12,14 @@ public abstract class Uniform<T extends Uniform<?>> {
     @Getter
     private int location;
 
-    public T bindToProgram(int n) {
-        this.programId = n;
+    public T bindToProgram(int programId) {
+        this.programId = programId;
         this.location = GL20.glGetUniformLocation(this.programId, this.name);
         return (T)this;
     }
 
     @Generated
-    public Uniform(String string) {
-        this.name = string;
+    public Uniform(String name) {
+        this.name = name;
     }
 }

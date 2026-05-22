@@ -15,9 +15,9 @@ import shit.zen.event.EventTarget;
 public class AutoSoup
 extends Module {
     public static AutoSoup INSTANCE;
-    private final NumberSetting health = new NumberSetting("Health", Integer.valueOf(15), Integer.valueOf(0), Integer.valueOf(20), Integer.valueOf(1));
-    private final NumberSetting delay = new NumberSetting("Delay", Integer.valueOf(300), Integer.valueOf(0), Integer.valueOf(1000), Integer.valueOf(1));
-    private final NumberSetting switchDelay = new NumberSetting("Switch Delay", Integer.valueOf(100), Integer.valueOf(0), Integer.valueOf(1000), Integer.valueOf(1));
+    private final NumberSetting health = new NumberSetting("Health", 15, 0, 20, 1);
+    private final NumberSetting delay = new NumberSetting("Delay", 300, 0, 1000, 1);
+    private final NumberSetting switchDelay = new NumberSetting("Switch Delay", 100, 0, 1000, 1);
     private final BooleanSetting drop = new BooleanSetting("Drop", true);
     private final Timer switchDelayTimer = new Timer();
     private final Timer delayTimer = new Timer();
@@ -49,13 +49,12 @@ extends Module {
         if (!this.delayTimer.hasPassed(this.delay.getValue().longValue())) {
             return;
         }
-        int n = ItemUtil.findItemInRange(0, 9, Items.MUSHROOM_STEW);
-        if (mc.player.getHealth() <= this.health.getValue().floatValue() && n != -1) {
-            boolean bl;
-            boolean bl2 = bl = mc.player.getInventory().selected == n;
-            if (!bl) {
+        int soupSlot = ItemUtil.findItemInRange(0, 9, Items.MUSHROOM_STEW);
+        if (mc.player.getHealth() <= this.health.getValue().floatValue() && soupSlot != -1) {
+            boolean alreadySelected = mc.player.getInventory().selected == soupSlot;
+            if (!alreadySelected) {
                 this.prevSelectedSlot = mc.player.getInventory().selected;
-                mc.player.getInventory().selected = n;
+                mc.player.getInventory().selected = soupSlot;
                 PlayerUtil.sendCarriedItem();
                 this.switchDelayTimer.reset();
             }

@@ -35,10 +35,10 @@ public class ModuleButton {
     private final float hoverSpeed = 4.0f;
     private long lastTime = System.currentTimeMillis();
 
-    public ModuleButton(Module module, CategoryPanel categoryPanel, int n) {
+    public ModuleButton(Module module, CategoryPanel categoryPanel, int yOffset) {
         this.module = module;
         this.panel = categoryPanel;
-        this.yOffset = n;
+        this.yOffset = yOffset;
         this.expanded = false;
         this.settingComponents = new ArrayList<>();
         for (Setting setting : module.getSettings()) {
@@ -64,144 +64,144 @@ public class ModuleButton {
         if (!this.expanded) {
             return this.panel.rowHeight;
         }
-        int n = this.panel.rowHeight;
-        List<SettingComponent> list = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
-        for (SettingComponent settingComponent2 : list) {
-            n += this.panel.rowHeight;
-            if (settingComponent2 instanceof ModeComponent mode && mode.isDropdownOpen()) {
-                n += mode.getDropdownHeight();
+        int total = this.panel.rowHeight;
+        List<SettingComponent> visibleComponents = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
+        for (SettingComponent settingComponent : visibleComponents) {
+            total += this.panel.rowHeight;
+            if (settingComponent instanceof ModeComponent mode && mode.isDropdownOpen()) {
+                total += mode.getDropdownHeight();
             }
-            if (settingComponent2 instanceof MultiSelectComponent multi && multi.isDropdownOpen()) {
-                n += multi.getDropdownHeight();
+            if (settingComponent instanceof MultiSelectComponent multi && multi.isDropdownOpen()) {
+                total += multi.getDropdownHeight();
             }
         }
-        return n;
+        return total;
     }
 
     public int getExpandedHeight() {
-        int n = 0;
-        List<SettingComponent> list = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
-        for (SettingComponent settingComponent2 : list) {
-            n += this.panel.rowHeight;
-            if (settingComponent2 instanceof ModeComponent mode && mode.isDropdownOpen()) {
-                n += mode.getDropdownHeight();
+        int total = 0;
+        List<SettingComponent> visibleComponents = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
+        for (SettingComponent settingComponent : visibleComponents) {
+            total += this.panel.rowHeight;
+            if (settingComponent instanceof ModeComponent mode && mode.isDropdownOpen()) {
+                total += mode.getDropdownHeight();
             }
-            if (settingComponent2 instanceof MultiSelectComponent multi && multi.isDropdownOpen()) {
-                n += multi.getDropdownHeight();
+            if (settingComponent instanceof MultiSelectComponent multi && multi.isDropdownOpen()) {
+                total += multi.getDropdownHeight();
             }
         }
-        return n;
+        return total;
     }
 
-    public void render(PoseStack poseStack, int n, int n2, float f) {
-        float f2;
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        float expandedHeight;
         this.expandAnim.tick();
-        long l = System.currentTimeMillis();
-        float f3 = (float)(l - this.lastTime) / 1000.0f;
-        this.lastTime = l;
-        if (this.isHovered(n, n2)) {
+        long now = System.currentTimeMillis();
+        float deltaSeconds = (float)(now - this.lastTime) / 1000.0f;
+        this.lastTime = now;
+        if (this.isHovered(mouseX, mouseY)) {
             if (this.hoverProgress < 1.0f) {
-                this.hoverProgress += f3 * 4.0f;
+                this.hoverProgress += deltaSeconds * 4.0f;
             }
             if (this.hoverProgress > 1.0f) {
                 this.hoverProgress = 1.0f;
             }
         } else {
             if (this.hoverProgress > 0.0f) {
-                this.hoverProgress -= f3 * 4.0f;
+                this.hoverProgress -= deltaSeconds * 4.0f;
             }
             if (this.hoverProgress < 0.0f) {
                 this.hoverProgress = 0.0f;
             }
         }
-        int n3 = (int)(160.0f + 40.0f * this.hoverProgress);
-        int n4 = this.panel.y + this.yOffset - (this.yOffset == 0 ? 0 : 1);
-        int n5 = this.panel.rowHeight + (this.yOffset == 0 ? 0 : 1);
-        RenderUtil.drawBlurredRect(poseStack, this.panel.x, n4, this.panel.width, n5, 4.0f, 6.0f, 0.9f, 0);
-        RenderUtil.drawFilledRect(poseStack, this.panel.x, n4, this.panel.width, n5, new Color(21, 21, 21, n3).getRGB());
-        String string = this.module.getName();
-        float f4 = FontStore.OPENSANS_16.getStringWidth(string);
-        float f5 = (float)this.panel.x + (float)this.panel.width / 2.0f - f4 / 2.0f;
-        float f6 = (float)(this.panel.y + this.yOffset) + (float)this.panel.rowHeight / 2.0f - FontStore.OPENSANS_16.getFontHeight() / 2.0f;
-        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, string, f5, f6, this.module.isEnabled() ? ColorUtil.fromARGB(138, 180, 248, 255) : -1);
+        int bgAlpha = (int)(160.0f + 40.0f * this.hoverProgress);
+        int rowY = this.panel.y + this.yOffset - (this.yOffset == 0 ? 0 : 1);
+        int rowHeight = this.panel.rowHeight + (this.yOffset == 0 ? 0 : 1);
+        RenderUtil.drawBlurredRect(poseStack, this.panel.x, rowY, this.panel.width, rowHeight, 4.0f, 6.0f, 0.9f, 0);
+        RenderUtil.drawFilledRect(poseStack, this.panel.x, rowY, this.panel.width, rowHeight, new Color(21, 21, 21, bgAlpha).getRGB());
+        String name = this.module.getName();
+        float nameWidth = FontStore.OPENSANS_16.getStringWidth(name);
+        float nameX = (float)this.panel.x + (float)this.panel.width / 2.0f - nameWidth / 2.0f;
+        float nameY = (float)(this.panel.y + this.yOffset) + (float)this.panel.rowHeight / 2.0f - FontStore.OPENSANS_16.getFontHeight() / 2.0f;
+        FontStore.OPENSANS_16.drawStringWithShadow(poseStack, name, nameX, nameY, this.module.isEnabled() ? ColorUtil.fromARGB(138, 180, 248, 255) : -1);
         if (!this.module.getSettings().isEmpty()) {
             poseStack.pushPose();
-            f2 = this.panel.x + this.panel.width - 15;
-            float f7 = (float)(this.panel.y + this.yOffset) + (float)this.panel.rowHeight / 2.0f;
-            float f8 = 180.0f * this.expandAnim.getValueF();
-            poseStack.translate(f2, f7, 0.0f);
-            poseStack.mulPose(Axis.ZP.rotationDegrees(f8));
-            poseStack.translate(-f2, -f7, 0.0f);
-            FontStore.MATERIAL_20.drawStringWithShadow(poseStack, "", f2 - FontStore.MATERIAL_20.getStringWidth("") / 2.0f, f7 - FontStore.MATERIAL_20.getFontHeight() / 2.0f, -1);
+            expandedHeight = this.panel.x + this.panel.width - 15;
+            float arrowY = (float)(this.panel.y + this.yOffset) + (float)this.panel.rowHeight / 2.0f;
+            float arrowAngle = 180.0f * this.expandAnim.getValueF();
+            poseStack.translate(expandedHeight, arrowY, 0.0f);
+            poseStack.mulPose(Axis.ZP.rotationDegrees(arrowAngle));
+            poseStack.translate(-expandedHeight, -arrowY, 0.0f);
+            FontStore.MATERIAL_20.drawStringWithShadow(poseStack, "", expandedHeight - FontStore.MATERIAL_20.getStringWidth("") / 2.0f, arrowY - FontStore.MATERIAL_20.getFontHeight() / 2.0f, -1);
             poseStack.popPose();
         }
-        if ((f2 = (float)this.getExpandedHeight() * this.expandAnim.getValueF()) > 0.0f) {
-            int n6 = this.panel.y + this.yOffset + this.panel.rowHeight - 1;
-            RenderUtil.drawBlurredRect(poseStack, this.panel.x, n6, this.panel.width, (int)f2 + 1, 4.0f, 6.0f, 0.9f, 0);
-            RenderUtil.pushScissor(this.panel.x, n6, this.panel.width, (int)f2 + 1);
-            RenderUtil.drawFilledRect(poseStack, this.panel.x, n6, this.panel.width, (int)f2 + 1, new Color(11, 11, 11, 150).getRGB());
-            List<SettingComponent> list = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
-            int n7 = 0;
-            for (SettingComponent settingComponent2 : list) {
-                SettingComponent settingComponent3;
-                settingComponent2.yOffset = n7;
-                settingComponent2.renderWithAlpha(poseStack, n, n2, f, 1.0f);
-                n7 += this.panel.rowHeight;
-                if (settingComponent2 instanceof ModeComponent && ((ModeComponent)(settingComponent3 = settingComponent2)).isDropdownOpen()) {
-                    n7 += ((ModeComponent)settingComponent3).getDropdownHeight();
+        if ((expandedHeight = (float)this.getExpandedHeight() * this.expandAnim.getValueF()) > 0.0f) {
+            int contentY = this.panel.y + this.yOffset + this.panel.rowHeight - 1;
+            RenderUtil.drawBlurredRect(poseStack, this.panel.x, contentY, this.panel.width, (int)expandedHeight + 1, 4.0f, 6.0f, 0.9f, 0);
+            RenderUtil.pushScissor(this.panel.x, contentY, this.panel.width, (int)expandedHeight + 1);
+            RenderUtil.drawFilledRect(poseStack, this.panel.x, contentY, this.panel.width, (int)expandedHeight + 1, new Color(11, 11, 11, 150).getRGB());
+            List<SettingComponent> visibleComponents = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
+            int componentOffsetY = 0;
+            for (SettingComponent settingComponent : visibleComponents) {
+                SettingComponent ref;
+                settingComponent.yOffset = componentOffsetY;
+                settingComponent.renderWithAlpha(poseStack, mouseX, mouseY, partialTicks, 1.0f);
+                componentOffsetY += this.panel.rowHeight;
+                if (settingComponent instanceof ModeComponent && ((ModeComponent)(ref = settingComponent)).isDropdownOpen()) {
+                    componentOffsetY += ((ModeComponent)ref).getDropdownHeight();
                 }
-                if (!(settingComponent2 instanceof MultiSelectComponent) || !((MultiSelectComponent)(settingComponent3 = settingComponent2)).isDropdownOpen()) continue;
-                n7 += ((MultiSelectComponent)settingComponent3).getDropdownHeight();
+                if (!(settingComponent instanceof MultiSelectComponent) || !((MultiSelectComponent)(ref = settingComponent)).isDropdownOpen()) continue;
+                componentOffsetY += ((MultiSelectComponent)ref).getDropdownHeight();
             }
             RenderUtil.popScissor();
         }
     }
 
-    public void mouseClicked(double d, double d2, int n) {
-        if (this.isHovered(d, d2)) {
-            if (n == 0) {
+    public void mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isHovered(mouseX, mouseY)) {
+            if (button == 0) {
                 this.module.setEnabled(!this.module.isEnabled());
-            } else if (n == 1 && !this.module.getSettings().isEmpty()) {
+            } else if (button == 1 && !this.module.getSettings().isEmpty()) {
                 this.expanded = !this.expanded;
                 this.expandAnim.animate(this.expanded ? 1.0 : 0.0, 0.2, Easings.EASE_OUT_QUAD);
                 this.panel.recalcLayout();
             }
         }
         if (this.expanded) {
-            List<SettingComponent> list = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
-            int n2 = 0;
-            for (SettingComponent settingComponent2 : list) {
-                SettingComponent settingComponent3;
-                settingComponent2.yOffset = n2;
-                if (settingComponent2.isHovered(d, d2)) {
-                    settingComponent2.mouseClicked(d, d2, n);
+            List<SettingComponent> visibleComponents = this.settingComponents.stream().filter(settingComponent -> settingComponent.setting.getVisibility().displayable()).collect(Collectors.toList());
+            int componentOffsetY = 0;
+            for (SettingComponent settingComponent : visibleComponents) {
+                SettingComponent ref;
+                settingComponent.yOffset = componentOffsetY;
+                if (settingComponent.isHovered(mouseX, mouseY)) {
+                    settingComponent.mouseClicked(mouseX, mouseY, button);
                 }
-                n2 += this.panel.rowHeight;
-                if (settingComponent2 instanceof ModeComponent && ((ModeComponent)(settingComponent3 = settingComponent2)).isDropdownOpen()) {
-                    n2 += ((ModeComponent)settingComponent3).getDropdownHeight();
+                componentOffsetY += this.panel.rowHeight;
+                if (settingComponent instanceof ModeComponent && ((ModeComponent)(ref = settingComponent)).isDropdownOpen()) {
+                    componentOffsetY += ((ModeComponent)ref).getDropdownHeight();
                 }
-                if (!(settingComponent2 instanceof MultiSelectComponent) || !((MultiSelectComponent)(settingComponent3 = settingComponent2)).isDropdownOpen()) continue;
-                n2 += ((MultiSelectComponent)settingComponent3).getDropdownHeight();
+                if (!(settingComponent instanceof MultiSelectComponent) || !((MultiSelectComponent)(ref = settingComponent)).isDropdownOpen()) continue;
+                componentOffsetY += ((MultiSelectComponent)ref).getDropdownHeight();
             }
         }
     }
 
-    public void mouseReleased(double d, double d2, int n) {
+    public void mouseReleased(double mouseX, double mouseY, int button) {
         if (this.expanded) {
             for (SettingComponent settingComponent : this.settingComponents) {
-                settingComponent.mouseReleased(d, d2, n);
+                settingComponent.mouseReleased(mouseX, mouseY, button);
             }
         }
     }
 
-    public void mouseScrolled(double d, double d2, double d3) {
+    public void mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
     }
 
     public void reset() {
     }
 
-    public boolean isHovered(double d, double d2) {
-        return d >= (double)this.panel.x && d <= (double)(this.panel.x + this.panel.width) && d2 >= (double)(this.panel.y + this.yOffset) && d2 <= (double)(this.panel.y + this.yOffset + this.panel.rowHeight);
+    public boolean isHovered(double mouseX, double mouseY) {
+        return mouseX >= (double)this.panel.x && mouseX <= (double)(this.panel.x + this.panel.width) && mouseY >= (double)(this.panel.y + this.yOffset) && mouseY <= (double)(this.panel.y + this.yOffset + this.panel.rowHeight);
     }
 
     public boolean isAnimating() {

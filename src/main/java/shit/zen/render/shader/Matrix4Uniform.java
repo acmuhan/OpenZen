@@ -17,32 +17,32 @@ extends Uniform<Matrix4Uniform> {
     @Getter
     private final FloatBuffer stagingBuffer = MemoryUtil.memAllocFloat(16);
 
-    public Matrix4Uniform(String string) {
-        super(string);
+    public Matrix4Uniform(String name) {
+        super(name);
     }
 
-    public void upload(Matrix4f matrix4f) {
+    public void upload(Matrix4f matrix) {
         this.stagingBuffer.clear();
-        BufferUtil.storeMatrix(this.stagingBuffer, matrix4f);
+        BufferUtil.storeMatrix(this.stagingBuffer, matrix);
         this.uploadRaw(false, this.stagingBuffer);
     }
 
-    public void uploadRaw(boolean bl, FloatBuffer floatBuffer) {
-        this.transpose = bl;
-        floatBuffer.mark();
+    public void uploadRaw(boolean transpose, FloatBuffer buffer) {
+        this.transpose = transpose;
+        buffer.mark();
         this.dataBuffer.clear();
-        this.dataBuffer.put(floatBuffer);
+        this.dataBuffer.put(buffer);
         this.dataBuffer.rewind();
-        floatBuffer.reset();
-        int n = this.getLocation();
-        if (n >= 0) {
-            GL20.glUniformMatrix4fv(n, bl, this.dataBuffer);
+        buffer.reset();
+        int location = this.getLocation();
+        if (location >= 0) {
+            GL20.glUniformMatrix4fv(location, transpose, this.dataBuffer);
         }
     }
 
-    public float getElement(int n, int n2) {
-        int n3 = this.transpose ? n2 * 4 + n : n * 4 + n2;
-        return this.dataBuffer.get(n3);
+    public float getElement(int row, int col) {
+        int index = this.transpose ? col * 4 + row : row * 4 + col;
+        return this.dataBuffer.get(index);
     }
 
     protected void clear() {

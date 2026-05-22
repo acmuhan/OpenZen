@@ -275,7 +275,7 @@ public class Projectiles extends Module {
         double dy = entity.getDeltaMovement().y;
         double dz = entity.getDeltaMovement().z;
         Projectile projectile = (Projectile) entity;
-        for (int n = 0; n < 1000; ++n) {
+        for (int step = 0; step < 1000; ++step) {
             Vec3 start = new Vec3(x, y, z);
             Vec3 end = new Vec3(x + dx, y + dy, z + dz);
             BlockHitResult blockHit = mc.level.clip(new ClipContext(
@@ -300,7 +300,7 @@ public class Projectiles extends Module {
                 Vec3 hitLoc = bestHit.getLocation();
                 Entity owner = projectile.getOwner();
                 String ownerName = owner != null ? owner.getName().getString() : "Unknown";
-                double flightTime = n / 20.0;
+                double flightTime = step / 20.0;
                 double distance = mc.player.getEyePosition().distanceTo(hitLoc);
                 return new ProjectileEntry(ownerName, flightTime, distance, System.currentTimeMillis(), Items.ENDER_PEARL, hitLoc);
             }
@@ -485,7 +485,7 @@ public class Projectiles extends Module {
         double dy = entity.getDeltaMovement().y;
         double dz = entity.getDeltaMovement().z;
         this.drawVertex(color, builder, poseStack, x, y, z);
-        for (int n = 0; n < 1000; ++n) {
+        for (int step = 0; step < 1000; ++step) {
             float halfWidth = provider.getFillAlpha();
             float height = provider.getOutlineAlpha();
             AABB box = new AABB(x - halfWidth, y, z - halfWidth, x + halfWidth, y + height, z + halfWidth);

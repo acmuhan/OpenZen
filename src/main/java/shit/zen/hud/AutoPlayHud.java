@@ -28,15 +28,15 @@ implements IHudElement {
         if (AutoPlay.instance.pendingDisconnect) {
             return true;
         }
-        long l = AutoPlay.instance.disconnectTime;
-        if (l <= 0L) {
+        long disconnectTime = AutoPlay.instance.disconnectTime;
+        if (disconnectTime <= 0L) {
             return false;
         }
-        double d = AutoPlay.instance.getDelay().getValue().doubleValue() * 1000.0;
-        long l2 = System.currentTimeMillis() - l;
-        if ((double)l2 >= d) {
-            long l3 = l2 - (long)d;
-            return l3 < 500L;
+        double delayMs = AutoPlay.instance.getDelay().getValue().doubleValue() * 1000.0;
+        long elapsed = System.currentTimeMillis() - disconnectTime;
+        if ((double)elapsed >= delayMs) {
+            long afterDoneMs = elapsed - (long)delayMs;
+            return afterDoneMs < 500L;
         }
         return false;
     }
@@ -46,25 +46,25 @@ implements IHudElement {
         if (!this.isVisible()) {
             return new IHudElement.Size(0.0f, 40.0f);
         }
-        long l = AutoPlay.instance.disconnectTime;
-        double d = AutoPlay.instance.getDelay().getValue().doubleValue() * 1000.0;
-        long l2 = System.currentTimeMillis() - l;
-        boolean bl = d <= 0.0 || (double)l2 >= d;
-        long l3 = bl ? l2 - (long)d : -1L;
-        String string = bl ? "Done!" : "Sending you to next game...";
-        float f = font.getBounds(string).getWidth();
-        float f2 = 28.0f;
-        float f3 = 18.0f + f2 + 8.0f + f + 18.0f;
-        float f4 = 30.0f;
-        float f5 = f3 - 30.0f;
-        float f6 = 60.0f;
-        f5 = Math.max(f5, f6);
-        float f7 = 40.0f;
-        if (bl) {
-            float f8 = Mth.clamp((float)l3 / 400.0f, 0.0f, 1.0f);
-            f7 = Mth.lerp(f8, 40.0f, 25.0f);
+        long disconnectTime = AutoPlay.instance.disconnectTime;
+        double delayMs = AutoPlay.instance.getDelay().getValue().doubleValue() * 1000.0;
+        long elapsed = System.currentTimeMillis() - disconnectTime;
+        boolean done = delayMs <= 0.0 || (double)elapsed >= delayMs;
+        long afterDoneMs = done ? elapsed - (long)delayMs : -1L;
+        String text = done ? "Done!" : "Sending you to next game...";
+        float textWidth = font.getBounds(text).getWidth();
+        float iconSize = 28.0f;
+        float totalWidth = 18.0f + iconSize + 8.0f + textWidth + 18.0f;
+        float padding = 30.0f;
+        float width = totalWidth - 30.0f;
+        float minWidth = 60.0f;
+        width = Math.max(width, minWidth);
+        float height = 40.0f;
+        if (done) {
+            float t = Mth.clamp((float)afterDoneMs / 400.0f, 0.0f, 1.0f);
+            height = Mth.lerp(t, 40.0f, 25.0f);
         }
-        return new IHudElement.Size(f5, f7);
+        return new IHudElement.Size(width, height);
     }
 
     @Override
@@ -78,115 +78,115 @@ implements IHudElement {
     }
 
     @Override
-    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float f, float f2, float f3, float f4, float f5) {
+    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float x, float y, float width, float height, float alpha) {
     }
 
     @Override
-    public void render(DrawContext drawContext, float f, float f2, float f3, float f4, float f5) {
-        float f6;
-        float f7;
-        float f8;
-        float f9;
-        float f10;
-        float f11;
-        long l = 0L;
-        if (mc == null || mc.player == null || f5 <= 0.01f || AutoPlay.instance == null) {
+    public void render(DrawContext drawContext, float x, float y, float width, float height, float alpha) {
+        float checkEndY;
+        float checkEndX;
+        float checkMidY;
+        float checkMidX;
+        float arcBottom;
+        float arcProgress;
+        long afterDoneMs = 0L;
+        if (mc == null || mc.player == null || alpha <= 0.01f || AutoPlay.instance == null) {
             return;
         }
-        long l2 = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
         if (!AutoPlay.instance.pendingDisconnect) {
             if (this.disableTime == -1L) {
-                this.disableTime = l2;
+                this.disableTime = now;
             }
         } else {
             this.disableTime = -1L;
         }
         if (this.lastUpdateTime == -1L) {
-            this.lastUpdateTime = l2;
+            this.lastUpdateTime = now;
         }
-        long l3 = l2 - this.lastUpdateTime;
-        this.lastUpdateTime = l2;
-        long l4 = AutoPlay.instance.disconnectTime;
-        double d = AutoPlay.instance.getDelay().getValue().doubleValue();
-        double d2 = d * 1000.0;
-        long l5 = System.currentTimeMillis() - l4;
-        float f12 = d2 > 0.0 ? (float)((double)l5 / d2) : 1.0f;
-        f12 = Mth.clamp(f12, 0.0f, 1.0f);
-        float f13 = Mth.clamp((float)l3 / 200.0f, 0.0f, 1.0f);
-        this.animProgress = Mth.lerp(f13, this.animProgress, f12);
-        if (Math.abs(this.animProgress - f12) < 0.01f) {
-            this.animProgress = f12;
+        long deltaTime = now - this.lastUpdateTime;
+        this.lastUpdateTime = now;
+        long disconnectTime = AutoPlay.instance.disconnectTime;
+        double delaySec = AutoPlay.instance.getDelay().getValue().doubleValue();
+        double delayMs = delaySec * 1000.0;
+        long elapsed = System.currentTimeMillis() - disconnectTime;
+        float targetProgress = delayMs > 0.0 ? (float)((double)elapsed / delayMs) : 1.0f;
+        targetProgress = Mth.clamp(targetProgress, 0.0f, 1.0f);
+        float lerpT = Mth.clamp((float)deltaTime / 200.0f, 0.0f, 1.0f);
+        this.animProgress = Mth.lerp(lerpT, this.animProgress, targetProgress);
+        if (Math.abs(this.animProgress - targetProgress) < 0.01f) {
+            this.animProgress = targetProgress;
         }
-        boolean bl = false;
-        if (l4 > 0L) {
-            long l6 = System.currentTimeMillis() - l4;
-            if (d2 <= 0.0 || (double)l6 >= d2) {
-                bl = true;
-                l = d2 > 0.0 ? l6 - (long)d2 : l6;
+        boolean done = false;
+        if (disconnectTime > 0L) {
+            long elapsed2 = System.currentTimeMillis() - disconnectTime;
+            if (delayMs <= 0.0 || (double)elapsed2 >= delayMs) {
+                done = true;
+                afterDoneMs = delayMs > 0.0 ? elapsed2 - (long)delayMs : elapsed2;
             }
         }
-        float f14 = f2 + f4 / 2.0f;
-        float f15 = f4 - 12.0f;
-        float f16 = f + 18.0f;
-        float f17 = f2 + 6.0f;
-        float f18 = f16 + f15 / 2.0f;
-        float f19 = f17 + f15 / 2.0f;
-        float f20 = f15 / 2.0f - 2.0f;
-        try (Paint object = new Paint();
+        float centerY = y + height / 2.0f;
+        float iconSize = height - 12.0f;
+        float iconX = x + 18.0f;
+        float iconY = y + 6.0f;
+        float iconCx = iconX + iconSize / 2.0f;
+        float iconCy = iconY + iconSize / 2.0f;
+        float iconRadius = iconSize / 2.0f - 2.0f;
+        try (Paint paint = new Paint();
              Path path = new Path()){
-            float f21;
-            object.setStrokeWidth(2.0f);
-            object.setStrokeCap(Paint.StrokeCap.STROKE);
-            object.setStrokeJoin(Paint.StrokeJoin.ROUND);
-            object.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
+            float arcLeft;
+            paint.setStrokeWidth(2.0f);
+            paint.setStrokeCap(Paint.StrokeCap.STROKE);
+            paint.setStrokeJoin(Paint.StrokeJoin.ROUND);
+            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
             if (this.animProgress > 0.001f) {
-                f11 = 360.0f * this.animProgress;
-                f21 = f18 - f20;
-                f10 = f19 - f20;
-                f9 = f18 + f20;
-                f8 = f19 + f20;
-                drawContext.drawArc(f21, f10, f9, f8, -90.0f, f11, false, object);
+                arcProgress = 360.0f * this.animProgress;
+                arcLeft = iconCx - iconRadius;
+                arcBottom = iconCy - iconRadius;
+                checkMidX = iconCx + iconRadius;
+                checkMidY = iconCy + iconRadius;
+                drawContext.drawArc(arcLeft, arcBottom, checkMidX, checkMidY, -90.0f, arcProgress, false, paint);
             }
-            if (bl) {
+            if (done) {
                 path.reset();
-                f11 = Mth.clamp((float)l / 400.0f, 0.0f, 1.0f);
-                f21 = f18 - f20 * 0.4f;
-                f10 = f19;
-                f9 = f18 - f20 * 0.15f;
-                f8 = f19 + f20 * 0.3f;
-                f7 = f18 + f20 * 0.4f;
-                f6 = f19 - f20 * 0.3f;
-                float f22 = (float)Math.hypot(f9 - f21, f8 - f10);
-                float f23 = (float)Math.hypot(f7 - f9, f6 - f8);
-                float f24 = f22 + f23;
-                float f25 = f24 * f11;
-                path.moveTo(f21, f10);
-                if (f25 <= f22) {
-                    float f26 = f25 / f22;
-                    path.lineTo(Mth.lerp(f26, f21, f9), Mth.lerp(f26, f10, f8));
+                arcProgress = Mth.clamp((float)afterDoneMs / 400.0f, 0.0f, 1.0f);
+                arcLeft = iconCx - iconRadius * 0.4f;
+                arcBottom = iconCy;
+                checkMidX = iconCx - iconRadius * 0.15f;
+                checkMidY = iconCy + iconRadius * 0.3f;
+                checkEndX = iconCx + iconRadius * 0.4f;
+                checkEndY = iconCy - iconRadius * 0.3f;
+                float seg1Len = (float)Math.hypot(checkMidX - arcLeft, checkMidY - arcBottom);
+                float seg2Len = (float)Math.hypot(checkEndX - checkMidX, checkEndY - checkMidY);
+                float totalLen = seg1Len + seg2Len;
+                float drawLen = totalLen * arcProgress;
+                path.moveTo(arcLeft, arcBottom);
+                if (drawLen <= seg1Len) {
+                    float seg1T = drawLen / seg1Len;
+                    path.lineTo(Mth.lerp(seg1T, arcLeft, checkMidX), Mth.lerp(seg1T, arcBottom, checkMidY));
                 } else {
-                    path.lineTo(f9, f8);
-                    float f27 = (f25 - f22) / f23;
-                    path.lineTo(Mth.lerp(f27, f9, f7), Mth.lerp(f27, f8, f6));
+                    path.lineTo(checkMidX, checkMidY);
+                    float seg2T = (drawLen - seg1Len) / seg2Len;
+                    path.lineTo(Mth.lerp(seg2T, checkMidX, checkEndX), Mth.lerp(seg2T, checkMidY, checkEndY));
                 }
-                drawContext.drawPath(path, object);
+                drawContext.drawPath(path, paint);
             }
         }
-        String statusText = bl ? "Done!" : "Sending you to next game...";
-        float f28 = f15;
-        f11 = f16 + f28 + 8.0f;
+        String statusText = done ? "Done!" : "Sending you to next game...";
+        float textIconSize = iconSize;
+        arcProgress = iconX + textIconSize + 8.0f;
         try (Paint paint = new Paint()){
-            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
-            f10 = f14 - font.getMetrics().capHeight() / 2.0f + 8.0f;
-            drawContext.drawString(statusText, f11, f10, font, paint);
-            f9 = 2.5f;
-            f8 = f10 + font.getMetrics().descent() + 8.0f;
-            f7 = f + f3 - f11 - 18.0f;
+            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
+            arcBottom = centerY - font.getMetrics().capHeight() / 2.0f + 8.0f;
+            drawContext.drawString(statusText, arcProgress, arcBottom, font, paint);
+            checkMidX = 2.5f;
+            checkMidY = arcBottom + font.getMetrics().descent() + 8.0f;
+            checkEndX = x + width - arcProgress - 18.0f;
             paint.setStrokeCap(Paint.StrokeCap.FILL);
-            paint.setColor(this.colorWithAlpha(new Color(0, 0, 0, 40).getRGB(), f5));
+            paint.setColor(this.colorWithAlpha(new Color(0, 0, 0, 40).getRGB(), alpha));
             if (this.animProgress > 0.0f) {
-                paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
-                f6 = f7 * this.animProgress;
+                paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
+                checkEndY = checkEndX * this.animProgress;
             }
         }
     }

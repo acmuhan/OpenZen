@@ -45,57 +45,57 @@ extends ClientBase {
         tempVec4a.set((float)viewport.get(0), (float)viewport.get(1), (float)viewport.get(2), (float)viewport.get(3));
     }
 
-    public static Vector2f project(double d, double d2, double d3, float f) {
-        Entity entity;
-        Vec3 vec3 = mc.getEntityRenderDispatcher().camera.getPosition();
-        Quaternionf quaternionf = new Quaternionf(mc.getEntityRenderDispatcher().cameraOrientation());
-        quaternionf.conjugate();
-        Vector3f vector3f = new Vector3f((float)(vec3.x - d), (float)(vec3.y - d2), (float)(vec3.z - d3));
-        vector3f.rotate(quaternionf);
-        if (mc.options.bobView().get() && (entity = mc.getCameraEntity()) instanceof Player) {
-            Player player = (Player)entity;
-            ProjectionUtil.applyBobbing(player, vector3f, f);
+    public static Vector2f project(double worldX, double worldY, double worldZ, float partialTicks) {
+        Entity cameraEntity;
+        Vec3 cameraPos = mc.getEntityRenderDispatcher().camera.getPosition();
+        Quaternionf cameraRotation = new Quaternionf(mc.getEntityRenderDispatcher().cameraOrientation());
+        cameraRotation.conjugate();
+        Vector3f relativePos = new Vector3f((float)(cameraPos.x - worldX), (float)(cameraPos.y - worldY), (float)(cameraPos.z - worldZ));
+        relativePos.rotate(cameraRotation);
+        if (mc.options.bobView().get() && (cameraEntity = mc.getCameraEntity()) instanceof Player) {
+            Player player = (Player)cameraEntity;
+            ProjectionUtil.applyBobbing(player, relativePos, partialTicks);
         }
-        double d4 = 1.2f;
+        double fov = 1.2f;
         try {
             Method method = mc.gameRenderer.getClass().getDeclaredMethod(ReflectionUtil.getMappedMethodName(mc.gameRenderer.getClass(), "getFov", "(Lnet/minecraft/client/Camera;FZ)D"), Camera.class, Float.TYPE, Boolean.TYPE);
             method.setAccessible(true);
-            d4 = (Double)method.invoke(mc.gameRenderer, new Object[]{mc.getEntityRenderDispatcher().camera, Float.valueOf(f), true});
+            fov = (Double)method.invoke(mc.gameRenderer, new Object[]{mc.getEntityRenderDispatcher().camera, partialTicks, true});
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-        return ProjectionUtil.projectInternal(vector3f, d4);
+        return ProjectionUtil.projectInternal(relativePos, fov);
     }
 
-    private static void applyBobbing(Player player, Vector3f vector3f, float f) {
-        float f2 = player.walkDist;
-        float f3 = f2 - player.walkDistO;
-        float f4 = -(f2 + f3 * f);
-        float f5 = Mth.lerp(f, player.oBob, player.bob);
-        Quaternionf quaternionf = new Quaternionf().rotationX(Math.abs(Mth.cos(f4 * (float)Math.PI - 0.2f) * f5) * 5.0f * ((float)Math.PI / 180));
-        quaternionf.conjugate();
-        vector3f.rotate(quaternionf);
-        Quaternionf quaternionf2 = new Quaternionf().rotationZ(Mth.sin(f4 * (float)Math.PI) * f5 * 3.0f * ((float)Math.PI / 180));
-        quaternionf2.conjugate();
-        vector3f.rotate(quaternionf2);
-        Vector3f vector3f2 = new Vector3f(Mth.sin(f4 * (float)Math.PI) * f5 * 0.5f, -Math.abs(Mth.cos(f4 * (float)Math.PI) * f5), 0.0f);
-        vector3f2.y = -vector3f2.y;
-        vector3f.add(vector3f2);
+    private static void applyBobbing(Player player, Vector3f relativePos, float partialTicks) {
+        float walkDist = player.walkDist;
+        float walkDelta = walkDist - player.walkDistO;
+        float walkProgress = -(walkDist + walkDelta * partialTicks);
+        float bobAmount = Mth.lerp(partialTicks, player.oBob, player.bob);
+        Quaternionf pitchRotation = new Quaternionf().rotationX(Math.abs(Mth.cos(walkProgress * (float)Math.PI - 0.2f) * bobAmount) * 5.0f * ((float)Math.PI / 180));
+        pitchRotation.conjugate();
+        relativePos.rotate(pitchRotation);
+        Quaternionf rollRotation = new Quaternionf().rotationZ(Mth.sin(walkProgress * (float)Math.PI) * bobAmount * 3.0f * ((float)Math.PI / 180));
+        rollRotation.conjugate();
+        relativePos.rotate(rollRotation);
+        Vector3f bobOffset = new Vector3f(Mth.sin(walkProgress * (float)Math.PI) * bobAmount * 0.5f, -Math.abs(Mth.cos(walkProgress * (float)Math.PI) * bobAmount), 0.0f);
+        bobOffset.y = -bobOffset.y;
+        relativePos.add(bobOffset);
     }
 
-    private static Vector2f projectInternal(Vector3f vector3f, double d) {
-        float f = (float)mc.getWindow().getGuiScaledHeight() / 2.0f;
-        float f2 = f / (vector3f.z() * (float)Math.tan(Math.toRadians(d / 2.0)));
-        if (vector3f.z() < 0.0f) {
-            return new Vector2f(-vector3f.x() * f2 + (float)mc.getWindow().getGuiScaledWidth() / 2.0f, (float)mc.getWindow().getGuiScaledHeight() / 2.0f - vector3f.y() * f2);
+    private static Vector2f projectInternal(Vector3f relativePos, double fov) {
+        float halfHeight = (float)mc.getWindow().getGuiScaledHeight() / 2.0f;
+        float scale = halfHeight / (relativePos.z() * (float)Math.tan(Math.toRadians(fov / 2.0)));
+        if (relativePos.z() < 0.0f) {
+            return new Vector2f(-relativePos.x() * scale + (float)mc.getWindow().getGuiScaledWidth() / 2.0f, (float)mc.getWindow().getGuiScaledHeight() / 2.0f - relativePos.y() * scale);
         }
         return new Vector2f(Float.MAX_VALUE, Float.MAX_VALUE);
     }
 
-    public static Vector2f project(double d, double d2, double d3) {
+    public static Vector2f project(double worldX, double worldY, double worldZ) {
         Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 vec3 = camera.getPosition();
-        tempVec3.set((float)(d - vec3.x), (float)(d2 - vec3.y), (float)(d3 - vec3.z));
+        Vec3 cameraPos = camera.getPosition();
+        tempVec3.set((float)(worldX - cameraPos.x), (float)(worldY - cameraPos.y), (float)(worldZ - cameraPos.z));
         tempQuat.set(camera.rotation()).conjugate();
         tempVec3.rotate(tempQuat);
         ProjectionUtil.tempVec3.x = -ProjectionUtil.tempVec3.x;
@@ -104,20 +104,20 @@ extends ClientBase {
         if (ProjectionUtil.tempVec4b.w <= 0.0f) {
             return null;
         }
-        float f = ProjectionUtil.tempVec4b.x / ProjectionUtil.tempVec4b.w;
-        float f2 = ProjectionUtil.tempVec4b.y / ProjectionUtil.tempVec4b.w;
-        if (Float.isNaN(f) || Float.isNaN(f2) || f < -1.2f || f > 1.2f || f2 < -1.2f || f2 > 1.2f) {
+        float ndcX = ProjectionUtil.tempVec4b.x / ProjectionUtil.tempVec4b.w;
+        float ndcY = ProjectionUtil.tempVec4b.y / ProjectionUtil.tempVec4b.w;
+        if (Float.isNaN(ndcX) || Float.isNaN(ndcY) || ndcX < -1.2f || ndcX > 1.2f || ndcY < -1.2f || ndcY > 1.2f) {
             return null;
         }
-        float f3 = tempVec4a.x() + (1.0f + f) * tempVec4a.z() / 2.0f;
-        float f4 = tempVec4a.y() + (1.0f - f2) * tempVec4a.w() / 2.0f;
-        double d4 = mc.getWindow().getGuiScale();
-        if (d4 == 0.0) {
-            d4 = 1.0;
+        float screenX = tempVec4a.x() + (1.0f + ndcX) * tempVec4a.z() / 2.0f;
+        float screenY = tempVec4a.y() + (1.0f - ndcY) * tempVec4a.w() / 2.0f;
+        double guiScale = mc.getWindow().getGuiScale();
+        if (guiScale == 0.0) {
+            guiScale = 1.0;
         }
-        f3 = (float)((double)f3 / d4);
-        f4 = (float)((double)f4 / d4);
-        return new Vector2f(f3, f4);
+        screenX = (float)((double)screenX / guiScale);
+        screenY = (float)((double)screenY / guiScale);
+        return new Vector2f(screenX, screenY);
     }
 
     @Generated

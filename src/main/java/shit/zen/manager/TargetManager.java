@@ -42,18 +42,18 @@ extends ClientBase {
         }
     }
 
-    public Stream<LivingEntity> getTargetsStream(float f) {
+    public Stream<LivingEntity> getTargetsStream(float range) {
         if (mc.player == null) {
             return Stream.empty();
         }
         return new ArrayList<>(this.targets).stream().filter(livingEntity -> {
-            Vec3 vec3 = RotationUtil.closestPoint(mc.player.getEyePosition(), livingEntity.getBoundingBox());
-            return vec3.distanceTo(mc.player.getEyePosition()) <= (double)f;
+            Vec3 closest = RotationUtil.closestPoint(mc.player.getEyePosition(), livingEntity.getBoundingBox());
+            return closest.distanceTo(mc.player.getEyePosition()) <= (double)range;
         });
     }
 
-    public List<LivingEntity> getTargets(float f) {
-        return this.getTargetsStream(f).toList();
+    public List<LivingEntity> getTargets(float range) {
+        return this.getTargetsStream(range).toList();
     }
 
     @Generated

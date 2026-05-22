@@ -31,25 +31,25 @@ public final class RoundedRectShader {
         if (this.programId != 0) {
             return;
         }
-        int n = RoundedRectShader.compileShader(35633, "#version 150\nin vec2 Position;\nin vec2 LocalPos;\nin vec2 UV;\nuniform mat4 ModelViewMat;\nuniform mat4 ProjMat;\nout vec2 localPos;\nout vec2 uvCoord;\nvoid main() {\n    gl_Position = ProjMat * ModelViewMat * vec4(Position, 0.0, 1.0);\n    localPos = LocalPos;\n    uvCoord = UV;\n}\n");
-        int n2 = RoundedRectShader.compileShader(35632, "#version 150\nuniform vec2 HalfSize;\nuniform vec4 Radii;\nuniform vec4 Color1;\nuniform vec4 Color2;\nuniform int UseGradient;\nuniform int UseTexture;\nuniform sampler2D Sampler0;\nuniform float StrokeWidth;\nin vec2 localPos;\nin vec2 uvCoord;\nout vec4 fragColor;\nvoid main() {\n    vec2 p = localPos;\n    float r;\n    if (p.x < 0.0) {\n        r = (p.y < 0.0) ? Radii.x : Radii.w;\n    } else {\n        r = (p.y < 0.0) ? Radii.y : Radii.z;\n    }\n    vec2 q = abs(p) - HalfSize + r;\n    float d = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r;\n    float alpha;\n    if (StrokeWidth > 0.0) {\n        float halfStroke = StrokeWidth * 0.5;\n        alpha = 1.0 - smoothstep(halfStroke - 0.5, halfStroke + 0.5, abs(d));\n    } else {\n        alpha = 1.0 - smoothstep(-0.5, 0.5, d);\n    }\n    vec4 col;\n    if (UseTexture == 1) {\n        col = texture(Sampler0, uvCoord) * Color1;\n    } else if (UseGradient == 1) {\n        float t = clamp((p.y + HalfSize.y) / max(2.0 * HalfSize.y, 0.0001), 0.0, 1.0);\n        col = mix(Color1, Color2, t);\n    } else {\n        col = Color1;\n    }\n    fragColor = vec4(col.rgb, col.a * alpha);\n}\n");
-        int n3 = GL20.glCreateProgram();
-        GL20.glAttachShader(n3, n);
-        GL20.glAttachShader(n3, n2);
-        GL20.glBindAttribLocation(n3, 0, "Position");
-        GL20.glBindAttribLocation(n3, 1, "LocalPos");
-        GL20.glBindAttribLocation(n3, 2, "UV");
-        GL20.glLinkProgram(n3);
-        if (GL20.glGetProgrami(n3, 35714) == 0) {
-            String string = GL20.glGetProgramInfoLog(n3);
-            GL20.glDeleteProgram(n3);
-            GL20.glDeleteShader(n);
-            GL20.glDeleteShader(n2);
-            throw new IllegalStateException("RoundedRectShader link failed: " + string);
+        int vertexShader = RoundedRectShader.compileShader(35633, "#version 150\nin vec2 Position;\nin vec2 LocalPos;\nin vec2 UV;\nuniform mat4 ModelViewMat;\nuniform mat4 ProjMat;\nout vec2 localPos;\nout vec2 uvCoord;\nvoid main() {\n    gl_Position = ProjMat * ModelViewMat * vec4(Position, 0.0, 1.0);\n    localPos = LocalPos;\n    uvCoord = UV;\n}\n");
+        int fragmentShader = RoundedRectShader.compileShader(35632, "#version 150\nuniform vec2 HalfSize;\nuniform vec4 Radii;\nuniform vec4 Color1;\nuniform vec4 Color2;\nuniform int UseGradient;\nuniform int UseTexture;\nuniform sampler2D Sampler0;\nuniform float StrokeWidth;\nin vec2 localPos;\nin vec2 uvCoord;\nout vec4 fragColor;\nvoid main() {\n    vec2 p = localPos;\n    float r;\n    if (p.x < 0.0) {\n        r = (p.y < 0.0) ? Radii.x : Radii.w;\n    } else {\n        r = (p.y < 0.0) ? Radii.y : Radii.z;\n    }\n    vec2 q = abs(p) - HalfSize + r;\n    float d = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r;\n    float alpha;\n    if (StrokeWidth > 0.0) {\n        float halfStroke = StrokeWidth * 0.5;\n        alpha = 1.0 - smoothstep(halfStroke - 0.5, halfStroke + 0.5, abs(d));\n    } else {\n        alpha = 1.0 - smoothstep(-0.5, 0.5, d);\n    }\n    vec4 col;\n    if (UseTexture == 1) {\n        col = texture(Sampler0, uvCoord) * Color1;\n    } else if (UseGradient == 1) {\n        float t = clamp((p.y + HalfSize.y) / max(2.0 * HalfSize.y, 0.0001), 0.0, 1.0);\n        col = mix(Color1, Color2, t);\n    } else {\n        col = Color1;\n    }\n    fragColor = vec4(col.rgb, col.a * alpha);\n}\n");
+        int program = GL20.glCreateProgram();
+        GL20.glAttachShader(program, vertexShader);
+        GL20.glAttachShader(program, fragmentShader);
+        GL20.glBindAttribLocation(program, 0, "Position");
+        GL20.glBindAttribLocation(program, 1, "LocalPos");
+        GL20.glBindAttribLocation(program, 2, "UV");
+        GL20.glLinkProgram(program);
+        if (GL20.glGetProgrami(program, 35714) == 0) {
+            String log = GL20.glGetProgramInfoLog(program);
+            GL20.glDeleteProgram(program);
+            GL20.glDeleteShader(vertexShader);
+            GL20.glDeleteShader(fragmentShader);
+            throw new IllegalStateException("RoundedRectShader link failed: " + log);
         }
-        GL20.glDeleteShader(n);
-        GL20.glDeleteShader(n2);
-        this.programId = n3;
+        GL20.glDeleteShader(vertexShader);
+        GL20.glDeleteShader(fragmentShader);
+        this.programId = program;
         this.uModelViewMat = GL20.glGetUniformLocation(this.programId, "ModelViewMat");
         this.uProjMat = GL20.glGetUniformLocation(this.programId, "ProjMat");
         this.uHalfSize = GL20.glGetUniformLocation(this.programId, "HalfSize");
@@ -62,70 +62,70 @@ public final class RoundedRectShader {
         this.uStrokeWidth = GL20.glGetUniformLocation(this.programId, "StrokeWidth");
         this.vaoId = GL30.glGenVertexArrays();
         this.vboId = GL15.glGenBuffers();
-        int n4 = GL11.glGetInteger(34229);
-        int n5 = GL11.glGetInteger(34964);
+        int prevVao = GL11.glGetInteger(34229);
+        int prevVbo = GL11.glGetInteger(34964);
         GL30.glBindVertexArray(this.vaoId);
         GL15.glBindBuffer(34962, this.vboId);
         GL15.glBufferData(34962, 144L, 35048);
-        int n6 = 24;
+        int stride = 24;
         GL20.glEnableVertexAttribArray(0);
-        GL20.glVertexAttribPointer(0, 2, 5126, false, n6, 0L);
+        GL20.glVertexAttribPointer(0, 2, 5126, false, stride, 0L);
         GL20.glEnableVertexAttribArray(1);
-        GL20.glVertexAttribPointer(1, 2, 5126, false, n6, 8L);
+        GL20.glVertexAttribPointer(1, 2, 5126, false, stride, 8L);
         GL20.glEnableVertexAttribArray(2);
-        GL20.glVertexAttribPointer(2, 2, 5126, false, n6, 16L);
-        GL30.glBindVertexArray(n4);
-        GL15.glBindBuffer(34962, n5);
+        GL20.glVertexAttribPointer(2, 2, 5126, false, stride, 16L);
+        GL30.glBindVertexArray(prevVao);
+        GL15.glBindBuffer(34962, prevVbo);
     }
 
-    public void draw(Matrix4f matrix4f, float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8, int n, int n2, boolean bl, float f9) {
-        this.drawInternal(matrix4f, f, f2, f3, f4, f5, f6, f7, f8, n, n2, bl, f9, -1, 0.0f, 0.0f, 1.0f, 1.0f);
+    public void draw(Matrix4f pose, float x1, float y1, float x2, float y2, float tlRadius, float trRadius, float brRadius, float blRadius, int color1, int color2, boolean useGradient, float strokeWidth) {
+        this.drawInternal(pose, x1, y1, x2, y2, tlRadius, trRadius, brRadius, blRadius, color1, color2, useGradient, strokeWidth, -1, 0.0f, 0.0f, 1.0f, 1.0f);
     }
 
-    public void drawTextured(Matrix4f matrix4f, float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8, int n, int n2, float f9, float f10, float f11, float f12) {
-        this.drawInternal(matrix4f, f, f2, f3, f4, f5, f6, f7, f8, n, n, false, 0.0f, n2, f9, f10, f11, f12);
+    public void drawTextured(Matrix4f pose, float x1, float y1, float x2, float y2, float tlRadius, float trRadius, float brRadius, float blRadius, int color, int textureId, float u1, float v1, float u2, float v2) {
+        this.drawInternal(pose, x1, y1, x2, y2, tlRadius, trRadius, brRadius, blRadius, color, color, false, 0.0f, textureId, u1, v1, u2, v2);
     }
 
-    private void drawInternal(Matrix4f matrix4f, float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8, int n, int n2, boolean bl, float f9, int n3, float f10, float f11, float f12, float f13) {
-        int n4;
+    private void drawInternal(Matrix4f pose, float x1, float y1, float x2, float y2, float tlRadius, float trRadius, float brRadius, float blRadius, int color1, int color2, boolean useGradient, float strokeWidth, int textureId, float u1, float v1, float u2, float v2) {
+        int i;
         this.init();
-        float f14 = (f + f3) * 0.5f;
-        float f15 = (f2 + f4) * 0.5f;
-        float f16 = (f3 - f) * 0.5f;
-        float f17 = (f4 - f2) * 0.5f;
-        if (f16 <= 0.0f || f17 <= 0.0f) {
+        float centerX = (x1 + x2) * 0.5f;
+        float centerY = (y1 + y2) * 0.5f;
+        float halfWidth = (x2 - x1) * 0.5f;
+        float halfHeight = (y2 - y1) * 0.5f;
+        if (halfWidth <= 0.0f || halfHeight <= 0.0f) {
             return;
         }
-        float f18 = Math.min(f16, f17);
-        f5 = Math.min(Math.max(f5, 0.0f), f18);
-        f6 = Math.min(Math.max(f6, 0.0f), f18);
-        f7 = Math.min(Math.max(f7, 0.0f), f18);
-        f8 = Math.min(Math.max(f8, 0.0f), f18);
-        float f19 = f16 + 1.0f;
-        float f20 = f17 + 1.0f;
-        Vector4f vector4f = new Vector4f();
-        float[] fArray = new float[36];
-        float[][] fArrayArray = new float[][]{{-f19, -f20}, {f19, -f20}, {f19, f20}, {-f19, -f20}, {f19, f20}, {-f19, f20}};
-        for (n4 = 0; n4 < 6; ++n4) {
-            vector4f.set(f14 + fArrayArray[n4][0], f15 + fArrayArray[n4][1], 0.0f, 1.0f).mul(matrix4f);
-            float f21 = fArrayArray[n4][0];
-            float f22 = fArrayArray[n4][1];
-            float f23 = f10 + (f21 + f16) / (2.0f * f16) * (f12 - f10);
-            float f24 = f11 + (f22 + f17) / (2.0f * f17) * (f13 - f11);
-            int n5 = n4 * 6;
-            fArray[n5] = vector4f.x;
-            fArray[n5 + 1] = vector4f.y;
-            fArray[n5 + 2] = f21;
-            fArray[n5 + 3] = f22;
-            fArray[n5 + 4] = f23;
-            fArray[n5 + 5] = f24;
+        float maxRadius = Math.min(halfWidth, halfHeight);
+        tlRadius = Math.min(Math.max(tlRadius, 0.0f), maxRadius);
+        trRadius = Math.min(Math.max(trRadius, 0.0f), maxRadius);
+        brRadius = Math.min(Math.max(brRadius, 0.0f), maxRadius);
+        blRadius = Math.min(Math.max(blRadius, 0.0f), maxRadius);
+        float expandedHalfW = halfWidth + 1.0f;
+        float expandedHalfH = halfHeight + 1.0f;
+        Vector4f vertexPos = new Vector4f();
+        float[] vertexData = new float[36];
+        float[][] cornerOffsets = new float[][]{{-expandedHalfW, -expandedHalfH}, {expandedHalfW, -expandedHalfH}, {expandedHalfW, expandedHalfH}, {-expandedHalfW, -expandedHalfH}, {expandedHalfW, expandedHalfH}, {-expandedHalfW, expandedHalfH}};
+        for (i = 0; i < 6; ++i) {
+            vertexPos.set(centerX + cornerOffsets[i][0], centerY + cornerOffsets[i][1], 0.0f, 1.0f).mul(pose);
+            float localX = cornerOffsets[i][0];
+            float localY = cornerOffsets[i][1];
+            float u = u1 + (localX + halfWidth) / (2.0f * halfWidth) * (u2 - u1);
+            float v = v1 + (localY + halfHeight) / (2.0f * halfHeight) * (v2 - v1);
+            int base = i * 6;
+            vertexData[base] = vertexPos.x;
+            vertexData[base + 1] = vertexPos.y;
+            vertexData[base + 2] = localX;
+            vertexData[base + 3] = localY;
+            vertexData[base + 4] = u;
+            vertexData[base + 5] = v;
         }
-        n4 = GL11.glGetInteger(35725);
-        int n6 = GL11.glGetInteger(34229);
-        int n7 = GL11.glGetInteger(34964);
-        int n8 = GL11.glGetInteger(34016);
+        i = GL11.glGetInteger(35725);
+        int prevVao = GL11.glGetInteger(34229);
+        int prevVbo = GL11.glGetInteger(34964);
+        int prevActiveTex = GL11.glGetInteger(34016);
         GL13.glActiveTexture(33984);
-        int n9 = GL11.glGetInteger(32873);
+        int prevTex2d = GL11.glGetInteger(32873);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
@@ -133,37 +133,37 @@ public final class RoundedRectShader {
         GL30.glBindVertexArray(this.vaoId);
         GL15.glBindBuffer(34962, this.vboId);
         try (MemoryStack memoryStack = MemoryStack.stackPush()){
-            FloatBuffer floatBuffer = memoryStack.mallocFloat(fArray.length);
-            floatBuffer.put(fArray).flip();
-            GL15.glBufferSubData(34962, 0L, floatBuffer);
-            FloatBuffer floatBuffer2 = memoryStack.mallocFloat(16);
-            RenderSystem.getModelViewMatrix().get(floatBuffer2);
-            GL20.glUniformMatrix4fv(this.uModelViewMat, false, floatBuffer2);
-            FloatBuffer floatBuffer3 = memoryStack.mallocFloat(16);
-            RenderSystem.getProjectionMatrix().get(floatBuffer3);
-            GL20.glUniformMatrix4fv(this.uProjMat, false, floatBuffer3);
+            FloatBuffer vertexBuffer = memoryStack.mallocFloat(vertexData.length);
+            vertexBuffer.put(vertexData).flip();
+            GL15.glBufferSubData(34962, 0L, vertexBuffer);
+            FloatBuffer modelViewBuffer = memoryStack.mallocFloat(16);
+            RenderSystem.getModelViewMatrix().get(modelViewBuffer);
+            GL20.glUniformMatrix4fv(this.uModelViewMat, false, modelViewBuffer);
+            FloatBuffer projBuffer = memoryStack.mallocFloat(16);
+            RenderSystem.getProjectionMatrix().get(projBuffer);
+            GL20.glUniformMatrix4fv(this.uProjMat, false, projBuffer);
         }
-        GL20.glUniform2f(this.uHalfSize, f16, f17);
-        GL20.glUniform4f(this.uRadii, f5, f6, f7, f8);
-        GL20.glUniform4f(this.uColor1, (float)(n >> 16 & 0xFF) / 255.0f, (float)(n >> 8 & 0xFF) / 255.0f, (float)(n & 0xFF) / 255.0f, (float)(n >>> 24 & 0xFF) / 255.0f);
-        GL20.glUniform4f(this.uColor2, (float)(n2 >> 16 & 0xFF) / 255.0f, (float)(n2 >> 8 & 0xFF) / 255.0f, (float)(n2 & 0xFF) / 255.0f, (float)(n2 >>> 24 & 0xFF) / 255.0f);
-        GL20.glUniform1i(this.uUseGradient, bl ? 1 : 0);
-        GL20.glUniform1f(this.uStrokeWidth, Math.max(0.0f, f9));
-        if (n3 > 0) {
+        GL20.glUniform2f(this.uHalfSize, halfWidth, halfHeight);
+        GL20.glUniform4f(this.uRadii, tlRadius, trRadius, brRadius, blRadius);
+        GL20.glUniform4f(this.uColor1, (float)(color1 >> 16 & 0xFF) / 255.0f, (float)(color1 >> 8 & 0xFF) / 255.0f, (float)(color1 & 0xFF) / 255.0f, (float)(color1 >>> 24 & 0xFF) / 255.0f);
+        GL20.glUniform4f(this.uColor2, (float)(color2 >> 16 & 0xFF) / 255.0f, (float)(color2 >> 8 & 0xFF) / 255.0f, (float)(color2 & 0xFF) / 255.0f, (float)(color2 >>> 24 & 0xFF) / 255.0f);
+        GL20.glUniform1i(this.uUseGradient, useGradient ? 1 : 0);
+        GL20.glUniform1f(this.uStrokeWidth, Math.max(0.0f, strokeWidth));
+        if (textureId > 0) {
             GL20.glUniform1i(this.uUseTexture, 1);
             GL20.glUniform1i(this.uSampler0, 0);
-            GL11.glBindTexture(3553, n3);
+            GL11.glBindTexture(3553, textureId);
             GL11.glTexParameteri(3553, 10241, 9728);
             GL11.glTexParameteri(3553, 10240, 9728);
         } else {
             GL20.glUniform1i(this.uUseTexture, 0);
         }
         GL11.glDrawArrays(4, 0, 6);
-        GL11.glBindTexture(3553, n9);
-        GL13.glActiveTexture(n8);
-        GL15.glBindBuffer(34962, n7);
-        GL30.glBindVertexArray(n6);
-        GL20.glUseProgram(n4);
+        GL11.glBindTexture(3553, prevTex2d);
+        GL13.glActiveTexture(prevActiveTex);
+        GL15.glBindBuffer(34962, prevVbo);
+        GL30.glBindVertexArray(prevVao);
+        GL20.glUseProgram(i);
     }
 
     public void dispose() {
@@ -181,15 +181,15 @@ public final class RoundedRectShader {
         }
     }
 
-    private static int compileShader(int n, String string) {
-        int n2 = GL20.glCreateShader(n);
-        GL20.glShaderSource(n2, string);
-        GL20.glCompileShader(n2);
-        if (GL20.glGetShaderi(n2, 35713) == 0) {
-            String string2 = GL20.glGetShaderInfoLog(n2);
-            GL20.glDeleteShader(n2);
-            throw new IllegalStateException("RoundedRectShader shader compile failed: " + string2);
+    private static int compileShader(int type, String source) {
+        int shader = GL20.glCreateShader(type);
+        GL20.glShaderSource(shader, source);
+        GL20.glCompileShader(shader);
+        if (GL20.glGetShaderi(shader, 35713) == 0) {
+            String log = GL20.glGetShaderInfoLog(shader);
+            GL20.glDeleteShader(shader);
+            throw new IllegalStateException("RoundedRectShader shader compile failed: " + log);
         }
-        return n2;
+        return shader;
     }
 }

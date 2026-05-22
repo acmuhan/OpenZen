@@ -54,7 +54,7 @@ public class FastUse extends Module implements TripleProvider {
     public static boolean releaseItemSent;
 
     public enum UseState {
-        Đ, Ŀ, Ł, ŧ
+        IDLE, WAITING, SWAPPING, USING
     }
 
     public final ModeSetting mode;
@@ -101,7 +101,7 @@ public class FastUse extends Module implements TripleProvider {
         this.pongQueue = new ArrayDeque<>();
         this.useHand = InteractionHand.MAIN_HAND;
         this.lastUseHand = InteractionHand.MAIN_HAND;
-        this.useState = UseState.Đ;
+        this.useState = UseState.IDLE;
         this.savedHotbarSlot = -1;
         INSTANCE = this;
         this.checkAndFallbackMode();
@@ -168,10 +168,10 @@ public class FastUse extends Module implements TripleProvider {
         if (this.isBlinking) {
             ++this.blinkTicks;
         }
-        if ((!this.isGrimSlowMode() || this.bowNoSlow.getValue()) && this.useState != UseState.Đ) {
+        if ((!this.isGrimSlowMode() || this.bowNoSlow.getValue()) && this.useState != UseState.IDLE) {
             this.resetOffhandState();
         }
-        if (this.useState == UseState.ŧ) {
+        if (this.useState == UseState.USING) {
             if (mc.player.isUsingItem()) {
                 this.idleTickCount = 0;
             } else if (++this.idleTickCount >= 5) {
@@ -363,18 +363,18 @@ public class FastUse extends Module implements TripleProvider {
         InteractionHand otherHand = mc.player.getUsedItemHand() == InteractionHand.MAIN_HAND
                 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
         if (this.isUseAnimation(mc.player.getItemInHand(otherHand).getUseAnimation())) {
-            if (this.useState != UseState.Đ) this.resetOffhandState();
+            if (this.useState != UseState.IDLE) this.resetOffhandState();
             return;
         }
-        if (this.useState != UseState.ŧ) {
+        if (this.useState != UseState.USING) {
             mc.options.keyUse.setDown(false);
         }
-        if (this.useState == UseState.Đ) {
-            this.useState = UseState.Ŀ;
+        if (this.useState == UseState.IDLE) {
+            this.useState = UseState.WAITING;
             this.savedHotbarSlot = mc.player.getInventory().selected;
             return;
         }
-        if (this.useState == UseState.ŧ) {
+        if (this.useState == UseState.USING) {
             event.setSlowDown(false);
             if (this.keepSprinting.getValue()) {
                 mc.player.setSprinting(true);
@@ -387,11 +387,11 @@ public class FastUse extends Module implements TripleProvider {
         Packet<?> packet = event.getPacket();
         if (!event.isIncoming()) {
             if (packet instanceof ServerboundPongPacket pong) {
-                if (this.useState != UseState.Đ) {
+                if (this.useState != UseState.IDLE) {
                     event.setCancelled(true);
                     this.pongQueue.add(pong);
-                    if (this.useState == UseState.Ŀ) {
-                        this.useState = UseState.Ł;
+                    if (this.useState == UseState.WAITING) {
+                        this.useState = UseState.SWAPPING;
                         this.didSwapOffhand = true;
                         this.sendSwapOffhand();
                     }
@@ -400,19 +400,19 @@ public class FastUse extends Module implements TripleProvider {
             }
             if (packet instanceof ServerboundPlayerActionPacket action
                     && action.getAction() == ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM
-                    && this.useState == UseState.ŧ) {
+                    && this.useState == UseState.USING) {
                 this.resetOffhandState();
             }
             return;
         }
-        if (this.useState == UseState.Ł && this.isEquipmentChangePacket(packet)) {
+        if (this.useState == UseState.SWAPPING && this.isEquipmentChangePacket(packet)) {
             mc.options.keyUse.setDown(true);
-            this.useState = UseState.ŧ;
+            this.useState = UseState.USING;
             this.idleTickCount = 0;
             return;
         }
         if (packet instanceof ClientboundSetEntityMotionPacket motion
-                && motion.getId() == mc.player.getId() && this.useState == UseState.ŧ) {
+                && motion.getId() == mc.player.getId() && this.useState == UseState.USING) {
             mc.options.keyUse.setDown(false);
         }
     }
@@ -451,7 +451,7 @@ public class FastUse extends Module implements TripleProvider {
     }
 
     private void resetOffhandState() {
-        if (this.useState == UseState.Đ && this.pongQueue.isEmpty() && !this.didSwapOffhand) {
+        if (this.useState == UseState.IDLE && this.pongQueue.isEmpty() && !this.didSwapOffhand) {
             this.clearOffhandQueue();
             return;
         }
@@ -472,7 +472,7 @@ public class FastUse extends Module implements TripleProvider {
 
     private void clearOffhandQueue() {
         this.pongQueue.clear();
-        this.useState = UseState.Đ;
+        this.useState = UseState.IDLE;
         this.didSwapOffhand = false;
         this.idleTickCount = 0;
         this.savedHotbarSlot = -1;
@@ -598,7 +598,7 @@ public class FastUse extends Module implements TripleProvider {
         return "NoSlow".equals(this.mode.getValue());
     }
 
-    private Packet<?> createUseItemPacket(int n) {
-        return new ServerboundUseItemPacket(this.useHand, n);
+    private Packet<?> createUseItemPacket(int sequence) {
+        return new ServerboundUseItemPacket(this.useHand, sequence);
     }
 }

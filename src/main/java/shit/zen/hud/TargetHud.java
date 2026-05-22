@@ -52,18 +52,18 @@ extends HudElement {
     }
 
     @Override
-    public void onGlRender(GlRenderEvent glRenderEvent, float f, float f2) {
+    public void onGlRender(GlRenderEvent glRenderEvent, float x, float y) {
     }
 
     @Override
-    public void onRender2D(Render2DEvent render2DEvent, float f, float f2) {
+    public void onRender2D(Render2DEvent render2DEvent, float x, float y) {
         if (mc.level == null || mc.player == null) {
             return;
         }
-        float f3;
-        for (AbstractClientPlayer abstractClientPlayer : mc.level.players()) {
-            if (abstractClientPlayer == mc.player || !playerHealthMap.containsKey(abstractClientPlayer.getName().getString())) continue;
-            abstractClientPlayer.setHealth((float)Math.max(1, playerHealthMap.get(abstractClientPlayer.getName().getString()).get()));
+        float maxHealth;
+        for (AbstractClientPlayer player : mc.level.players()) {
+            if (player == mc.player || !playerHealthMap.containsKey(player.getName().getString())) continue;
+            player.setHealth((float)Math.max(1, playerHealthMap.get(player.getName().getString()).get()));
         }
         LivingEntity target = null;
         if (mc.screen instanceof ChatScreen) {
@@ -77,8 +77,8 @@ extends HudElement {
                 this.lastHealth = target.getHealth();
             }
             float currentHealth = Math.min(target.getHealth(), 20.0f);
-            f3 = Math.min(target.getMaxHealth(), 20.0f);
-            float ratio = f3 > 0.0f ? currentHealth / f3 : 0.0f;
+            maxHealth = Math.min(target.getMaxHealth(), 20.0f);
+            float ratio = maxHealth > 0.0f ? currentHealth / maxHealth : 0.0f;
             this.healthAnim.animate(ratio, 0.5, Easings.EASE_OUT_POW4);
             this.healthLagAnim.animate(ratio, 1.5, Easings.EASE_OUT_POW5);
         } else {
@@ -88,8 +88,8 @@ extends HudElement {
         this.healthLagAnim.tick();
         TargetStyle targetStyle = TargetStyle.getByName(this.styleMode.getValue());
         if (targetStyle != null) {
-            f3 = target != null ? (target.getMaxHealth() > 0.0f ? Math.min(target.getHealth(), 20.0f) / Math.min(target.getMaxHealth(), 20.0f) : 0.0f) : 0.0f;
-            targetStyle.render(render2DEvent, target, this.healthAnim, this.healthLagAnim, f3, f, f2);
+            maxHealth = target != null ? (target.getMaxHealth() > 0.0f ? Math.min(target.getHealth(), 20.0f) / Math.min(target.getMaxHealth(), 20.0f) : 0.0f) : 0.0f;
+            targetStyle.render(render2DEvent, target, this.healthAnim, this.healthLagAnim, maxHealth, x, y);
             if (targetStyle instanceof RoundTargetStyle) {
                 this.setWidth(120.0f);
                 this.setHeight(38.0f);

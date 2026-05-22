@@ -54,47 +54,47 @@ implements IHudElement {
     }
 
     @Override
-    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float f, float f2, float f3, float f4, float f5) {
+    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float x, float y, float width, float height, float alpha) {
     }
 
     @Override
-    public void render(DrawContext drawContext, float f, float f2, float f3, float f4, float f5) {
-        if (mc == null || mc.player == null || f5 <= 0.01f) {
+    public void render(DrawContext drawContext, float x, float y, float width, float height, float alpha) {
+        if (mc == null || mc.player == null || alpha <= 0.01f) {
             return;
         }
         this.updateCache();
-        float f6 = betaWidth + this.maxSubWidth;
-        float f7 = f + (f3 - f6) / 2.0f - 1.0f;
-        float f8 = f2 + f4 / 2.0f + 1.0f;
-        int n = this.colorWithAlpha(Color.WHITE.getRGB(), f5);
-        int n2 = this.colorWithAlpha(primaryColor, f5);
-        int n3 = this.colorWithAlpha(shadowColor, f5);
+        float totalWidth = betaWidth + this.maxSubWidth;
+        float drawX = x + (width - totalWidth) / 2.0f - 1.0f;
+        float centerY = y + height / 2.0f + 1.0f;
+        int textColor = this.colorWithAlpha(Color.WHITE.getRGB(), alpha);
+        int subColor = this.colorWithAlpha(primaryColor, alpha);
+        int shadow = this.colorWithAlpha(shadowColor, alpha);
         try (Paint paint = new Paint()){
-            this.drawText(drawContext, paint, "Z", f7, f8 + 4.0f, logoFont, b1Width, n, n3, true);
-            f7 += logoCharWidth + 12.0f;
-            this.drawText(drawContext, paint, "|", (f7 += 12.0f) - 13.0f, f8, subFont, subLineHeight, n2, n3, true);
-            float f9 = (f7 += separatorCharWidth + 12.0f) + (sep1Width - betaRawWidth) / 2.0f - 13.0f;
-            float f10 = f7 + (sep1Width - b1RawWidth) / 2.0f - 13.0f;
-            this.drawText(drawContext, paint, "beta", f9, f8 - 2.0f, subFont, 0.0f, n, n3, false);
-            this.drawText(drawContext, paint, "b1", f10, f8 + 7.0f, subFont, 0.0f, n2, n3, false);
-            f7 += sep1Width;
-            this.drawText(drawContext, paint, "|", (f7 += 12.0f) - 13.0f, f8, subFont, subLineHeight, n2, n3, true);
-            float f11 = (f7 += separatorCharWidth + 12.0f) + (this.maxSubWidth - this.line1Width) / 2.0f - 13.0f;
-            float f12 = f7 + (this.maxSubWidth - this.line2Width) / 2.0f - 13.0f;
-            this.drawText(drawContext, paint, this.line1Text, f11, f8 - 2.0f, subFont, 0.0f, n, n3, false);
-            this.drawText(drawContext, paint, this.line2Text, f12, f8 + 7.0f, subFont, 0.0f, n2, n3, false);
+            this.drawText(drawContext, paint, "Z", drawX, centerY + 4.0f, logoFont, b1Width, textColor, shadow, true);
+            drawX += logoCharWidth + 12.0f;
+            this.drawText(drawContext, paint, "|", (drawX += 12.0f) - 13.0f, centerY, subFont, subLineHeight, subColor, shadow, true);
+            float betaX = (drawX += separatorCharWidth + 12.0f) + (sep1Width - betaRawWidth) / 2.0f - 13.0f;
+            float b1X = drawX + (sep1Width - b1RawWidth) / 2.0f - 13.0f;
+            this.drawText(drawContext, paint, "beta", betaX, centerY - 2.0f, subFont, 0.0f, textColor, shadow, false);
+            this.drawText(drawContext, paint, "b1", b1X, centerY + 7.0f, subFont, 0.0f, subColor, shadow, false);
+            drawX += sep1Width;
+            this.drawText(drawContext, paint, "|", (drawX += 12.0f) - 13.0f, centerY, subFont, subLineHeight, subColor, shadow, true);
+            float line1X = (drawX += separatorCharWidth + 12.0f) + (this.maxSubWidth - this.line1Width) / 2.0f - 13.0f;
+            float line2X = drawX + (this.maxSubWidth - this.line2Width) / 2.0f - 13.0f;
+            this.drawText(drawContext, paint, this.line1Text, line1X, centerY - 2.0f, subFont, 0.0f, textColor, shadow, false);
+            this.drawText(drawContext, paint, this.line2Text, line2X, centerY + 7.0f, subFont, 0.0f, subColor, shadow, false);
         }
     }
 
-    private void drawText(DrawContext drawContext, Paint paint, String string, float f, float f2, FontRenderer fontRenderer, float f3, int n, int n2, boolean bl) {
-        float f4 = f2;
-        if (bl) {
-            f4 = f2 + f3 / 2.0f;
+    private void drawText(DrawContext drawContext, Paint paint, String text, float x, float y, FontRenderer fontRenderer, float lineHeight, int color, int shadowColor, boolean centerVertical) {
+        float drawY = y;
+        if (centerVertical) {
+            drawY = y + lineHeight / 2.0f;
         }
-        paint.setColor(n2);
-        drawContext.drawString(string, f + 0.5f, f4 + 0.5f, fontRenderer, paint);
-        paint.setColor(n);
-        drawContext.drawString(string, f, f4, fontRenderer, paint);
+        paint.setColor(shadowColor);
+        drawContext.drawString(text, x + 0.5f, drawY + 0.5f, fontRenderer, paint);
+        paint.setColor(color);
+        drawContext.drawString(text, x, drawY, fontRenderer, paint);
     }
 
     private float getX() {
@@ -113,13 +113,13 @@ implements IHudElement {
             return new String[]{"Singleplayer", "1ms"};
         }
         ServerData serverData = mc.getCurrentServer();
-        String string = serverData != null ? serverData.ip : "Multiplayer";
-        int n = 0;
+        String serverIp = serverData != null ? serverData.ip : "Multiplayer";
+        int ping = 0;
         if (mc.getConnection() != null && mc.player != null && (playerInfo = mc.getConnection().getPlayerInfo(mc.player.getUUID())) != null) {
-            n = playerInfo.getLatency();
+            ping = playerInfo.getLatency();
         }
-        n = Mth.clamp(n, 0, 9999);
-        return new String[]{string, n + "ms"};
+        ping = Mth.clamp(ping, 0, 9999);
+        return new String[]{serverIp, ping + "ms"};
     }
 
     @Override

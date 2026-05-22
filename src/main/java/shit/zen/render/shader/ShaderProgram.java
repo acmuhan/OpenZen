@@ -30,29 +30,29 @@ public class ShaderProgram {
     private Matrix4f cachedProjection;
     private static int prevProgram;
 
-    public ShaderProgram(String string) {
-        this(string, "vertex", ShaderFormats.POSITION_UV, "ModelViewMat", "ProjMat");
+    public ShaderProgram(String name) {
+        this(name, "vertex", ShaderFormats.POSITION_UV, "ModelViewMat", "ProjMat");
     }
 
-    public ShaderProgram(String string, String string2, Supplier<Map<Integer, String>> supplier) {
-        this(string, string2, supplier, "ModelViewMat", "ProjMat");
+    public ShaderProgram(String fragmentName, String vertexName, Supplier<Map<Integer, String>> attributesSupplier) {
+        this(fragmentName, vertexName, attributesSupplier, "ModelViewMat", "ProjMat");
     }
 
-    public ShaderProgram(String string, Supplier<Map<Integer, String>> supplier) {
-        this(string, string, supplier, "ModelViewMat", "ProjMat");
+    public ShaderProgram(String name, Supplier<Map<Integer, String>> attributesSupplier) {
+        this(name, name, attributesSupplier, "ModelViewMat", "ProjMat");
     }
 
-    public ShaderProgram(String string, Supplier<Map<Integer, String>> supplier, String string2, String string3) {
-        this(string, string, supplier, string2, string3);
+    public ShaderProgram(String name, Supplier<Map<Integer, String>> attributesSupplier, String modelViewName, String projName) {
+        this(name, name, attributesSupplier, modelViewName, projName);
     }
 
-    public ShaderProgram(String string, String string2, Supplier<Map<Integer, String>> supplier, String string3, String string4) {
+    public ShaderProgram(String fragmentName, String vertexName, Supplier<Map<Integer, String>> attributesSupplier, String modelViewName, String projName) {
         this.programId = GL20.glCreateProgram();
-        int n = ShaderProgram.compileShader(ShaderSource.getByFileName(string + ".fsh").getSource(), 35632);
-        int n2 = ShaderProgram.compileShader(ShaderSource.getByFileName(string2 + ".vsh").getSource(), 35633);
-        GL20.glAttachShader(this.programId, n);
-        GL20.glAttachShader(this.programId, n2);
-        for (Map.Entry<Integer, String> entry : supplier.get().entrySet()) {
+        int fragmentShader = ShaderProgram.compileShader(ShaderSource.getByFileName(fragmentName + ".fsh").getSource(), 35632);
+        int vertexShader = ShaderProgram.compileShader(ShaderSource.getByFileName(vertexName + ".vsh").getSource(), 35633);
+        GL20.glAttachShader(this.programId, fragmentShader);
+        GL20.glAttachShader(this.programId, vertexShader);
+        for (Map.Entry<Integer, String> entry : attributesSupplier.get().entrySet()) {
             GL20.glEnableVertexAttribArray(entry.getKey());
             GL20.glBindAttribLocation(this.programId, entry.getKey(), entry.getValue());
         }
@@ -61,10 +61,10 @@ public class ShaderProgram {
             LOGGER.error(GL20.glGetProgramInfoLog(this.programId, Short.MAX_VALUE));
             throw new IllegalStateException("Failed to link shader program!");
         }
-        GL20.glDeleteShader(n);
-        GL20.glDeleteShader(n2);
-        this.modelViewUniform = new Matrix4Uniform(string3).bindToProgram(this.programId);
-        this.projectionUniform = new Matrix4Uniform(string4).bindToProgram(this.programId);
+        GL20.glDeleteShader(fragmentShader);
+        GL20.glDeleteShader(vertexShader);
+        this.modelViewUniform = new Matrix4Uniform(modelViewName).bindToProgram(this.programId);
+        this.projectionUniform = new Matrix4Uniform(projName).bindToProgram(this.programId);
     }
 
     public void use() {
@@ -74,17 +74,17 @@ public class ShaderProgram {
         this.setProjection(RenderSystem.getProjectionMatrix());
     }
 
-    public void setModelView(Matrix4f matrix4f) {
-        if (this.cachedModelView != matrix4f) {
-            this.modelViewUniform.upload(matrix4f);
-            this.cachedModelView = matrix4f;
+    public void setModelView(Matrix4f modelView) {
+        if (this.cachedModelView != modelView) {
+            this.modelViewUniform.upload(modelView);
+            this.cachedModelView = modelView;
         }
     }
 
-    public void setProjection(Matrix4f matrix4f) {
-        if (this.cachedProjection != matrix4f) {
-            this.projectionUniform.upload(matrix4f);
-            this.cachedProjection = matrix4f;
+    public void setProjection(Matrix4f projection) {
+        if (this.cachedProjection != projection) {
+            this.projectionUniform.upload(projection);
+            this.cachedProjection = projection;
         }
     }
 
@@ -92,30 +92,30 @@ public class ShaderProgram {
         GL20.glUseProgram(prevProgram);
     }
 
-    public int getUniformLocation(String string) {
-        if (!this.uniformCache.containsKey(string)) {
-            this.uniformCache.put(string, GL20.glGetUniformLocation(this.programId, string));
+    public int getUniformLocation(String uniformName) {
+        if (!this.uniformCache.containsKey(uniformName)) {
+            this.uniformCache.put(uniformName, GL20.glGetUniformLocation(this.programId, uniformName));
         }
-        return this.uniformCache.get(string);
+        return this.uniformCache.get(uniformName);
     }
 
-    private static int compileShader(String string, int n) {
-        int n2 = GL20.glCreateShader(n);
-        Matcher matcher = ShaderFormats.IMPORT_PATTERN.matcher(string);
+    private static int compileShader(String source, int type) {
+        int shader = GL20.glCreateShader(type);
+        Matcher matcher = ShaderFormats.IMPORT_PATTERN.matcher(source);
         while (matcher.find()) {
-            boolean bl = matcher.group(2) == null;
-            if (!bl) continue;
-            String string2 = matcher.group(3);
-            String string3 = ShaderSource.getByFileName(string2).getSource();
-            string = string.replaceAll(ShaderFormats.IMPORT_PATTERN.pattern(), string3);
+            boolean isPlainImport = matcher.group(2) == null;
+            if (!isPlainImport) continue;
+            String importName = matcher.group(3);
+            String importSource = ShaderSource.getByFileName(importName).getSource();
+            source = source.replaceAll(ShaderFormats.IMPORT_PATTERN.pattern(), importSource);
         }
-        GL20.glShaderSource(n2, string);
-        GL20.glCompileShader(n2);
-        if (GL20.glGetShaderi(n2, 35713) == 0) {
-            LOGGER.error(GL20.glGetShaderInfoLog(n2, Short.MAX_VALUE));
-            throw new IllegalStateException(String.format("Failed to compile shader! (Type: %s)", new Object[]{n}));
+        GL20.glShaderSource(shader, source);
+        GL20.glCompileShader(shader);
+        if (GL20.glGetShaderi(shader, 35713) == 0) {
+            LOGGER.error(GL20.glGetShaderInfoLog(shader, Short.MAX_VALUE));
+            throw new IllegalStateException(String.format("Failed to compile shader! (Type: %s)", new Object[]{type}));
         }
-        return n2;
+        return shader;
     }
 
     }

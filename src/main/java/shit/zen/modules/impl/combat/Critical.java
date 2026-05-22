@@ -20,12 +20,12 @@ extends Module {
         if (mc.player == null) {
             return;
         }
-        boolean bl = mc.player.fallDistance > 0.0f && !mc.player.onGround() && !mc.player.onClimbable() && !mc.player.isInWater() && !mc.player.hasEffect(MobEffects.BLINDNESS) && !mc.player.isPassenger() && entityRemoveEvent.entity() instanceof LivingEntity;
-        boolean bl2 = mc.player.isSprinting();
-        if (bl && !entityRemoveEvent.dead()) {
+        boolean canCrit = mc.player.fallDistance > 0.0f && !mc.player.onGround() && !mc.player.onClimbable() && !mc.player.isInWater() && !mc.player.hasEffect(MobEffects.BLINDNESS) && !mc.player.isPassenger() && entityRemoveEvent.entity() instanceof LivingEntity;
+        boolean wasSprinting = mc.player.isSprinting();
+        if (canCrit && !entityRemoveEvent.dead()) {
             mc.player.resetAttackStrengthTicker();
         }
-        if (bl && bl2 && entityRemoveEvent.dead()) {
+        if (canCrit && wasSprinting && entityRemoveEvent.dead()) {
             mc.options.keySprint.setDown(false);
         }
     }

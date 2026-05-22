@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -36,12 +37,20 @@ import shit.zen.event.impl.TickEvent;
 import shit.zen.event.impl.WorldChangeEvent;
 import shit.zen.modules.Category;
 import shit.zen.modules.Module;
+import shit.zen.modules.impl.combat.antikb.NoXZMode;
+import shit.zen.modules.impl.player.AntiTNT;
+import shit.zen.modules.impl.player.AntiWeb;
 import shit.zen.modules.impl.player.AutoWebPlace;
+import shit.zen.modules.impl.player.Helper;
+import shit.zen.modules.impl.player.MidPearl;
+import shit.zen.modules.impl.player.Stuck;
 import shit.zen.modules.impl.world.Teams;
 import shit.zen.settings.impl.BooleanSetting;
 import shit.zen.settings.impl.ModeSetting;
 import shit.zen.settings.impl.NumberSetting;
+import shit.zen.utils.game.ItemUtil;
 import shit.zen.utils.game.RotationUtil;
+import shit.zen.utils.math.MathUtil;
 import shit.zen.utils.rotation.Rotation;
 import shit.zen.utils.rotation.RotationHandler;
 import shit.zen.event.EventTarget;
@@ -75,9 +84,9 @@ public class KillAura extends Module {
     public final ModeSetting sortMode;
     public final ModeSetting attackMode;
 
-    private RotationUtil.BestHitInfo prevBestHit;
     private RotationUtil.BestHitInfo currentBestHit;
-    private final int attackTimes;
+    private RotationUtil.BestHitInfo prevBestHit;
+    private int attackTimes;
     private float attacks;
     private int targetIndex;
     public int sprintTickCounter;
@@ -109,7 +118,6 @@ public class KillAura extends Module {
         this.rotationsMode = new ModeSetting("Rotations", "Smooth", "Snap").withDefault("Smooth");
         this.sortMode = new ModeSetting("Sort", "Distance", "FOV", "Health", "None").withDefault("Distance");
         this.attackMode = new ModeSetting("Attack Mode", "Single", "Switch", "Multi", "None").withDefault("Single");
-        this.attackTimes = 0;
         this.attacks = 0.0f;
         INSTANCE = this;
     }
@@ -132,6 +140,7 @@ public class KillAura extends Module {
         aimingTarget = null;
         this.sprintTickCounter = 0;
         this.sprintCounter = 0;
+        this.attackTimes = 0;
         super.onDisable();
     }
 
@@ -194,30 +203,40 @@ public class KillAura extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (mc.player == null || mc.level == null) {
+        if (!ZenClient.isReady()) {
             return;
         }
-        if (mc.screen != null) {
+        if (mc.screen instanceof AbstractContainerScreen
+                || ItemUtil.hasServerItem()
+                || (Stuck.INSTANCE != null && Stuck.INSTANCE.isEnabled())
+                || (Helper.INSTANCE != null && Helper.INSTANCE.isEnabled() && Helper.targetRotation != null)
+                || AntiWeb.targetRotation != null
+                || AntiTNT.targetRotation != null
+                || MidPearl.targetRotation != null
+                || this.isWebPlacing()) {
             target = null;
             aimingTarget = null;
-            this.rotation = null;
             this.currentBestHit = null;
+            this.rotation = null;
             this.prevBestHit = null;
             targetList.clear();
+            this.sprintTickCounter = 0;
+            this.attacks = 0.0f;
+            this.sprintCounter = 0;
             return;
         }
-        boolean isSwitch = this.switchSize.getValue().intValue() > 1;
+        boolean isSwitch = this.switchSize.getValue().intValue() > 1
+                || this.infSwitch.getValue()
+                || this.multiAttack.getValue();
         this.updateTargets();
         aimingTarget = this.getTarget();
         this.prevBestHit = this.currentBestHit;
         this.currentBestHit = null;
-        this.rotation = null;
         if (aimingTarget != null) {
-            RotationUtil.BestHitInfo hit = RotationUtil.getBestHit(aimingTarget);
-            this.currentBestHit = hit;
-            if (hit != null && hit.rotation() != null) {
-                this.rotation = hit.rotation();
-            }
+            this.currentBestHit = RotationUtil.getBestHit(aimingTarget);
+            this.rotation = this.currentBestHit != null ? this.currentBestHit.rotation() : null;
+        } else {
+            this.rotation = null;
         }
         if (targetList.isEmpty()) {
             target = null;
@@ -226,10 +245,10 @@ public class KillAura extends Module {
         if (this.targetIndex > targetList.size() - 1) {
             this.targetIndex = 0;
         }
-        boolean switchByAttacks = this.attacks >= this.switchAttackTimes.getValue().floatValue();
-        boolean switchByDistance = this.currentBestHit != null && this.currentBestHit.distance() > 3.0;
-        if (targetList.size() > 1 && (switchByAttacks || switchByDistance)) {
-            this.attacks = 0.0f;
+        if (targetList.size() > 1
+                && (this.attackTimes >= this.switchDelay.getValue().intValue()
+                    || (this.currentBestHit != null && this.currentBestHit.distance() > 3.0))) {
+            this.attackTimes = 0;
             for (int i = 0; i < targetList.size(); ++i) {
                 ++this.targetIndex;
                 if (this.targetIndex > targetList.size() - 1) {
@@ -246,7 +265,29 @@ public class KillAura extends Module {
             this.targetIndex = 0;
         }
         target = targetList.get(this.targetIndex);
-        this.attacks += this.aps.getValue().floatValue() / 20.0f;
+        if (this.rotationsMode.is("Smooth")) {
+            float apsValue;
+            float minApsValue;
+            if (NoXZMode.isAttacking) {
+                int kbAttackAmount = AntiKB.INSTANCE != null
+                        ? AntiKB.INSTANCE.attackAmount.getValue().intValue()
+                        : 0;
+                apsValue = this.aps.getValue().floatValue() - kbAttackAmount;
+                minApsValue = this.switchAttackTimes.getValue().floatValue() - kbAttackAmount;
+            } else {
+                apsValue = this.aps.getValue().floatValue();
+                minApsValue = this.switchAttackTimes.getValue().floatValue();
+            }
+            if (this.sprintSync.getValue()) {
+                apsValue *= 2.0f;
+                minApsValue *= 2.0f;
+            }
+            this.attacks += (float)(MathUtil.randomDouble(minApsValue, apsValue) / 20.0);
+        } else if (this.sprintCounter > 0) {
+            --this.sprintCounter;
+        } else if (mc.player.getAttackStrengthScale(0.0f) >= 0.9f) {
+            this.doAttack();
+        }
     }
 
     @EventTarget
@@ -282,10 +323,12 @@ public class KillAura extends Module {
         }
         if (this.multiAttack.getValue()) {
             int attacked = 0;
+            Rotation aimRot = RotationHandler.targetRotation != null
+                    ? RotationHandler.targetRotation
+                    : this.rotation;
             for (Entity entity : targetList) {
-                if (!this.isValidAttack(entity)) continue;
-                Vec3 closest = RotationUtil.closestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
-                if (closest.distanceTo(mc.player.getEyePosition()) >= 3.0) continue;
+                if (aimRot == null) break;
+                if (RotationUtil.getHitDistance(entity, mc.player.getEyePosition(), aimRot) >= 3.0) continue;
                 this.attackEntity(entity);
                 if (++attacked >= 2) {
                     break;
@@ -293,11 +336,7 @@ public class KillAura extends Module {
             }
         } else if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
             Entity hitEntity = ((EntityHitResult) hitResult).getEntity();
-            if (this.isValidAttack(hitEntity)) {
-                this.attackEntity(hitEntity);
-            }
-        } else if (target != null && this.isValidAttack(target)) {
-            this.attackEntity(target);
+            this.attackEntity(hitEntity);
         }
     }
 
@@ -305,7 +344,7 @@ public class KillAura extends Module {
         Entity entity = target;
         if (entity == null) {
             List<Entity> list = this.getTargets();
-            if (list != null && !list.isEmpty()) {
+            if (!list.isEmpty()) {
                 entity = list.get(0);
             }
         }
@@ -319,7 +358,8 @@ public class KillAura extends Module {
     }
 
     public void updateTargets() {
-        targetList = this.getTargets();
+        List<Entity> next = this.getTargets();
+        targetList = next != null ? next : new ArrayList<>();
     }
 
     public boolean isValidTarget(Entity entity) {
@@ -337,7 +377,7 @@ public class KillAura extends Module {
                 if (this.aboveTarget.getValue() && player.getY() >= mc.player.getY() + 0.05f) {
                     return true;
                 }
-                if (ZenClient.isOwner(entity.getName().getString())) return false;
+                // if (ZenClient.isOwner(entity.getName().getString())) return false;
             }
             if (Teams.isSameTeam(entity)) return false;
             if (entity instanceof Player && !(Boolean) this.attackPlayer.getValue()) return false;
@@ -372,6 +412,10 @@ public class KillAura extends Module {
         if (mc.player == null || mc.gameMode == null || entity == null) {
             return;
         }
+        if (this.isWebPlacing()) {
+            return;
+        }
+        ++this.attackTimes;
         float currentYaw = mc.player.getYRot();
         float currentPitch = mc.player.getXRot();
         Rotation targetRot = RotationHandler.targetRotation != null
@@ -379,10 +423,20 @@ public class KillAura extends Module {
                 : (this.rotation != null ? this.rotation : new Rotation(currentYaw, currentPitch));
         mc.player.setYRot(targetRot.getYaw());
         mc.player.setXRot(targetRot.getPitch());
-        mc.gameMode.attack(mc.player, entity);
-        mc.player.swing(InteractionHand.MAIN_HAND);
+        boolean performAttack = !this.sprintSync.getValue() || this.sprintTickCounter % 2 == 0;
+        if (performAttack) {
+            mc.gameMode.attack(mc.player, entity);
+            mc.player.swing(InteractionHand.MAIN_HAND);
+        }
+        if (this.targetHud.getValue() && entity instanceof LivingEntity living) {
+            mc.player.magicCrit(living);
+            mc.player.crit(living);
+        }
         mc.player.setYRot(currentYaw);
         mc.player.setXRot(currentPitch);
+        if (this.rotationsMode.is("Snap")) {
+            this.sprintCounter = (int) mc.player.getCurrentItemAttackStrengthDelay();
+        }
     }
 
     private boolean isWebPlacing() {

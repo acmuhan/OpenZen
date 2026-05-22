@@ -10,71 +10,71 @@ extends ClientBase {
     private static final String UTILITY_CLASS_MSG = "This is a utility class and cannot be instantiated";
 
     public static Color getPlayerColor(Player player) {
-        int n = player.getName().getString().hashCode();
-        int n2 = (n & 0xFF0000) >> 16;
-        int n3 = (n & 0xFF00) >> 8;
-        int n4 = n & 0xFF;
-        return new Color(n2, n3, n4);
+        int hash = player.getName().getString().hashCode();
+        int red = (hash & 0xFF0000) >> 16;
+        int green = (hash & 0xFF00) >> 8;
+        int blue = hash & 0xFF;
+        return new Color(red, green, blue);
     }
 
-    public static int animateColor(int n, int n2, double d) {
-        if (d > 1.0) {
-            d = 1.0 - d % 1.0;
+    public static int animateColor(int colorA, int colorB, double progress) {
+        if (progress > 1.0) {
+            progress = 1.0 - progress % 1.0;
         }
-        return ColorUtil.interpolateColor(n, n2, d);
+        return ColorUtil.interpolateColor(colorA, colorB, progress);
     }
 
-    public static int animateColorOffset(int n, int n2, long l) {
-        return ColorUtil.animateColor(n, n2, (double)((System.currentTimeMillis() + l) % 4000L) / 2000.0);
+    public static int animateColorOffset(int colorA, int colorB, long offsetMs) {
+        return ColorUtil.animateColor(colorA, colorB, (double)((System.currentTimeMillis() + offsetMs) % 4000L) / 2000.0);
     }
 
-    public static int interpolateColor(int n, int n2, double d) {
-        double d2 = 1.0 - d;
-        int n3 = (int)((double)(n >> 16 & 0xFF) * d2 + (double)(n2 >> 16 & 0xFF) * d);
-        int n4 = (int)((double)(n >> 8 & 0xFF) * d2 + (double)(n2 >> 8 & 0xFF) * d);
-        int n5 = (int)((double)(n & 0xFF) * d2 + (double)(n2 & 0xFF) * d);
-        int n6 = (int)((double)(n >> 24 & 0xFF) * d2 + (double)(n2 >> 24 & 0xFF) * d);
-        return (n6 & 0xFF) << 24 | (n3 & 0xFF) << 16 | (n4 & 0xFF) << 8 | n5 & 0xFF;
+    public static int interpolateColor(int colorA, int colorB, double progress) {
+        double inverse = 1.0 - progress;
+        int red = (int)((double)(colorA >> 16 & 0xFF) * inverse + (double)(colorB >> 16 & 0xFF) * progress);
+        int green = (int)((double)(colorA >> 8 & 0xFF) * inverse + (double)(colorB >> 8 & 0xFF) * progress);
+        int blue = (int)((double)(colorA & 0xFF) * inverse + (double)(colorB & 0xFF) * progress);
+        int alpha = (int)((double)(colorA >> 24 & 0xFF) * inverse + (double)(colorB >> 24 & 0xFF) * progress);
+        return (alpha & 0xFF) << 24 | (red & 0xFF) << 16 | (green & 0xFF) << 8 | blue & 0xFF;
     }
 
-    public static Color getRainbowColor(int n, int n2) {
-        int n3 = (int)((System.currentTimeMillis() / (long)n + (long)n2) % 360L);
-        float f = (float)n3 / 360.0f;
-        return new Color(Color.HSBtoRGB(f, 0.5f, 1.0f));
+    public static Color getRainbowColor(int speed, int offset) {
+        int hueDegrees = (int)((System.currentTimeMillis() / (long)speed + (long)offset) % 360L);
+        float hue = (float)hueDegrees / 360.0f;
+        return new Color(Color.HSBtoRGB(hue, 0.5f, 1.0f));
     }
 
-    public static int fromRGB(int n, int n2, int n3) {
-        return ColorUtil.fromARGB(n, n2, n3, 255);
+    public static int fromRGB(int red, int green, int blue) {
+        return ColorUtil.fromARGB(red, green, blue, 255);
     }
 
-    public static int fromARGB(int n, int n2, int n3, int n4) {
-        return (n4 & 0xFF) << 24 | (n & 0xFF) << 16 | (n2 & 0xFF) << 8 | n3 & 0xFF;
+    public static int fromARGB(int red, int green, int blue, int alpha) {
+        return (alpha & 0xFF) << 24 | (red & 0xFF) << 16 | (green & 0xFF) << 8 | blue & 0xFF;
     }
 
-    public static int withAlpha(int n, float f) {
-        Color color = new Color(n);
-        return ColorUtil.withAlphaColor(color, f).getRGB();
+    public static int withAlpha(int color, float alphaScale) {
+        Color colorObj = new Color(color);
+        return ColorUtil.withAlphaColor(colorObj, alphaScale).getRGB();
     }
 
-    public static Color withAlphaColor(Color color, float f) {
-        f = Math.min(1.0f, Math.max(0.0f, f));
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int)((float)color.getAlpha() * f));
+    public static Color withAlphaColor(Color color, float alphaScale) {
+        alphaScale = Math.min(1.0f, Math.max(0.0f, alphaScale));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int)((float)color.getAlpha() * alphaScale));
     }
 
-    public static int getAlpha(int n) {
-        return n >> 24 & 0xFF;
+    public static int getAlpha(int color) {
+        return color >> 24 & 0xFF;
     }
 
-    public static int getRed(int n) {
-        return n >> 16 & 0xFF;
+    public static int getRed(int color) {
+        return color >> 16 & 0xFF;
     }
 
-    public static int getGreen(int n) {
-        return n >> 8 & 0xFF;
+    public static int getGreen(int color) {
+        return color >> 8 & 0xFF;
     }
 
-    public static int getBlue(int n) {
-        return n & 0xFF;
+    public static int getBlue(int color) {
+        return color & 0xFF;
     }
 
     @Generated

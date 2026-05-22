@@ -3,13 +3,13 @@ package shit.zen.render;
 import shit.zen.render.Paint.GradientCoords;
 
 public final class GradientHelper {
-    public static Paint.GradientCoords createLinearGradientEx(float f, float f2, float f3, float f4, int[] nArray, float[] fArray, Object object) {
-        int n = nArray.length > 0 ? nArray[0] : 0;
-        int n2 = nArray.length > 1 ? nArray[nArray.length - 1] : n;
-        return new Paint.GradientCoords(f, f2, f3, f4, n, n2);
+    public static Paint.GradientCoords createLinearGradientEx(float x1, float y1, float x2, float y2, int[] colors, float[] stops, Object tileMode) {
+        int firstColor = colors.length > 0 ? colors[0] : 0;
+        int lastColor = colors.length > 1 ? colors[colors.length - 1] : firstColor;
+        return new Paint.GradientCoords(x1, y1, x2, y2, firstColor, lastColor);
     }
 
-    public static Paint.GradientCoords createLinearGradient(float f, float f2, float f3, float f4, int[] nArray) {
-        return GradientHelper.createLinearGradientEx(f, f2, f3, f4, nArray, null, null);
+    public static Paint.GradientCoords createLinearGradient(float x1, float y1, float x2, float y2, int[] colors) {
+        return GradientHelper.createLinearGradientEx(x1, y1, x2, y2, colors, null, null);
     }
 }

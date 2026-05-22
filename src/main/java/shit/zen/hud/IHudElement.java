@@ -35,6 +35,6 @@ public interface IHudElement {
         return color & 0xFFFFFF | (int) (255.0f * clamped) << 24;
     }
 
-    default void render(DrawContext drawContext, float a, float b, float c, float d, float e) {
+    default void render(DrawContext drawContext, float x, float y, float width, float height, float alpha) {
     }
 }

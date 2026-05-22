@@ -4,15 +4,15 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 
 public class BufferUtil {
-    public static void fill(FloatBuffer floatBuffer, float f) {
-        floatBuffer.clear();
-        for (int i = 0; i < floatBuffer.capacity(); ++i) {
-            floatBuffer.put(i, f);
+    public static void fill(FloatBuffer buffer, float value) {
+        buffer.clear();
+        for (int i = 0; i < buffer.capacity(); ++i) {
+            buffer.put(i, value);
         }
-        floatBuffer.clear();
+        buffer.clear();
     }
 
-    public static FloatBuffer storeMatrix(FloatBuffer floatBuffer, Matrix4f matrix4f) {
-        return matrix4f.get(floatBuffer);
+    public static FloatBuffer storeMatrix(FloatBuffer buffer, Matrix4f matrix) {
+        return matrix.get(buffer);
     }
 }

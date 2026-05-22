@@ -22,6 +22,7 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import shit.zen.modules.impl.render.NameProtect;
 import shit.zen.event.impl.GlRenderEvent;
 import shit.zen.event.impl.PacketEvent;
 import shit.zen.event.impl.Render2DEvent;
@@ -42,56 +43,79 @@ import shit.zen.event.EventTarget;
 public class PlayerListHud
 extends HudElement {
     public static final class PlayerEntry {
-        public final PlayerListHud parent;
+        public final PlayerListHud outer;
         public final net.minecraft.world.entity.player.Player player;
+        public String displayName;
+        public float nameWidth;
         public java.util.List<ItemStack> items;
-        public final java.util.Map<net.minecraft.world.item.Item, ItemStack> itemStacks = new java.util.HashMap<>();
+        public float totalWidth;
         public final java.util.Map<net.minecraft.world.item.Item, Integer> cheatItems = new java.util.HashMap<>();
         public final java.util.Set<net.minecraft.world.item.Item> flaggedItems = new java.util.HashSet<>();
-        public final SmoothAnimationTimer fadeAnim = new SmoothAnimationTimer();
+        public final java.util.Map<net.minecraft.world.item.Item, ItemStack> itemStacks = new java.util.HashMap<>();
+        public final long createdTime;
         public final SmoothAnimationTimer slideAnim = new SmoothAnimationTimer();
+        public final SmoothAnimationTimer fadeAnim = new SmoothAnimationTimer();
         public final SmoothAnimationTimer heightAnim = new SmoothAnimationTimer();
         public final SmoothAnimationTimer alphaAnim = new SmoothAnimationTimer();
         public final SmoothAnimationTimer widthAnim = new SmoothAnimationTimer();
-        public String displayName;
-        public float nameWidth;
-        public boolean visible = true;
-        public boolean rightAligned = false;
-        public float alpha = 1.0f;
-        public float targetY;
-        public float currentY;
         public boolean removing = false;
+        public boolean visible = true;
+        public final boolean rightAligned;
 
-        public PlayerEntry(PlayerListHud parent, net.minecraft.world.entity.player.Player player, java.util.List<ItemStack> items) {
-            this.parent = parent;
+        public PlayerEntry(PlayerListHud outer, net.minecraft.world.entity.player.Player player, java.util.List<ItemStack> initialItems) {
+            this.outer = outer;
             this.player = player;
-            this.items = items;
-            this.displayName = player.getName().getString();
-            for (ItemStack s : items) {
-                this.itemStacks.put(s.getItem(), s);
+            this.rightAligned = outer.wasRightAligned;
+            this.createdTime = System.currentTimeMillis();
+            initialItems.forEach(this::addItemStack);
+            ArrayList<ItemStack> initialList = new ArrayList<>();
+            for (ItemStack stack : this.itemStacks.values()) {
+                if (ItemUtil.isOtherCheat(stack)) {
+                    this.cheatItems.put(stack.getItem(), stack.getDamageValue());
+                }
+                initialList.add(stack);
             }
+            this.updateItems(initialList);
+            this.slideAnim.setCurrentValue(this.rightAligned ? 20.0 : -20.0);
+            this.heightAnim.setCurrentValue(0.0);
+            this.alphaAnim.setCurrentValue(0.0);
+            this.widthAnim.setCurrentValue(this.totalWidth);
+        }
+
+        public void updateItems(java.util.List<ItemStack> items) {
+            this.items = items;
+            this.displayName = NameProtect.replacePlayerName(this.player.getName().getString());
+            this.nameWidth = GlHelper.getStringWidth(this.displayName, this.outer.headerFont);
+            float padding = 5.0f;
+            float gap = 3.0f;
+            float headSize = 20.0f;
+            float itemSize = 16.0f;
+            this.totalWidth = padding + headSize + gap + this.nameWidth + gap + items.size() * (itemSize + gap) + padding;
+            this.widthAnim.animate(this.totalWidth, 0.25, Easings.EASE_OUT_SINE);
         }
 
         public void startRemove() {
+            if (this.removing) return;
             this.removing = true;
-        }
-
-        public void updateItems(java.util.List<ItemStack> newItems) {
-            this.items = newItems;
-        }
-
-        public boolean isRemoveDone() {
-            return this.removing && this.alpha <= 0.01f;
+            float dist = 40.0f;
+            this.slideAnim.animate(this.rightAligned ? dist : -dist, 0.2, Easings.EASE_IN_POW3);
+            this.heightAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
         }
 
         public void tick() {
-            float target = this.removing ? 0.0f : 1.0f;
-            this.alpha += (target - this.alpha) * 0.18f;
-            this.currentY += (this.targetY - this.currentY) * 0.18f;
-            this.fadeAnim.tick();
             this.slideAnim.tick();
+            this.fadeAnim.tick();
             this.heightAnim.tick();
             this.alphaAnim.tick();
+            this.widthAnim.tick();
+        }
+
+        public boolean isRemoveDone() {
+            return this.removing && this.heightAnim.isDone();
+        }
+
+        private void addItemStack(ItemStack stack) {
+            this.itemStacks.putIfAbsent(stack.getItem(), stack);
         }
     }
 
@@ -144,8 +168,8 @@ extends HudElement {
             }
             return;
         }
-        List<? extends Player> list = mc.level.players();
-        ArrayList<Player> playerList = new ArrayList<>(list);
+        List<? extends Player> levelPlayers = mc.level.players();
+        ArrayList<Player> playerList = new ArrayList<>(levelPlayers);
         for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
             if (!playerList.stream().noneMatch(p -> p.getUUID().equals(entry.player.getUUID()))) continue;
             entry.startRemove();
@@ -181,13 +205,13 @@ extends HudElement {
                 }
             });
         }
-        this.removedEntries.removeIf(uUID -> {
-            Player player = mc.level.getPlayerByUUID(uUID);
+        this.removedEntries.removeIf(uuid -> {
+            Player player = mc.level.getPlayerByUUID(uuid);
             if (player == null) {
                 return true;
             }
-            MobEffectInstance mobEffectInstance = player.getEffect(MobEffects.ABSORPTION);
-            return mobEffectInstance == null || mobEffectInstance.getAmplifier() < 3;
+            MobEffectInstance absorption = player.getEffect(MobEffects.ABSORPTION);
+            return absorption == null || absorption.getAmplifier() < 3;
         });
     }
 
@@ -200,23 +224,23 @@ extends HudElement {
 
     @EventTarget
     public void onPacket(PacketEvent packetEvent) {
-        MobEffectInstance mobEffectInstance;
+        MobEffectInstance absorption;
         Player player;
         Entity entity;
-        ClientboundEntityEventPacket clientboundEntityEventPacket;
+        ClientboundEntityEventPacket entityEventPacket;
         if (mc.level == null) {
             return;
         }
         Packet<?> packet = packetEvent.getPacket();
-        if (packet instanceof ClientboundEntityEventPacket && (clientboundEntityEventPacket = (ClientboundEntityEventPacket)packet).getEventId() == 35 && (entity = clientboundEntityEventPacket.getEntity(mc.level)) instanceof Player) {
+        if (packet instanceof ClientboundEntityEventPacket && (entityEventPacket = (ClientboundEntityEventPacket)packet).getEventId() == 35 && (entity = entityEventPacket.getEntity(mc.level)) instanceof Player) {
             player = (Player)entity;
             ChatUtil.print("§e[提示] §f" + player.getName().getString() + " 触发了不死图腾!");
             this.updatePlayerItem(player, Items.TOTEM_OF_UNDYING);
         }
         if (packet instanceof ClientboundSetEntityDataPacket dataPacket
                 && (entity = mc.level.getEntity(dataPacket.id())) instanceof Player
-                && (mobEffectInstance = (player = (Player)entity).getEffect(MobEffects.ABSORPTION)) != null
-                && mobEffectInstance.getAmplifier() >= 3
+                && (absorption = (player = (Player)entity).getEffect(MobEffects.ABSORPTION)) != null
+                && absorption.getAmplifier() >= 3
                 && player.hasEffect(MobEffects.REGENERATION)
                 && !this.removedEntries.contains(player.getUUID())) {
             ChatUtil.print("§6[提示] §f" + player.getName().getString() + " 吃下了附魔金苹果!");
@@ -226,23 +250,23 @@ extends HudElement {
     }
 
     private void updatePlayerItem(Player player, Item item) {
-        this.playerEntryList.stream().filter(playerListHud$PlayerEntry -> playerListHud$PlayerEntry.player.getUUID().equals(player.getUUID())).findFirst().ifPresent(playerListHud$PlayerEntry -> {
-            playerListHud$PlayerEntry.flaggedItems.add(item);
-            playerListHud$PlayerEntry.itemStacks.remove(item);
+        this.playerEntryList.stream().filter(entry -> entry.player.getUUID().equals(player.getUUID())).findFirst().ifPresent(entry -> {
+            entry.flaggedItems.add(item);
+            entry.itemStacks.remove(item);
         });
     }
 
     @Override
-    public void onRender2D(Render2DEvent render2DEvent, float f, float f2) {
+    public void onRender2D(Render2DEvent render2DEvent, float x, float y) {
     }
 
     @Override
-    public void onGlRender(GlRenderEvent glRenderEvent, float f, float f2) {
-        float f3;
-        float f4;
-        float f5;
-        float f6;
-        boolean bl;
+    public void onGlRender(GlRenderEvent glRenderEvent, float x, float y) {
+        float rightFade;
+        float leftFade;
+        float entryY;
+        float panelWidth;
+        boolean isRightAligned;
         this.playerEntryList.removeIf(PlayerListHud.PlayerEntry::isRemoveDone);
         this.playerEntryList.forEach(PlayerListHud.PlayerEntry::tick);
         this.slideAnim.tick();
@@ -251,218 +275,218 @@ extends HudElement {
         if (this.playerEntryList.isEmpty() && this.slideAnim.isDone() && this.fadeAnim.isDone()) {
             return;
         }
-        boolean bl2 = bl = f + this.getWidth() / 2.0f > (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
-        if (this.wasRightAligned != bl && this.rightAlignAnim.isDone()) {
+        boolean rightSide = isRightAligned = x + this.getWidth() / 2.0f > (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
+        if (this.wasRightAligned != isRightAligned && this.rightAlignAnim.isDone()) {
             this.rightAlign = this.wasRightAligned;
-            this.wasRightAligned = bl;
+            this.wasRightAligned = isRightAligned;
             this.rightAlignAnim.setCurrentValue(0.0);
             this.rightAlignAnim.animate(1.0, 0.3, Easings.EASE_OUT_SINE);
         }
-        float f7 = 5.0f;
-        float f8 = 3.0f;
-        float f9 = 4.5f;
-        float f10 = 15.0f;
-        float f11 = 0.7f;
-        String string = "";
-        String string2 = "Playerlist";
-        float f12 = GlHelper.getStringWidth(string, this.subFont);
-        float f13 = GlHelper.getStringWidth(string2, this.nameFont);
-        float f14 = (float)GlHelper.getFontAscent(this.nameFont) + f7 * 2.0f;
-        float f15 = f12 + f8 + f13 + f7 * 2.0f;
-        float f16 = 20.0f;
-        float f17 = 16.0f;
-        float f18 = f16 + f7 * 2.0f;
-        float f19 = f15;
+        float padding = 5.0f;
+        float gap = 3.0f;
+        float spacing = 4.5f;
+        float cornerRadius = 15.0f;
+        float blurStrength = 0.7f;
+        String iconText = "\ue7fd";
+        String titleText = "Playerlist";
+        float iconWidth = GlHelper.getStringWidth(iconText, this.subFont);
+        float titleWidth = GlHelper.getStringWidth(titleText, this.nameFont);
+        float headerHeight = (float)GlHelper.getFontAscent(this.nameFont) + padding * 2.0f;
+        float headerWidth = iconWidth + gap + titleWidth + padding * 2.0f;
+        float headSize = 20.0f;
+        float itemSize = 16.0f;
+        float entryHeight = headSize + padding * 2.0f;
+        float targetWidth = headerWidth;
         if (!this.playerEntryList.isEmpty()) {
-            f6 = 0.0f;
-            for (PlayerListHud.PlayerEntry playerListHud$PlayerEntry : this.playerEntryList) {
-                float f20;
-                f5 = GlHelper.getStringWidth(playerListHud$PlayerEntry.displayName, this.headerFont);
-                float f21 = f16 + f8 + f5 + f8 + (f20 = (float)playerListHud$PlayerEntry.items.size() * (f17 + f8)) + f7 * 2.0f;
-                if (!(f21 > f6)) continue;
-                f6 = f21;
+            panelWidth = 0.0f;
+            for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
+                float itemsWidth;
+                entryY = GlHelper.getStringWidth(entry.displayName, this.headerFont);
+                float rowWidth = headSize + gap + entryY + gap + (itemsWidth = (float)entry.items.size() * (itemSize + gap)) + padding * 2.0f;
+                if (!(rowWidth > panelWidth)) continue;
+                panelWidth = rowWidth;
             }
-            f19 = Math.max(f15, f6);
+            targetWidth = Math.max(headerWidth, panelWidth);
         }
         if (this.slideAnim.isDone() && this.playerEntryList.isEmpty()) {
-            this.slideAnim.setCurrentValue(f19);
+            this.slideAnim.setCurrentValue(targetWidth);
         }
-        this.slideAnim.animate(f19, 0.2, Easings.EASE_OUT_SINE);
+        this.slideAnim.animate(targetWidth, 0.2, Easings.EASE_OUT_SINE);
         if (this.playerEntryList.isEmpty()) {
             this.fadeAnim.animate(0.0, 0.2, Easings.EASE_IN_POW3);
         } else {
             this.fadeAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
         }
-        f6 = this.slideAnim.getValueF();
-        float f22 = f;
+        panelWidth = this.slideAnim.getValueF();
+        float drawX = x;
         if (this.wasRightAligned) {
-            f22 = f + this.getWidth() - f6;
+            drawX = x + this.getWidth() - panelWidth;
         }
-        float f23 = f22;
-        f5 = f2 + f14 + f8;
-        for (PlayerListHud.PlayerEntry playerListHud$PlayerEntry : this.playerEntryList) {
-            if (playerListHud$PlayerEntry.visible) {
-                playerListHud$PlayerEntry.visible = false;
-                playerListHud$PlayerEntry.fadeAnim.setCurrentValue(f5);
-                playerListHud$PlayerEntry.slideAnim.setCurrentValue(playerListHud$PlayerEntry.rightAligned ? 20.0 : -20.0);
-                playerListHud$PlayerEntry.heightAnim.setCurrentValue(0.0);
-                playerListHud$PlayerEntry.alphaAnim.setCurrentValue(0.0);
-                playerListHud$PlayerEntry.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
-                playerListHud$PlayerEntry.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
-                playerListHud$PlayerEntry.alphaAnim.animate(f18 + f8, 0.2, Easings.EASE_OUT_POW3);
+        float finalX = drawX;
+        entryY = y + headerHeight + gap;
+        for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
+            if (entry.visible) {
+                entry.visible = false;
+                entry.fadeAnim.setCurrentValue(entryY);
+                entry.slideAnim.setCurrentValue(entry.rightAligned ? 20.0 : -20.0);
+                entry.heightAnim.setCurrentValue(0.0);
+                entry.alphaAnim.setCurrentValue(0.0);
+                entry.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
+                entry.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
+                entry.alphaAnim.animate(entryHeight + gap, 0.2, Easings.EASE_OUT_POW3);
             }
-            playerListHud$PlayerEntry.fadeAnim.animate(f5, 0.15, Easings.EASE_OUT_SINE);
-            f5 += playerListHud$PlayerEntry.alphaAnim.getValueF();
+            entry.fadeAnim.animate(entryY, 0.15, Easings.EASE_OUT_SINE);
+            entryY += entry.alphaAnim.getValueF();
         }
-        GuiGraphics iterator = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-        float f24 = this.fadeAnim.getValueF();
+        GuiGraphics guiGraphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
+        float globalAlpha = this.fadeAnim.getValueF();
         if (!this.rightAlignAnim.isDone()) {
-            float f25 = 1.0f - this.rightAlignAnim.getValueF();
-            f4 = this.rightAlignAnim.getValueF();
-            this.renderLegacy(iterator.pose(), f23, f2, f6, this.rightAlign, f24 * f25, f18, f9, f10, f11, f7);
-            this.renderLegacy(iterator.pose(), f23, f2, f6, this.wasRightAligned, f24 * f4, f18, f9, f10, f11, f7);
+            float prevSideFade = 1.0f - this.rightAlignAnim.getValueF();
+            leftFade = this.rightAlignAnim.getValueF();
+            this.renderLegacy(guiGraphics.pose(), finalX, y, panelWidth, this.rightAlign, globalAlpha * prevSideFade, entryHeight, spacing, cornerRadius, blurStrength, padding);
+            this.renderLegacy(guiGraphics.pose(), finalX, y, panelWidth, this.wasRightAligned, globalAlpha * leftFade, entryHeight, spacing, cornerRadius, blurStrength, padding);
         } else {
-            this.renderLegacy(iterator.pose(), f23, f2, f6, this.wasRightAligned, f24, f18, f9, f10, f11, f7);
+            this.renderLegacy(guiGraphics.pose(), finalX, y, panelWidth, this.wasRightAligned, globalAlpha, entryHeight, spacing, cornerRadius, blurStrength, padding);
         }
         DrawContext drawContext = glRenderEvent.drawContext();
         if (!this.rightAlignAnim.isDone()) {
-            f4 = 1.0f - this.rightAlignAnim.getValueF();
-            f3 = this.rightAlignAnim.getValueF();
-            this.renderEntry(drawContext, f23, f2, f6, this.rightAlign, f24 * f4, string, string2, f12, f13, f14, f7, f8, f9, f16);
-            this.renderEntry(drawContext, f23, f2, f6, this.wasRightAligned, f24 * f3, string, string2, f12, f13, f14, f7, f8, f9, f16);
+            leftFade = 1.0f - this.rightAlignAnim.getValueF();
+            rightFade = this.rightAlignAnim.getValueF();
+            this.renderEntry(drawContext, finalX, y, panelWidth, this.rightAlign, globalAlpha * leftFade, iconText, titleText, iconWidth, titleWidth, headerHeight, padding, gap, spacing, headSize);
+            this.renderEntry(drawContext, finalX, y, panelWidth, this.wasRightAligned, globalAlpha * rightFade, iconText, titleText, iconWidth, titleWidth, headerHeight, padding, gap, spacing, headSize);
         } else {
-            this.renderEntry(drawContext, f23, f2, f6, this.wasRightAligned, f24, string, string2, f12, f13, f14, f7, f8, f9, f16);
+            this.renderEntry(drawContext, finalX, y, panelWidth, this.wasRightAligned, globalAlpha, iconText, titleText, iconWidth, titleWidth, headerHeight, padding, gap, spacing, headSize);
         }
         if (!this.rightAlignAnim.isDone()) {
-            f4 = 1.0f - this.rightAlignAnim.getValueF();
-            f3 = this.rightAlignAnim.getValueF();
-            this.renderEntryGui(iterator, f23, f2, f6, this.rightAlign, f24 * f4, f16, f17, f7, f8);
-            this.renderEntryGui(iterator, f23, f2, f6, this.wasRightAligned, f24 * f3, f16, f17, f7, f8);
+            leftFade = 1.0f - this.rightAlignAnim.getValueF();
+            rightFade = this.rightAlignAnim.getValueF();
+            this.renderEntryGui(guiGraphics, finalX, y, panelWidth, this.rightAlign, globalAlpha * leftFade, headSize, itemSize, padding, gap);
+            this.renderEntryGui(guiGraphics, finalX, y, panelWidth, this.wasRightAligned, globalAlpha * rightFade, headSize, itemSize, padding, gap);
         } else {
-            this.renderEntryGui(iterator, f23, f2, f6, this.wasRightAligned, f24, f16, f17, f7, f8);
+            this.renderEntryGui(guiGraphics, finalX, y, panelWidth, this.wasRightAligned, globalAlpha, headSize, itemSize, padding, gap);
         }
-        iterator.flush();
+        guiGraphics.flush();
         if (this.wasRightAligned) {
-            this.setX(f22);
+            this.setX(drawX);
         }
-        this.setWidth(f6);
-        this.setHeight(f5 - f2);
+        this.setWidth(panelWidth);
+        this.setHeight(entryY - y);
     }
 
-    private void renderLegacy(PoseStack poseStack, float f, float f2, float f3, boolean bl, float f4, float f5, float f6, float f7, float f8, float f9) {
-        if (f4 <= 0.01f) {
+    private void renderLegacy(PoseStack poseStack, float x, float y, float width, boolean rightAligned, float alpha, float entryHeight, float spacing, float cornerRadius, float blurStrength, float padding) {
+        if (alpha <= 0.01f) {
             return;
         }
-        for (PlayerListHud.PlayerEntry playerListHud$PlayerEntry : this.playerEntryList) {
-            float f10 = playerListHud$PlayerEntry.heightAnim.getValueF();
-            if (f10 <= 0.0f) continue;
-            float f11 = bl ? f + f3 - playerListHud$PlayerEntry.widthAnim.getValueF() : f;
-            float f12 = f11 + playerListHud$PlayerEntry.slideAnim.getValueF();
-            float f13 = playerListHud$PlayerEntry.fadeAnim.getValueF();
-            float f14 = f8 * f4 * f10;
-            float f15 = playerListHud$PlayerEntry.widthAnim.getValueF();
-            float f16 = f12;
-            RenderUtil.drawBlurredRect(poseStack, f16, f13, f15, f5, f6, f7, f14, 0);
+        for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
+            float heightFactor = entry.heightAnim.getValueF();
+            if (heightFactor <= 0.0f) continue;
+            float baseX = rightAligned ? x + width - entry.widthAnim.getValueF() : x;
+            float entryX = baseX + entry.slideAnim.getValueF();
+            float entryY = entry.fadeAnim.getValueF();
+            float entryAlpha = blurStrength * alpha * heightFactor;
+            float entryWidth = entry.widthAnim.getValueF();
+            float drawX = entryX;
+            RenderUtil.drawBlurredRect(poseStack, drawX, entryY, entryWidth, entryHeight, spacing, cornerRadius, entryAlpha, 0);
         }
     }
 
-    private void renderEntry(DrawContext drawContext, float f, float f2, float f3, boolean bl, float f4, String string, String string2, float f5, float f6, float f7, float f8, float f9, float f10, float f11) {
-        if (f4 <= 0.01f) {
+    private void renderEntry(DrawContext drawContext, float x, float y, float width, boolean rightAligned, float alpha, String iconText, String titleText, float iconWidth, float titleWidth, float headerHeight, float padding, float gap, float spacing, float headSize) {
+        if (alpha <= 0.01f) {
             return;
         }
-        float f12 = f2 + f8 + (f7 - f8 * 2.0f - (float)GlHelper.getFontAscent(this.nameFont)) / 2.0f + 1.0f;
-        int n = ColorUtil.fromARGB(255, 255, 255, (int)(255.0f * f4));
-        Paint paint = GlHelper.toPaint(n);
-        try (Paint paint2 = new Paint()){
-            paint2.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(190.0f * f4)));
-            GlHelper.drawRoundedRect(f, f2, f3, f7, f10, paint2);
+        float headerTextY = y + padding + (headerHeight - padding * 2.0f - (float)GlHelper.getFontAscent(this.nameFont)) / 2.0f + 1.0f;
+        int textColor = ColorUtil.fromARGB(255, 255, 255, (int)(255.0f * alpha));
+        Paint textPaint = GlHelper.toPaint(textColor);
+        try (Paint bgPaint = new Paint()){
+            bgPaint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(190.0f * alpha)));
+            GlHelper.drawRoundedRect(x, y, width, headerHeight, spacing, bgPaint);
         }
-        if (bl) {
-            float f13 = f + f3 - f8 - f5;
-            float f14 = f13 - f9 - f6;
-            GlHelper.drawTextWithShadow(string2, f14, f12, this.nameFont, paint);
-            GlHelper.drawTextWithShadow(string, f13, f12 + 1.0f, this.subFont, paint);
+        if (rightAligned) {
+            float iconX = x + width - padding - iconWidth;
+            float titleX = iconX - gap - titleWidth;
+            GlHelper.drawTextWithShadow(titleText, titleX, headerTextY, this.nameFont, textPaint);
+            GlHelper.drawTextWithShadow(iconText, iconX, headerTextY + 1.0f, this.subFont, textPaint);
         } else {
-            GlHelper.drawTextWithShadow(string, f + f8, f12 + 1.0f, this.subFont, paint);
-            GlHelper.drawTextWithShadow(string2, f + f8 + f5 + f9, f12, this.nameFont, paint);
+            GlHelper.drawTextWithShadow(iconText, x + padding, headerTextY + 1.0f, this.subFont, textPaint);
+            GlHelper.drawTextWithShadow(titleText, x + padding + iconWidth + gap, headerTextY, this.nameFont, textPaint);
         }
-        for (PlayerListHud.PlayerEntry playerListHud$PlayerEntry : this.playerEntryList) {
-            float f15;
-            float f16;
-            float f17 = playerListHud$PlayerEntry.heightAnim.getValueF();
-            if (f17 <= 0.0f || (f16 = f4 * f17) <= 0.0f) continue;
-            float f18 = bl ? f + f3 - playerListHud$PlayerEntry.widthAnim.getValueF() : f;
-            float f19 = f18 + playerListHud$PlayerEntry.slideAnim.getValueF();
-            float f20 = playerListHud$PlayerEntry.fadeAnim.getValueF();
-            float f21 = f11 + f8 * 2.0f;
-            try (Paint paint3 = new Paint()){
-                paint3.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(90.0f * f16)));
-                float f22 = playerListHud$PlayerEntry.widthAnim.getValueF();
-                float f23 = f19;
-                GlHelper.drawRoundedRect(f23, f20, f22, f21, f10, paint3);
+        for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
+            float headX;
+            float entryAlpha;
+            float heightFactor = entry.heightAnim.getValueF();
+            if (heightFactor <= 0.0f || (entryAlpha = alpha * heightFactor) <= 0.0f) continue;
+            float baseX = rightAligned ? x + width - entry.widthAnim.getValueF() : x;
+            float entryX = baseX + entry.slideAnim.getValueF();
+            float entryY = entry.fadeAnim.getValueF();
+            float entryHeight = headSize + padding * 2.0f;
+            try (Paint entryBgPaint = new Paint()){
+                entryBgPaint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(90.0f * entryAlpha)));
+                float entryWidth = entry.widthAnim.getValueF();
+                float entryDrawX = entryX;
+                GlHelper.drawRoundedRect(entryDrawX, entryY, entryWidth, entryHeight, spacing, entryBgPaint);
             }
-            float f24 = f20 + f8;
-            int n2 = playerListHud$PlayerEntry.player == mc.player ? ColorUtil.fromRGB(100, 150, 255) : -1;
-            int n3 = ColorUtil.withAlpha(n2, (int)f16);
-            float f25 = f20 + f8 + (f21 - f8 * 2.0f - (float)GlHelper.getFontAscent(this.headerFont)) / 2.0f;
-            if (bl) {
-                f15 = f19 + playerListHud$PlayerEntry.widthAnim.getValueF();
-                float f26 = f15 - f8 - f11;
-                if (playerListHud$PlayerEntry.player instanceof AbstractClientPlayer) {
-                    GlHelper.drawPlayerHeadRounded((AbstractClientPlayer)playerListHud$PlayerEntry.player, f26, f24, f11, f11, f16, f10);
+            float contentY = entryY + padding;
+            int nameColor = entry.player == mc.player ? ColorUtil.fromRGB(100, 150, 255) : -1;
+            int nameAlpha = ColorUtil.withAlpha(nameColor, (int)entryAlpha);
+            float nameY = entryY + padding + (entryHeight - padding * 2.0f - (float)GlHelper.getFontAscent(this.headerFont)) / 2.0f;
+            if (rightAligned) {
+                headX = entryX + entry.widthAnim.getValueF();
+                float headDrawX = headX - padding - headSize;
+                if (entry.player instanceof AbstractClientPlayer) {
+                    GlHelper.drawPlayerHeadRounded((AbstractClientPlayer)entry.player, headDrawX, contentY, headSize, headSize, entryAlpha, spacing);
                 }
-                float f27 = f26 - f9 - playerListHud$PlayerEntry.nameWidth;
-                GlHelper.drawTextShadowLegacy(playerListHud$PlayerEntry.displayName, f27, f25, this.headerFont, n3);
+                float nameX = headDrawX - spacing - entry.nameWidth;
+                GlHelper.drawTextShadowLegacy(entry.displayName, nameX, nameY, this.headerFont, nameAlpha);
                 continue;
             }
-            if (playerListHud$PlayerEntry.player instanceof AbstractClientPlayer) {
-                f15 = f19 + f8;
-                GlHelper.drawPlayerHeadRounded((AbstractClientPlayer)playerListHud$PlayerEntry.player, f15, f24, f11, f11, f16, f10);
+            if (entry.player instanceof AbstractClientPlayer) {
+                headX = entryX + padding;
+                GlHelper.drawPlayerHeadRounded((AbstractClientPlayer)entry.player, headX, contentY, headSize, headSize, entryAlpha, spacing);
             }
-            f15 = f19 + f8 + f11 + f9;
-            GlHelper.drawTextShadowLegacy(playerListHud$PlayerEntry.displayName, f15, f25, this.headerFont, n3);
+            headX = entryX + padding + headSize + spacing;
+            GlHelper.drawTextShadowLegacy(entry.displayName, headX, nameY, this.headerFont, nameAlpha);
         }
     }
 
-    private void renderEntryGui(GuiGraphics guiGraphics, float f, float f2, float f3, boolean bl, float f4, float f5, float f6, float f7, float f8) {
-        if (f4 <= 0.01f) {
+    private void renderEntryGui(GuiGraphics guiGraphics, float x, float y, float width, boolean rightAligned, float alpha, float headSize, float itemSize, float padding, float gap) {
+        if (alpha <= 0.01f) {
             return;
         }
-        for (PlayerListHud.PlayerEntry playerListHud$PlayerEntry : this.playerEntryList) {
-            float f9;
-            float f10 = playerListHud$PlayerEntry.heightAnim.getValueF();
-            if (f10 <= 0.0f || (f9 = f4 * f10) <= 0.01f) continue;
-            float f11 = bl ? f + f3 - playerListHud$PlayerEntry.widthAnim.getValueF() : f;
-            float f12 = f11 + playerListHud$PlayerEntry.slideAnim.getValueF();
-            float f13 = playerListHud$PlayerEntry.fadeAnim.getValueF();
-            float f14 = f13 + f7 + (f5 - f6) / 2.0f;
+        for (PlayerListHud.PlayerEntry entry : this.playerEntryList) {
+            float entryAlpha;
+            float heightFactor = entry.heightAnim.getValueF();
+            if (heightFactor <= 0.0f || (entryAlpha = alpha * heightFactor) <= 0.01f) continue;
+            float baseX = rightAligned ? x + width - entry.widthAnim.getValueF() : x;
+            float entryX = baseX + entry.slideAnim.getValueF();
+            float entryY = entry.fadeAnim.getValueF();
+            float itemY = entryY + padding + (headSize - itemSize) / 2.0f;
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, f9);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, entryAlpha);
             float rightEdge;
-            if (bl) {
-                rightEdge = f12 + playerListHud$PlayerEntry.widthAnim.getValueF();
-                float f15 = rightEdge - f7 - f5;
-                float f16 = f15 - f8 - playerListHud$PlayerEntry.nameWidth;
-                float f17 = (float)playerListHud$PlayerEntry.items.size() * (f6 + f8);
-                float f18 = f16 - f8 - f17;
-                for (ItemStack itemStack : playerListHud$PlayerEntry.items) {
+            if (rightAligned) {
+                rightEdge = entryX + entry.widthAnim.getValueF();
+                float headRight = rightEdge - padding - headSize;
+                float nameRight = headRight - gap - entry.nameWidth;
+                float itemsTotal = (float)entry.items.size() * (itemSize + gap);
+                float itemX = nameRight - gap - itemsTotal;
+                for (ItemStack itemStack : entry.items) {
                     PoseStack poseStack = guiGraphics.pose();
                     poseStack.pushPose();
-                    poseStack.translate(f18, f14, 0.0f);
+                    poseStack.translate(itemX, itemY, 0.0f);
                     guiGraphics.renderItem(itemStack, 0, 0);
                     poseStack.popPose();
-                    f18 += f6 + f8;
+                    itemX += itemSize + gap;
                 }
             } else {
-                rightEdge = f12 + f7 + f5 + f8 + playerListHud$PlayerEntry.nameWidth + f8;
-                for (ItemStack itemStack : playerListHud$PlayerEntry.items) {
+                rightEdge = entryX + padding + headSize + gap + entry.nameWidth + gap;
+                for (ItemStack itemStack : entry.items) {
                     PoseStack poseStack = guiGraphics.pose();
                     poseStack.pushPose();
-                    poseStack.translate(rightEdge, f14, 0.0f);
+                    poseStack.translate(rightEdge, itemY, 0.0f);
                     guiGraphics.renderItem(itemStack, 0, 0);
                     poseStack.popPose();
-                    rightEdge += f6 + f8;
+                    rightEdge += itemSize + gap;
                 }
             }
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);

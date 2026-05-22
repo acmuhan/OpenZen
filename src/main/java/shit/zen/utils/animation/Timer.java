@@ -9,17 +9,17 @@ public class Timer {
         this.time = System.currentTimeMillis();
     }
 
-    public void setTime(long l) {
-        this.time = l;
+    public void setTime(long time) {
+        this.time = time;
     }
 
-    public void setTimeMs(long l) {
-        this.time = l;
+    public void setTimeMs(long time) {
+        this.time = time;
     }
 
-    public boolean hasPassedReset(long l, boolean bl) {
-        if (System.currentTimeMillis() - this.time > l) {
-            if (bl) {
+    public boolean hasPassedReset(long durationMs, boolean reset) {
+        if (System.currentTimeMillis() - this.time > durationMs) {
+            if (reset) {
                 this.reset();
             }
             return true;
@@ -27,28 +27,27 @@ public class Timer {
         return false;
     }
 
-    public boolean hasPassed(float f) {
-        return (float)(System.currentTimeMillis() - this.time) >= f;
+    public boolean hasPassed(float durationMs) {
+        return (float)(System.currentTimeMillis() - this.time) >= durationMs;
     }
 
-    public boolean hasPassedDouble(double d, boolean bl) {
-        boolean bl2;
-        boolean bl3 = bl2 = (double)Mth.clamp((float)(System.currentTimeMillis() - this.time), 0.0f, (float)d) >= d;
-        if (bl2 && bl) {
+    public boolean hasPassedDouble(double durationMs, boolean reset) {
+        boolean passed = (double)Mth.clamp((float)(System.currentTimeMillis() - this.time), 0.0f, (float)durationMs) >= durationMs;
+        if (passed && reset) {
             this.reset();
         }
-        return bl2;
+        return passed;
     }
 
     public long getElapsed() {
         return System.currentTimeMillis() - this.time;
     }
 
-    public boolean hasPassed(long l) {
-        return System.currentTimeMillis() - this.time > l;
+    public boolean hasPassed(long durationMs) {
+        return System.currentTimeMillis() - this.time > durationMs;
     }
 
-    public boolean hasPassedOrEqual(long l) {
-        return System.currentTimeMillis() - this.time >= l;
+    public boolean hasPassedOrEqual(long durationMs) {
+        return System.currentTimeMillis() - this.time >= durationMs;
     }
 }

@@ -12,36 +12,36 @@ public class SpringAnimation {
     private float currentValue;
     private float velocity;
 
-    public SpringAnimation(float f, float f2, float f3, float f4) {
-        this.stiffness = f;
-        this.mass = f2;
-        this.damping = f3;
-        this.currentValue = f4;
-        this.targetValue = f4;
+    public SpringAnimation(float stiffness, float mass, float damping, float initialValue) {
+        this.stiffness = stiffness;
+        this.mass = mass;
+        this.damping = damping;
+        this.currentValue = initialValue;
+        this.targetValue = initialValue;
     }
 
-    public void reset(float f) {
-        this.currentValue = f;
-        this.targetValue = f;
+    public void reset(float value) {
+        this.currentValue = value;
+        this.targetValue = value;
         this.velocity = 0.0f;
     }
 
-    public void update(float f) {
-        if (f <= 0.0f) {
+    public void update(float deltaTime) {
+        if (deltaTime <= 0.0f) {
             return;
         }
-        float f2 = -this.stiffness * (this.currentValue - this.targetValue) - this.damping * this.velocity;
-        float f3 = f2 / this.mass;
-        this.velocity += f3 * f;
-        this.currentValue += this.velocity * f;
+        float force = -this.stiffness * (this.currentValue - this.targetValue) - this.damping * this.velocity;
+        float acceleration = force / this.mass;
+        this.velocity += acceleration * deltaTime;
+        this.currentValue += this.velocity * deltaTime;
     }
 
     public float getValue() {
         return this.currentValue;
     }
 
-    public void setValue(float f) {
-        this.currentValue = f;
+    public void setValue(float value) {
+        this.currentValue = value;
     }
 
     }

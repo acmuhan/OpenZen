@@ -13,7 +13,7 @@ import shit.zen.event.EventTarget;
 public class AutoPlay
 extends Module {
     public static AutoPlay instance;
-    private final NumberSetting delay = new NumberSetting("Delay", Double.valueOf(2.0), Double.valueOf(0.0), Double.valueOf(10.0), Double.valueOf(0.1));
+    private final NumberSetting delay = new NumberSetting("Delay", 2.0, 0.0, 10.0, 0.1);
     public long disconnectTime = -1L;
     public boolean pendingDisconnect = false;
     public long reconnectTime = -1L;
@@ -51,15 +51,15 @@ extends Module {
         if (mc.player == null || mc.level == null) {
             return;
         }
-        if (packetEvent.getPacket() instanceof ClientboundSystemChatPacket clientboundSystemChatPacket) {
-            String string = clientboundSystemChatPacket.content().getString().replaceAll("§[0-9a-fk-or]", "").trim();
-            if (string.contains("地图评分")) {
+        if (packetEvent.getPacket() instanceof ClientboundSystemChatPacket chatPacket) {
+            String message = chatPacket.content().getString().replaceAll("§[0-9a-fk-or]", "").trim();
+            if (message.contains("地图评分")) {
                 ChatUtil.print("1");
                 if (this.disconnectTime == -1L) {
                     this.disconnectTime = System.currentTimeMillis();
                     this.pendingDisconnect = true;
                 }
-            } else if (string.contains("游戏将在 1 秒 后开始")) {
+            } else if (message.contains("游戏将在 1 秒 后开始")) {
                 ChatUtil.print("2");
                 this.disconnectTime = -1L;
                 this.pendingDisconnect = false;
@@ -69,7 +69,7 @@ extends Module {
 
     @EventTarget
     public void onTick(TickEvent tickEvent) {
-        long l;
+        long elapsed;
         if (mc.player == null || mc.level == null) {
             return;
         }
@@ -81,7 +81,7 @@ extends Module {
             }
             return;
         }
-        if (this.disconnectTime != -1L && (double)(l = System.currentTimeMillis() - this.disconnectTime) >= this.delay.getValue().doubleValue() * 1000.0) {
+        if (this.disconnectTime != -1L && (double)(elapsed = System.currentTimeMillis() - this.disconnectTime) >= this.delay.getValue().doubleValue() * 1000.0) {
             mc.player.connection.sendCommand("again");
             this.reconnectTime = System.currentTimeMillis();
         }

@@ -21,32 +21,32 @@ extends ClientBase {
     private final Map<Category, Float> hoverAnimations = new HashMap<>();
     private Category selectedCategory = Category.COMBAT;
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, int n3, int n4, float f, float f2) {
+    public void render(GuiGraphics guiGraphics, int originX, int originY, int mouseX, int mouseY, float scale, float alpha) {
         try {
-            int n5 = (int)(20.0f * f);
-            int n6 = (int)(25.0f * f);
-            int n7 = (int)(80.0f * f);
-            float f3 = 24.0f * f;
-            int n8 = (int)(420.0f * f);
-            int n9 = n + n8;
-            int n10 = n2 + n7 - (int)(65.0f * f);
-            Category[] categoryArray = Category.values();
+            int iconSize = (int)(20.0f * scale);
+            int iconSpacing = (int)(25.0f * scale);
+            int verticalOffset = (int)(80.0f * scale);
+            float iconFontSize = 24.0f * scale;
+            int horizontalOffset = (int)(420.0f * scale);
+            int baseX = originX + horizontalOffset;
+            int baseY = originY + verticalOffset - (int)(65.0f * scale);
+            Category[] categories = Category.values();
             Renderer.renderConsumer(drawContext -> {
-                FontRenderer iconFont = FontPresets.materialIcons(f3);
-                for (int i = 0; i < categoryArray.length; ++i) {
-                    Category category = categoryArray[i];
+                FontRenderer iconFont = FontPresets.materialIcons(iconFontSize);
+                for (int i = 0; i < categories.length; ++i) {
+                    Category category = categories[i];
                     String iconString = CATEGORY_ICONS.get(category);
                     if (iconString == null) continue;
-                    int iconX = n9 + i * n6;
-                    int iconY = n10;
-                    this.updateCategoryHover(category, iconX, iconY, n3, n4, n5);
+                    int iconX = baseX + i * iconSpacing;
+                    int iconY = baseY;
+                    this.updateCategoryHover(category, iconX, iconY, mouseX, mouseY, iconSize);
                     int categoryColor = this.getCategoryColor(category);
                     if (category == this.selectedCategory) {
-                        int glowColor = new Color(255, 255, 255, (int)(150.0f * f2)).getRGB();
-                        TextGlow.drawGlowText(iconString, iconX, iconY, iconFont, this.applyAlpha(categoryColor, f2), glowColor, 8.0f * f);
+                        int glowColor = new Color(255, 255, 255, (int)(150.0f * alpha)).getRGB();
+                        TextGlow.drawGlowText(iconString, iconX, iconY, iconFont, this.applyAlpha(categoryColor, alpha), glowColor, 8.0f * scale);
                         continue;
                     }
-                    GlHelper.drawText(iconString, iconX, iconY, iconFont, this.applyAlpha(categoryColor, f2));
+                    GlHelper.drawText(iconString, iconX, iconY, iconFont, this.applyAlpha(categoryColor, alpha));
                 }
             });
         } catch (Exception exception) {
@@ -54,61 +54,61 @@ extends ClientBase {
         }
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private void updateCategoryHover(Category category, int n, int n2, int n3, int n4, int n5) {
-        float f = this.hoverAnimations.getOrDefault(category, Float.valueOf(0.0f)).floatValue();
-        boolean bl = this.isMouseOverCategory(n, n2, n3, n4, n5);
-        this.hoverAnimations.put(category, Float.valueOf(LerpUtil.lerp(f, bl ? 1.0f : 0.0f, 0.12f)));
+    private void updateCategoryHover(Category category, int iconX, int iconY, int mouseX, int mouseY, int iconSize) {
+        float current = this.hoverAnimations.getOrDefault(category, 0.0f).floatValue();
+        boolean hovered = this.isMouseOverCategory(iconX, iconY, mouseX, mouseY, iconSize);
+        this.hoverAnimations.put(category, LerpUtil.lerp(current, hovered ? 1.0f : 0.0f, 0.12f));
     }
 
     private int getCategoryColor(Category category) {
         if (category == this.selectedCategory) {
             return -1;
         }
-        float f = this.hoverAnimations.getOrDefault(category, Float.valueOf(0.0f)).floatValue();
-        return this.lerpColor(-7829368, -3355444, f);
+        float hoverAmount = this.hoverAnimations.getOrDefault(category, 0.0f).floatValue();
+        return this.lerpColor(-7829368, -3355444, hoverAmount);
     }
 
-    private int lerpColor(int n, int n2, float f) {
-        float f2 = 1.0f - f;
-        int n3 = n >> 24 & 0xFF;
-        int n4 = n >> 16 & 0xFF;
-        int n5 = n >> 8 & 0xFF;
-        int n6 = n & 0xFF;
-        int n7 = n2 >> 24 & 0xFF;
-        int n8 = n2 >> 16 & 0xFF;
-        int n9 = n2 >> 8 & 0xFF;
-        int n10 = n2 & 0xFF;
-        int n11 = (int)((float)n3 * f2 + (float)n7 * f);
-        int n12 = (int)((float)n4 * f2 + (float)n8 * f);
-        int n13 = (int)((float)n5 * f2 + (float)n9 * f);
-        int n14 = (int)((float)n6 * f2 + (float)n10 * f);
-        return n11 << 24 | n12 << 16 | n13 << 8 | n14;
+    private int lerpColor(int fromColor, int toColor, float t) {
+        float inv = 1.0f - t;
+        int aFrom = fromColor >> 24 & 0xFF;
+        int rFrom = fromColor >> 16 & 0xFF;
+        int gFrom = fromColor >> 8 & 0xFF;
+        int bFrom = fromColor & 0xFF;
+        int aTo = toColor >> 24 & 0xFF;
+        int rTo = toColor >> 16 & 0xFF;
+        int gTo = toColor >> 8 & 0xFF;
+        int bTo = toColor & 0xFF;
+        int a = (int)((float)aFrom * inv + (float)aTo * t);
+        int r = (int)((float)rFrom * inv + (float)rTo * t);
+        int g = (int)((float)gFrom * inv + (float)gTo * t);
+        int b = (int)((float)bFrom * inv + (float)bTo * t);
+        return a << 24 | r << 16 | g << 8 | b;
     }
 
-    private boolean isMouseOverCategory(int n, int n2, int n3, int n4, int n5) {
-        int n6 = n5 / 2;
-        return n3 >= n && n3 <= n + n5 && n4 >= n2 - n6 && n4 <= n2 + n6;
+    private boolean isMouseOverCategory(int iconX, int iconY, int mouseX, int mouseY, int iconSize) {
+        int halfSize = iconSize / 2;
+        return mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY - halfSize && mouseY <= iconY + halfSize;
     }
 
-    public boolean onMouseClick(int n, int n2, int n3, int n4, float f) {
-        int n5 = (int)(20.0f * f);
-        int n6 = (int)(25.0f * f);
-        int n7 = (int)(80.0f * f);
-        int n8 = (int)(420.0f * f);
-        int n9 = n + n8;
-        int n10 = n2 + n7 - (int)(65.0f * f);
-        Category[] categoryArray = Category.values();
-        for (int i = 0; i < categoryArray.length; ++i) {
-            Category category = categoryArray[i];
-            int n11 = n9 + i * n6;
-            int n12 = n10;
-            if (!this.isMouseOverCategory(n11, n12, n3, n4, n5)) continue;
+    public boolean onMouseClick(int originX, int originY, int mouseX, int mouseY, float scale) {
+        int iconSize = (int)(20.0f * scale);
+        int iconSpacing = (int)(25.0f * scale);
+        int verticalOffset = (int)(80.0f * scale);
+        int horizontalOffset = (int)(420.0f * scale);
+        int baseX = originX + horizontalOffset;
+        int baseY = originY + verticalOffset - (int)(65.0f * scale);
+        Category[] categories = Category.values();
+        for (int i = 0; i < categories.length; ++i) {
+            Category category = categories[i];
+            int iconX = baseX + i * iconSpacing;
+            int iconY = baseY;
+            if (!this.isMouseOverCategory(iconX, iconY, mouseX, mouseY, iconSize)) continue;
             this.selectedCategory = category;
             return true;
         }
@@ -123,40 +123,40 @@ extends ClientBase {
         this.selectedCategory = category;
     }
 
-    public boolean isMouseOverAnyCategory(int n, int n2, int n3, int n4, float f) {
-        int n5 = (int)(20.0f * f);
-        int n6 = (int)(25.0f * f);
-        int n7 = (int)(80.0f * f);
-        int n8 = (int)(420.0f * f);
-        int n9 = n + n8;
-        int n10 = n2 + n7 - (int)(65.0f * f);
-        Category[] categoryArray = Category.values();
-        for (int i = 0; i < categoryArray.length; ++i) {
-            int n11 = n9 + i * n6;
-            int n12 = n10;
-            if (!this.isMouseOverCategory(n11, n12, n3, n4, n5)) continue;
+    public boolean isMouseOverAnyCategory(int originX, int originY, int mouseX, int mouseY, float scale) {
+        int iconSize = (int)(20.0f * scale);
+        int iconSpacing = (int)(25.0f * scale);
+        int verticalOffset = (int)(80.0f * scale);
+        int horizontalOffset = (int)(420.0f * scale);
+        int baseX = originX + horizontalOffset;
+        int baseY = originY + verticalOffset - (int)(65.0f * scale);
+        Category[] categories = Category.values();
+        for (int i = 0; i < categories.length; ++i) {
+            int iconX = baseX + i * iconSpacing;
+            int iconY = baseY;
+            if (!this.isMouseOverCategory(iconX, iconY, mouseX, mouseY, iconSize)) continue;
             return true;
         }
         return false;
     }
 
-    public int getTotalWidth(float f) {
-        int n = (int)(20.0f * f);
-        int n2 = (int)(25.0f * f);
-        return (Category.values().length - 1) * n2 + n;
+    public int getTotalWidth(float scale) {
+        int iconSize = (int)(20.0f * scale);
+        int iconSpacing = (int)(25.0f * scale);
+        return (Category.values().length - 1) * iconSpacing + iconSize;
     }
 
-    public int getCategoryHeight(float f) {
-        return (int)(20.0f * f);
+    public int getCategoryHeight(float scale) {
+        return (int)(20.0f * scale);
     }
 
     static {
-        CATEGORY_ICONS.put(Category.COMBAT, "");
-        CATEGORY_ICONS.put(Category.MOVEMENT, "");
-        CATEGORY_ICONS.put(Category.PLAYER, "");
-        CATEGORY_ICONS.put(Category.RENDER, "");
-        CATEGORY_ICONS.put(Category.EXPLOIT, "");
-        CATEGORY_ICONS.put(Category.WORLD, "");
-        CATEGORY_ICONS.put(Category.MISC, "");
+        CATEGORY_ICONS.put(Category.COMBAT, "\uE074");
+        CATEGORY_ICONS.put(Category.MOVEMENT, "\uE511");
+        CATEGORY_ICONS.put(Category.PLAYER, "\uE7FD");
+        CATEGORY_ICONS.put(Category.RENDER, "\uE8F4");
+        CATEGORY_ICONS.put(Category.EXPLOIT, "\uE894");
+        CATEGORY_ICONS.put(Category.WORLD, "\uE5D3");
+        CATEGORY_ICONS.put(Category.MISC, "\uE24D");
     }
 }

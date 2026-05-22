@@ -40,25 +40,25 @@ extends Module {
         if (mc.player == null || mc.level == null) {
             return false;
         }
-        Vec3 vec3 = mc.player.getEyePosition(1.0f);
-        Vec3 vec32 = mc.player.getViewVector(1.0f);
-        Vec3 vec33 = vec3.add(vec32.scale(4.5));
-        ChestBlockEntity chestBlockEntity = null;
-        BlockHitResult blockHitResult = null;
-        double d = Double.MAX_VALUE;
-        ArrayList<BlockEntity> arrayList = ChunkUtil.getLoadedBlockEntities().collect(Collectors.toCollection(ArrayList::new));
-        for (BlockEntity blockEntity : arrayList) {
-            double d2;
-            Optional<Vec3> optional;
-            ChestBlockEntity chestBlockEntity2;
-            AABB aABB;
-            if (!(blockEntity instanceof ChestBlockEntity) || (aABB = this.getChestAABB(chestBlockEntity2 = (ChestBlockEntity)blockEntity)) == null || !(optional = aABB.clip(vec3, vec33)).isPresent() || !((d2 = optional.get().distanceTo(vec3)) < d)) continue;
-            d = d2;
-            chestBlockEntity = chestBlockEntity2;
-            blockHitResult = new BlockHitResult(optional.get(), Direction.UP, chestBlockEntity2.getBlockPos(), false);
+        Vec3 eyePos = mc.player.getEyePosition(1.0f);
+        Vec3 lookVec = mc.player.getViewVector(1.0f);
+        Vec3 endPos = eyePos.add(lookVec.scale(4.5));
+        ChestBlockEntity targetChest = null;
+        BlockHitResult chestHit = null;
+        double closestDist = Double.MAX_VALUE;
+        ArrayList<BlockEntity> blockEntities = ChunkUtil.getLoadedBlockEntities().collect(Collectors.toCollection(ArrayList::new));
+        for (BlockEntity blockEntity : blockEntities) {
+            double dist;
+            Optional<Vec3> clipResult;
+            ChestBlockEntity candidateChest;
+            AABB chestBox;
+            if (!(blockEntity instanceof ChestBlockEntity) || (chestBox = this.getChestAABB(candidateChest = (ChestBlockEntity)blockEntity)) == null || !(clipResult = chestBox.clip(eyePos, endPos)).isPresent() || !((dist = clipResult.get().distanceTo(eyePos)) < closestDist)) continue;
+            closestDist = dist;
+            targetChest = candidateChest;
+            chestHit = new BlockHitResult(clipResult.get(), Direction.UP, candidateChest.getBlockPos(), false);
         }
-        if (chestBlockEntity != null && blockHitResult != null) {
-            mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
+        if (targetChest != null && chestHit != null) {
+            mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, chestHit);
             mc.player.swing(InteractionHand.MAIN_HAND);
             return true;
         }
@@ -66,7 +66,7 @@ extends Module {
     }
 
     private AABB getChestAABB(ChestBlockEntity chestBlockEntity) {
-        BlockPos blockPos;
+        BlockPos pairedPos;
         BlockState blockState = chestBlockEntity.getBlockState();
         if (!blockState.hasProperty((Property)ChestBlock.TYPE)) {
             return null;
@@ -75,13 +75,13 @@ extends Module {
         if (chestType == ChestType.LEFT) {
             return null;
         }
-        BlockPos blockPos2 = chestBlockEntity.getBlockPos();
-        AABB aABB = BlockUtil.getBoundingBox(blockPos2);
-        if (chestType != ChestType.SINGLE && BlockUtil.canBeClicked(blockPos = blockPos2.relative(ChestBlock.getConnectedDirection(blockState)))) {
-            AABB aABB2 = BlockUtil.getBoundingBox(blockPos);
-            aABB = aABB.minmax(aABB2);
+        BlockPos chestPos = chestBlockEntity.getBlockPos();
+        AABB chestBox = BlockUtil.getBoundingBox(chestPos);
+        if (chestType != ChestType.SINGLE && BlockUtil.canBeClicked(pairedPos = chestPos.relative(ChestBlock.getConnectedDirection(blockState)))) {
+            AABB pairedBox = BlockUtil.getBoundingBox(pairedPos);
+            chestBox = chestBox.minmax(pairedBox);
         }
-        return aABB;
+        return chestBox;
     }
 
     static {

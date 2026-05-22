@@ -39,37 +39,37 @@ public class SettingRendererRegistry {
         return null;
     }
 
-    public int render(GuiGraphics guiGraphics, Setting<?> setting, int n, int n2, int n3, int n4, int n5, float f, float f2) {
+    public int render(GuiGraphics guiGraphics, Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, float alpha, float scale) {
         SettingRenderer settingRenderer = this.findRenderer(setting);
         if (!setting.getName().equals(versionString) || setting instanceof ModeSetting) {
             // empty if block
         }
         if (settingRenderer != null) {
-            return settingRenderer.render(guiGraphics, setting, n, n2, n3, n4, n5, f, f2);
+            return settingRenderer.render(guiGraphics, setting, x, y, width, mouseX, mouseY, alpha, scale);
         }
         return 0;
     }
 
-    public boolean onClick(Setting<?> setting, int n, int n2, int n3, int n4, int n5, int n6, float f) {
+    public boolean onClick(Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, int button, float scale) {
         SettingRenderer settingRenderer = this.findRenderer(setting);
         if (settingRenderer != null) {
-            return settingRenderer.onClick(setting, n, n2, n3, n4, n5, n6, f);
+            return settingRenderer.onClick(setting, x, y, width, mouseX, mouseY, button, scale);
         }
         return false;
     }
 
-    public int getHeight(Setting<?> setting, float f) {
+    public int getHeight(Setting<?> setting, float scale) {
         SettingRenderer settingRenderer = this.findRenderer(setting);
         if (settingRenderer != null) {
-            return settingRenderer.getHeight(setting, f);
+            return settingRenderer.getHeight(setting, scale);
         }
         return 0;
     }
 
-    public int getHeightForScroll(Setting<?> setting, float f) {
+    public int getHeightForScroll(Setting<?> setting, float scale) {
         SettingRenderer settingRenderer = this.findRenderer(setting);
         if (settingRenderer != null) {
-            return settingRenderer.getHeight(setting, f);
+            return settingRenderer.getHeight(setting, scale);
         }
         return 0;
     }

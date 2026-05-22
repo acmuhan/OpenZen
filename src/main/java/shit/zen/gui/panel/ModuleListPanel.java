@@ -47,28 +47,28 @@ extends ClientBase {
     private String searchQuery = "";
     private List<Module> searchResults;
 
-    public void setSearchQuery(String string) {
-        if (string == null) {
+    public void setSearchQuery(String query) {
+        if (query == null) {
             this.searchQuery = "";
             this.searchResults = null;
             return;
         }
-        this.searchQuery = string;
-        this.searchResults = !string.isEmpty() ? ZenClient.instance.getModuleManager().getModules().stream().filter(module -> module.getName().toLowerCase().contains(string.toLowerCase())).sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList()) : ZenClient.instance.getModuleManager().getModules().stream().sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList());
+        this.searchQuery = query;
+        this.searchResults = !query.isEmpty() ? ZenClient.instance.getModuleManager().getModules().stream().filter(module -> module.getName().toLowerCase().contains(query.toLowerCase())).sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList()) : ZenClient.instance.getModuleManager().getModules().stream().sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList());
         this.currentCategory = null;
         this.scrollOffset = 0.0f;
         this.scrollTarget = 0.0f;
         this.animationState = ModuleListPanel.AnimationState.NONE;
     }
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, int n3, int n4, Category category, float f, float f2) {
-        if (Math.abs(f - this.lastScale) > 0.001f) {
-            this.rescaleScroll(f);
-            this.lastScale = f;
+    public void render(GuiGraphics guiGraphics, int originX, int originY, int mouseX, int mouseY, Category category, float scale, float alpha) {
+        if (Math.abs(scale - this.lastScale) > 0.001f) {
+            this.rescaleScroll(scale);
+            this.lastScale = scale;
         }
         this.scrollOffset = Math.abs(this.scrollOffset - this.scrollTarget) > 0.01f ? LerpUtil.smoothLerp(this.scrollOffset, this.scrollTarget, 0.35f) : this.scrollTarget;
         if (this.searchResults != null) {
-            this.renderSearchResults(guiGraphics, n, n2, n3, n4, f, f2);
+            this.renderSearchResults(guiGraphics, originX, originY, mouseX, mouseY, scale, alpha);
             return;
         }
         if (this.currentCategory != category) {
@@ -84,7 +84,7 @@ extends ClientBase {
                 this.animProgress = 0.0f;
             }
             this.currentCategory = category;
-            List<Module> list = this.currentModules = category == null ? null : ZenClient.instance.getModuleManager().getModules().stream().filter(module -> module.getCategory() == category).sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList());
+            List<Module> filtered = this.currentModules = category == null ? null : ZenClient.instance.getModuleManager().getModules().stream().filter(module -> module.getCategory() == category).sorted(Comparator.comparing(Module::getName)).collect(Collectors.toList());
         }
         if (this.animationState != ModuleListPanel.AnimationState.NONE) {
             this.animProgress = LerpUtil.smoothLerp(this.animProgress, 1.0f, 0.18f);
@@ -105,191 +105,191 @@ extends ClientBase {
             }
         }
         try {
-            int n5 = (int)(160.0f * f);
-            int n6 = (int)(20.0f * f);
-            int n7 = (int)(20.0f * f);
-            int n8 = (int)(400.0f * f);
-            int n9 = n + n6 - (int)(8.0f * f);
-            int n10 = n2 + n7 + (int)(23.0f * f);
-            int n11 = n8 - 2 * n6 - (int)(20.0f * f);
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n9, n10, n5, n11, 4.0f * f, this.applyAlpha(HOVER_BG_COLOR, f2));
-            Renderer.renderConsumer(drawContext -> {
+            int panelWidth = (int)(160.0f * scale);
+            int marginX = (int)(20.0f * scale);
+            int marginY = (int)(20.0f * scale);
+            int baseSize = (int)(400.0f * scale);
+            int panelX = originX + marginX - (int)(8.0f * scale);
+            int panelY = originY + marginY + (int)(23.0f * scale);
+            int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), panelX, panelY, panelWidth, panelHeight, 4.0f * scale, this.applyAlpha(HOVER_BG_COLOR, alpha));
+            Renderer.render(guiGraphics, drawContext -> {
                 Category renderCategory = this.currentCategory;
                 List<Module> renderList = this.currentModules;
                 float slideOffset = 0.0f;
-                float renderAlpha = f2;
+                float renderAlpha = alpha;
                 if (this.animationState == ModuleListPanel.AnimationState.FADE_OUT) {
                     renderCategory = this.prevCategory;
                     renderList = this.prevModules;
-                    slideOffset = this.animProgress * 20.0f * f;
-                    renderAlpha = (1.0f - this.animProgress) * f2;
+                    slideOffset = this.animProgress * 20.0f * scale;
+                    renderAlpha = (1.0f - this.animProgress) * alpha;
                 } else if (this.animationState == ModuleListPanel.AnimationState.FADE_IN) {
                     renderCategory = this.currentCategory;
                     renderList = this.currentModules;
-                    slideOffset = (1.0f - this.animProgress) * 20.0f * f;
-                    renderAlpha = this.animProgress * f2;
+                    slideOffset = (1.0f - this.animProgress) * 20.0f * scale;
+                    renderAlpha = this.animProgress * alpha;
                 }
                 drawContext.save();
-                drawContext.clip(Rectangle.ofXYWH(n9, n10, n5, n11));
+                drawContext.clip(Rectangle.ofXYWH(panelX, panelY, panelWidth, panelHeight));
                 if (renderCategory != null) {
                     drawContext.save();
                     drawContext.translate(0.0f, slideOffset);
-                    this.renderModuleList(renderCategory, renderList, n9, n10, n11, n3, n4, renderAlpha, this.animationState != ModuleListPanel.AnimationState.NONE, f);
+                    this.renderModuleList(renderCategory, renderList, panelX, panelY, panelHeight, mouseX, mouseY, renderAlpha, this.animationState != ModuleListPanel.AnimationState.NONE, scale);
                     drawContext.restore();
                 }
                 drawContext.restore();
             });
             if (this.animationState == ModuleListPanel.AnimationState.NONE) {
-                this.renderScrollbar(guiGraphics, n9, n10, n11, f, f2);
+                this.renderScrollbar(guiGraphics, panelX, panelY, panelHeight, scale, alpha);
             }
         } catch (Exception exception) {
             // empty catch block
         }
     }
 
-    private void renderSearchResults(GuiGraphics guiGraphics, int n, int n2, int n3, int n4, float f, float f2) {
+    private void renderSearchResults(GuiGraphics guiGraphics, int originX, int originY, int mouseX, int mouseY, float scale, float alpha) {
         try {
-            int n5 = (int)(160.0f * f);
-            int n6 = (int)(20.0f * f);
-            int n7 = (int)(20.0f * f);
-            int n8 = (int)(400.0f * f);
-            int n9 = n + n6 - (int)(8.0f * f);
-            int n10 = n2 + n7 + (int)(23.0f * f);
-            int n11 = n8 - 2 * n6 - (int)(20.0f * f);
-            RenderUtil.drawRoundedRect(guiGraphics.pose(), n9, n10, n5, n11, 4.0f * f, this.applyAlpha(HOVER_BG_COLOR, f2));
-            Renderer.renderConsumer((drawContext -> this.renderModuleList(null, this.searchResults, n9, n10, n11, n3, n4, f2, false, f)));
-            this.renderScrollbar(guiGraphics, n9, n10, n11, f, f2);
+            int panelWidth = (int)(160.0f * scale);
+            int marginX = (int)(20.0f * scale);
+            int marginY = (int)(20.0f * scale);
+            int baseSize = (int)(400.0f * scale);
+            int panelX = originX + marginX - (int)(8.0f * scale);
+            int panelY = originY + marginY + (int)(23.0f * scale);
+            int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+            RenderUtil.drawRoundedRect(guiGraphics.pose(), panelX, panelY, panelWidth, panelHeight, 4.0f * scale, this.applyAlpha(HOVER_BG_COLOR, alpha));
+            Renderer.render(guiGraphics, drawContext -> this.renderModuleList(null, this.searchResults, panelX, panelY, panelHeight, mouseX, mouseY, alpha, false, scale));
+            this.renderScrollbar(guiGraphics, panelX, panelY, panelHeight, scale, alpha);
         } catch (Exception exception) {
             // empty catch block
         }
     }
 
-    private void renderScrollbar(GuiGraphics guiGraphics, int n, int n2, int n3, float f, float f2) {
-        float f3;
-        float f4 = 30.0f * f;
-        float f5 = (float)n3 - f4;
-        if (this.totalContentHeight <= f5) {
-            f3 = 0.0f;
+    private void renderScrollbar(GuiGraphics guiGraphics, int panelX, int panelY, int panelHeight, float scale, float alpha) {
+        float targetAlpha;
+        float headerHeight = 30.0f * scale;
+        float visibleHeight = (float)panelHeight - headerHeight;
+        if (this.totalContentHeight <= visibleHeight) {
+            targetAlpha = 0.0f;
         } else {
-            long l = System.currentTimeMillis() - this.lastScrollTime;
-            if (this.isDraggingScrollbar || l < 500L) {
-                f3 = 1.0f;
-            } else if (l < 1000L) {
-                long l2 = l - 500L;
-                f3 = 1.0f - (float)l2 / 500.0f;
+            long sinceScroll = System.currentTimeMillis() - this.lastScrollTime;
+            if (this.isDraggingScrollbar || sinceScroll < 500L) {
+                targetAlpha = 1.0f;
+            } else if (sinceScroll < 1000L) {
+                long fadeMs = sinceScroll - 500L;
+                targetAlpha = 1.0f - (float)fadeMs / 500.0f;
             } else {
-                f3 = 0.0f;
+                targetAlpha = 0.0f;
             }
         }
-        this.scrollbarAlpha = Math.abs(this.scrollbarAlpha - f3) > 0.01f ? LerpUtil.smoothLerp(this.scrollbarAlpha, f3, 0.35f) : f3;
+        this.scrollbarAlpha = Math.abs(this.scrollbarAlpha - targetAlpha) > 0.01f ? LerpUtil.smoothLerp(this.scrollbarAlpha, targetAlpha, 0.35f) : targetAlpha;
         if (this.scrollbarAlpha <= 0.01f) {
             return;
         }
-        float f6 = this.totalContentHeight - f5;
-        if (f6 <= 0.0f) {
+        float maxScroll = this.totalContentHeight - visibleHeight;
+        if (maxScroll <= 0.0f) {
             return;
         }
-        float f7 = Math.max(20.0f * f, f5 / this.totalContentHeight * f5);
-        float f8 = (float)n2 + f4 + this.scrollOffset / f6 * (f5 - f7);
-        int n4 = n + (int)(160.0f * f) - (int)(4.0f * f) - 2;
-        float f9 = 4.0f * f;
-        int n5 = new Color(1.0f, 1.0f, 1.0f, this.scrollbarAlpha * f2).getRGB();
-        RenderUtil.drawRoundedRect(guiGraphics.pose(), n4, f8, f9, f7, f9 / 2.0f, n5);
+        float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+        float thumbY = (float)panelY + headerHeight + this.scrollOffset / maxScroll * (visibleHeight - thumbHeight);
+        int thumbX = panelX + (int)(160.0f * scale) - (int)(4.0f * scale) - 2;
+        float thumbWidth = 4.0f * scale;
+        int thumbColor = new Color(1.0f, 1.0f, 1.0f, this.scrollbarAlpha * alpha).getRGB();
+        RenderUtil.drawRoundedRect(guiGraphics.pose(), thumbX, thumbY, thumbWidth, thumbHeight, thumbWidth / 2.0f, thumbColor);
     }
 
-    private void updateModuleHover(Module module, int n, int n2, int n3, int n4, float f) {
+    private void updateModuleHover(Module module, int rowX, int rowY, int mouseX, int mouseY, float scale) {
         if (module.isEnabled()) {
-            this.hoverAnimations.put(module, Float.valueOf(0.0f));
+            this.hoverAnimations.put(module, 0.0f);
             return;
         }
-        float f2 = this.hoverAnimations.getOrDefault(module, Float.valueOf(0.0f)).floatValue();
-        boolean bl = this.isMouseOverModule(module, n, n2, n3, n4, f);
-        this.hoverAnimations.put(module, Float.valueOf(LerpUtil.lerp(f2, bl ? 1.0f : 0.0f, 0.12f)));
+        float current = this.hoverAnimations.getOrDefault(module, 0.0f).floatValue();
+        boolean hovered = this.isMouseOverModule(module, rowX, rowY, mouseX, mouseY, scale);
+        this.hoverAnimations.put(module, LerpUtil.lerp(current, hovered ? 1.0f : 0.0f, 0.12f));
     }
 
-    private int applyAlpha(int n, float f) {
-        int n2 = n >> 24 & 0xFF;
-        int n3 = (int)((float)n2 * f);
-        return n3 << 24 | n & 0xFFFFFF;
+    private int applyAlpha(int color, float alpha) {
+        int origAlpha = color >> 24 & 0xFF;
+        int newAlpha = (int)((float)origAlpha * alpha);
+        return newAlpha << 24 | color & 0xFFFFFF;
     }
 
-    private void renderModuleList(Category category, List<Module> list, int n, int n2, int n3, int n4, int n5, float f, boolean bl, float f2) {
-        float f3 = 30.0f * f2;
-        int n6 = (int)(160.0f * f2);
-        FontRenderer fontRenderer = FontPresets.axiformaBold(20.0f * f2);
-        String string = category == null ? "Search" : category.name().substring(0, 1).toUpperCase() + category.name().substring(1).toLowerCase();
-        GlHelper.drawText(string, (float)n + 10.0f * f2, (float)n2 + 12.0f * f2, fontRenderer, this.applyAlpha(-1, f));
-        FontRenderer fontRenderer2 = FontPresets.axiformaRegular(12.0f * f2);
-        String string2 = category == null ? list.size() + " Results" : "Sorting: A-Z";
-        float f4 = GlHelper.getStringWidth(string2, fontRenderer2);
-        float f5 = (float)(n + n6) - f4 - 10.0f * f2;
-        GlHelper.drawText(string2, f5, (float)n2 + 14.0f * f2, fontRenderer2, this.applyAlpha(-5592406, f));
+    private void renderModuleList(Category category, List<Module> modules, int panelX, int panelY, int panelHeight, int mouseX, int mouseY, float alpha, boolean animating, float scale) {
+        float headerHeight = 30.0f * scale;
+        int panelWidth = (int)(160.0f * scale);
+        FontRenderer titleFont = FontPresets.axiformaBold(20.0f * scale);
+        String titleText = category == null ? "Search" : category.name().substring(0, 1).toUpperCase() + category.name().substring(1).toLowerCase();
+        GlHelper.drawText(titleText, (float)panelX + 10.0f * scale, (float)panelY + 12.0f * scale, titleFont, this.applyAlpha(-1, alpha));
+        FontRenderer subtitleFont = FontPresets.axiformaRegular(12.0f * scale);
+        String subtitle = category == null ? modules.size() + " Results" : "Sorting: A-Z";
+        float subtitleWidth = GlHelper.getStringWidth(subtitle, subtitleFont);
+        float subtitleX = (float)(panelX + panelWidth) - subtitleWidth - 10.0f * scale;
+        GlHelper.drawText(subtitle, subtitleX, (float)panelY + 14.0f * scale, subtitleFont, this.applyAlpha(-5592406, alpha));
         DrawContext drawContext = GlHelper.getCanvas();
         drawContext.save();
-        drawContext.clip(Rectangle.ofXYWH(n, (float)n2 + f3, n6, (float)n3 - f3));
-        int n7 = n2 + (int)f3 + (int)(2.0f * f2);
-        if (list != null) {
-            this.totalContentHeight = list.size() * Math.round(18.0f * f2);
-            for (Module module : list) {
-                float f6 = (float)n7 - this.scrollOffset;
-                if (!bl) {
-                    this.updateModuleHover(module, n, (int)f6, n4, n5, f2);
+        drawContext.clip(Rectangle.ofXYWH(panelX, (float)panelY + headerHeight, panelWidth, (float)panelHeight - headerHeight));
+        int rowY = panelY + (int)headerHeight + (int)(2.0f * scale);
+        if (modules != null) {
+            this.totalContentHeight = modules.size() * Math.round(18.0f * scale);
+            for (Module module : modules) {
+                float drawY = (float)rowY - this.scrollOffset;
+                if (!animating) {
+                    this.updateModuleHover(module, panelX, (int)drawY, mouseX, mouseY, scale);
                 }
-                FontRenderer fontRenderer3 = module.isEnabled() ? FontPresets.axiformaBold(16.0f * f2) : FontPresets.axiformaRegular(16.0f * f2);
-                String string3 = module.getName();
+                FontRenderer moduleFont = module.isEnabled() ? FontPresets.axiformaBold(16.0f * scale) : FontPresets.axiformaRegular(16.0f * scale);
+                String moduleName = module.getName();
                 if (this.searchResults != null) {
-                    String string4 = module.getCategory().name().substring(1).toLowerCase();
-                    char c = module.getCategory().name().charAt(0);
-                    string3 = string3 + " (" + c + string4 + ")";
+                    String categorySuffix = module.getCategory().name().substring(1).toLowerCase();
+                    char categoryInitial = module.getCategory().name().charAt(0);
+                    moduleName = moduleName + " (" + categoryInitial + categorySuffix + ")";
                 }
                 if (module.isEnabled()) {
-                    int n8 = this.applyAlpha(-1, f);
-                    int glowColor = this.applyAlpha(new Color(255, 255, 255, 150).getRGB(), f);
-                    TextGlow.drawGlowText(string3, (float)n + 10.0f * f2, f6, fontRenderer3, n8, glowColor, 8.0f * f2);
-                    String string5 = module.getBind().getName();
-                    if (!string5.equalsIgnoreCase("None")) {
-                        FontRenderer fontRenderer4 = FontPresets.materialIcons(16.0f * f2);
-                        String string6 = "";
-                        FontRenderer fontRenderer5 = FontPresets.axiformaRegular(16.0f * f2);
-                        float f7 = GlHelper.getStringWidth(string5, fontRenderer5);
-                        float f8 = GlHelper.getStringWidth(string6, fontRenderer4);
-                        float f9 = 2.0f * f2;
-                        float f10 = f7 + f8 + f9;
-                        float f11 = (float)(n + n6) - f10 - 10.0f * f2;
-                        TextGlow.drawGlowText(string6, f11, f6 - (float)Math.round(f2), fontRenderer4, n8, glowColor, 8.0f * f2);
-                        TextGlow.drawGlowText(string5, f11 + f8 + f9, f6 - 2.0f, fontRenderer3, n8, glowColor, 8.0f * f2);
+                    int textColor = this.applyAlpha(-1, alpha);
+                    int glowColor = this.applyAlpha(new Color(255, 255, 255, 150).getRGB(), alpha);
+                    TextGlow.drawGlowText(moduleName, (float)panelX + 10.0f * scale, drawY, moduleFont, textColor, glowColor, 8.0f * scale);
+                    String bindName = module.getBind().getName();
+                    if (!bindName.equalsIgnoreCase("None")) {
+                        FontRenderer iconFont = FontPresets.materialIcons(16.0f * scale);
+                        String iconText = "\uE312";
+                        FontRenderer bindFont = FontPresets.axiformaRegular(16.0f * scale);
+                        float bindWidth = GlHelper.getStringWidth(bindName, bindFont);
+                        float iconWidth = GlHelper.getStringWidth(iconText, iconFont);
+                        float spacing = 2.0f * scale;
+                        float totalWidth = bindWidth + iconWidth + spacing;
+                        float bindX = (float)(panelX + panelWidth) - totalWidth - 10.0f * scale;
+                        TextGlow.drawGlowText(iconText, bindX, drawY - (float)Math.round(scale), iconFont, textColor, glowColor, 8.0f * scale);
+                        TextGlow.drawGlowText(bindName, bindX + iconWidth + spacing, drawY - 2.0f, moduleFont, textColor, glowColor, 8.0f * scale);
                     }
                 } else {
-                    float f12 = this.hoverAnimations.getOrDefault(module, Float.valueOf(0.0f)).floatValue();
-                    int glowColor = 170;
-                    int n9 = 170;
-                    int n10 = 170;
-                    int n11 = 204;
-                    int n12 = 204;
-                    int n13 = 204;
-                    int n14 = (int)((float)glowColor + (float)(n11 - glowColor) * f12);
-                    int n15 = (int)((float)n9 + (float)(n12 - n9) * f12);
-                    int n16 = (int)((float)n10 + (float)(n13 - n10) * f12);
-                    int n17 = 0xFF000000 | n14 << 16 | n15 << 8 | n16;
-                    int n18 = this.applyAlpha(n17, f);
-                    GlHelper.drawText(string3, (float)n + 10.0f * f2, f6, fontRenderer3, n18);
-                    String string7 = module.getBind().getName();
-                    if (!string7.equalsIgnoreCase("None")) {
-                        int n19 = (int)(f * 0.39215687f * f12);
-                        int n20 = this.applyAlpha(-3355444, (float)n19 / 255.0f);
-                        FontRenderer fontRenderer6 = FontPresets.materialIcons(16.0f * f2);
-                        String string8 = "";
-                        FontRenderer fontRenderer7 = FontPresets.axiformaRegular(16.0f * f2);
-                        float f13 = GlHelper.getStringWidth(string7, fontRenderer7);
-                        float f14 = GlHelper.getStringWidth(string8, fontRenderer6);
-                        float f15 = 2.0f * f2;
-                        float f16 = f13 + f14 + f15;
-                        float f17 = (float)(n + n6) - f16 - 10.0f * f2;
-                        TextGlow.drawGlowText(string8, f17, f6 - (float)Math.round(f2), fontRenderer6, n18, n20, 5.0f * f2);
-                        TextGlow.drawGlowText(string7, f17 + f14 + f15, f6 - 2.0f, fontRenderer3, n18, n20, 5.0f * f2);
+                    float hoverAmount = this.hoverAnimations.getOrDefault(module, 0.0f).floatValue();
+                    int rFrom = 170;
+                    int gFrom = 170;
+                    int bFrom = 170;
+                    int rTo = 204;
+                    int gTo = 204;
+                    int bTo = 204;
+                    int r = (int)((float)rFrom + (float)(rTo - rFrom) * hoverAmount);
+                    int g = (int)((float)gFrom + (float)(gTo - gFrom) * hoverAmount);
+                    int b = (int)((float)bFrom + (float)(bTo - bFrom) * hoverAmount);
+                    int rgbColor = 0xFF000000 | r << 16 | g << 8 | b;
+                    int textColor = this.applyAlpha(rgbColor, alpha);
+                    GlHelper.drawText(moduleName, (float)panelX + 10.0f * scale, drawY, moduleFont, textColor);
+                    String bindName = module.getBind().getName();
+                    if (!bindName.equalsIgnoreCase("None")) {
+                        int glowByte = (int)(alpha * 0.39215687f * hoverAmount);
+                        int glowColor = this.applyAlpha(-3355444, (float)glowByte / 255.0f);
+                        FontRenderer iconFont = FontPresets.materialIcons(16.0f * scale);
+                        String iconText = "\uE312";
+                        FontRenderer bindFont = FontPresets.axiformaRegular(16.0f * scale);
+                        float bindWidth = GlHelper.getStringWidth(bindName, bindFont);
+                        float iconWidth = GlHelper.getStringWidth(iconText, iconFont);
+                        float spacing = 2.0f * scale;
+                        float totalWidth = bindWidth + iconWidth + spacing;
+                        float bindX = (float)(panelX + panelWidth) - totalWidth - 10.0f * scale;
+                        TextGlow.drawGlowText(iconText, bindX, drawY - (float)Math.round(scale), iconFont, textColor, glowColor, 5.0f * scale);
+                        TextGlow.drawGlowText(bindName, bindX + iconWidth + spacing, drawY - 2.0f, moduleFont, textColor, glowColor, 5.0f * scale);
                     }
                 }
-                n7 += Math.round(18.0f * f2);
+                rowY += Math.round(18.0f * scale);
             }
         } else {
             this.totalContentHeight = 0.0f;
@@ -297,90 +297,90 @@ extends ClientBase {
         drawContext.restore();
     }
 
-    public boolean onMouseClick(int n, int n2, int n3, int n4, Category category, int n5, float f) {
-        List<Module> list;
-        List<Module> list2 = list = !this.searchQuery.isEmpty() ? this.searchResults : this.currentModules;
-        if (list == null || this.searchQuery.isEmpty() && this.animationState != ModuleListPanel.AnimationState.NONE) {
+    public boolean onMouseClick(int originX, int originY, int mouseX, int mouseY, Category category, int button, float scale) {
+        List<Module> modules;
+        List<Module> dup = modules = !this.searchQuery.isEmpty() ? this.searchResults : this.currentModules;
+        if (modules == null || this.searchQuery.isEmpty() && this.animationState != ModuleListPanel.AnimationState.NONE) {
             return false;
         }
-        int n6 = (int)(160.0f * f);
-        int n7 = (int)(20.0f * f);
-        int n8 = (int)(20.0f * f);
-        int n9 = (int)(400.0f * f);
-        int n10 = (int)(30.0f * f);
-        int n11 = n + n7 - (int)(8.0f * f);
-        int n12 = n2 + n8 + (int)(23.0f * f);
-        int n13 = n9 - 2 * n7 - (int)(20.0f * f);
-        float f2 = n13 - n10;
-        if (this.totalContentHeight > f2) {
-            float f3 = this.totalContentHeight - f2;
-            float f4 = Math.max(20.0f * f, f2 / this.totalContentHeight * f2);
-            float f5 = (float)(n12 + n10) + this.scrollOffset / f3 * (f2 - f4);
-            float f6 = 4.0f * f;
-            int n14 = n11 + n6 - (int)f6 - 2;
-            if (n3 >= n14 && (float)n3 <= (float)n14 + f6 && (float)n4 >= f5 && (float)n4 <= f5 + f4) {
+        int panelWidth = (int)(160.0f * scale);
+        int marginX = (int)(20.0f * scale);
+        int marginY = (int)(20.0f * scale);
+        int baseSize = (int)(400.0f * scale);
+        int headerHeight = (int)(30.0f * scale);
+        int panelX = originX + marginX - (int)(8.0f * scale);
+        int panelY = originY + marginY + (int)(23.0f * scale);
+        int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+        float visibleHeight = panelHeight - headerHeight;
+        if (this.totalContentHeight > visibleHeight) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+            float thumbY = (float)(panelY + headerHeight) + this.scrollOffset / maxScroll * (visibleHeight - thumbHeight);
+            float thumbWidth = 4.0f * scale;
+            int thumbX = panelX + panelWidth - (int)thumbWidth - 2;
+            if (mouseX >= thumbX && (float)mouseX <= (float)thumbX + thumbWidth && (float)mouseY >= thumbY && (float)mouseY <= thumbY + thumbHeight) {
                 this.isDraggingScrollbar = true;
-                this.scrollbarDragStartY = n4;
+                this.scrollbarDragStartY = mouseY;
                 this.scrollOffsetAtDragStart = this.scrollOffset;
                 this.lastScrollTime = System.currentTimeMillis();
                 return true;
             }
         }
-        if (!this.isMouseOverPanel(n, n2, n3, n4, f)) {
+        if (!this.isMouseOverPanel(originX, originY, mouseX, mouseY, scale)) {
             return false;
         }
-        int n15 = n12 + n10 + Math.round(2.0f * f);
-        for (Module module : list) {
-            int n16;
-            if (this.isMouseOverModule(module, n11, n16 = (int)((float)n15 - this.scrollOffset), n3, n4, f)) {
-                if (n5 == 0) {
+        int rowY = panelY + headerHeight + Math.round(2.0f * scale);
+        for (Module module : modules) {
+            int adjustedRowY;
+            if (this.isMouseOverModule(module, panelX, adjustedRowY = (int)((float)rowY - this.scrollOffset), mouseX, mouseY, scale)) {
+                if (button == 0) {
                     module.toggle();
-                    String string = module.isEnabled() ? "On" : "Off";
-                    PanelClickGui.panelClickGui.addToast(module.getName() + " Module " + string);
-                } else if (n5 == 1) {
+                    String stateLabel = module.isEnabled() ? "On" : "Off";
+                    PanelClickGui.panelClickGui.addToast(module.getName() + " Module " + stateLabel);
+                } else if (button == 1) {
                     this.hoveredModule = module;
-                } else if (n5 == 2) {
+                } else if (button == 2) {
                     PanelClickGui.panelClickGui.selectModule(module);
                 }
                 return true;
             }
-            n15 += Math.round(18.0f * f);
+            rowY += Math.round(18.0f * scale);
         }
         return false;
     }
 
-    private boolean isMouseOverModule(Module module, int n, int n2, int n3, int n4, float f) {
-        int n5 = Math.round(18.0f * f);
-        int n6 = (int)(160.0f * f);
-        boolean bl = n3 >= n && n3 <= n + n6;
-        boolean bl2 = n4 >= n2 - n5 / 2 && n4 <= n2 + n5 / 2;
-        return bl && bl2;
+    private boolean isMouseOverModule(Module module, int rowX, int rowY, int mouseX, int mouseY, float scale) {
+        int rowHeight = Math.round(18.0f * scale);
+        int panelWidth = (int)(160.0f * scale);
+        boolean withinX = mouseX >= rowX && mouseX <= rowX + panelWidth;
+        boolean withinY = mouseY >= rowY - rowHeight / 2 && mouseY <= rowY + rowHeight / 2;
+        return withinX && withinY;
     }
 
-    public void onScroll(double d, float f) {
-        int n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f);
-        float f2 = 30.0f * f;
-        float f3 = (float)n - f2;
-        if (this.totalContentHeight > f3) {
-            float f4 = this.totalContentHeight - f3;
-            this.scrollTarget -= (float)d * 18.0f * f;
-            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, f4));
+    public void onScroll(double scrollDelta, float scale) {
+        int contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale);
+        float headerHeight = 30.0f * scale;
+        float visibleHeight = (float)contentHeight - headerHeight;
+        if (this.totalContentHeight > visibleHeight) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            this.scrollTarget -= (float)scrollDelta * 18.0f * scale;
+            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, maxScroll));
             this.lastScrollTime = System.currentTimeMillis();
         }
     }
 
-    public void onMouseDrag(double d, double d2, float f) {
+    public void onMouseDrag(double mouseX, double mouseY, float scale) {
         if (this.isDraggingScrollbar) {
-            int n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f);
-            float f2 = (float)n - 30.0f * f;
-            float f3 = this.totalContentHeight - f2;
-            float f4 = Math.max(20.0f * f, f2 / this.totalContentHeight * f2);
-            float f5 = f2 - f4;
-            if (f5 > 0.0f) {
-                float f6 = (float)d2 - this.scrollbarDragStartY;
-                float f7 = f6 / f5 * f3;
-                this.scrollOffset = this.scrollOffsetAtDragStart + f7;
-                this.scrollTarget = this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, f3));
+            int contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale);
+            float visibleHeight = (float)contentHeight - 30.0f * scale;
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            float thumbHeight = Math.max(20.0f * scale, visibleHeight / this.totalContentHeight * visibleHeight);
+            float trackHeight = visibleHeight - thumbHeight;
+            if (trackHeight > 0.0f) {
+                float dragDeltaY = (float)mouseY - this.scrollbarDragStartY;
+                float scrollDelta = dragDeltaY / trackHeight * maxScroll;
+                this.scrollOffset = this.scrollOffsetAtDragStart + scrollDelta;
+                this.scrollTarget = this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, maxScroll));
             }
             this.lastScrollTime = System.currentTimeMillis();
         }
@@ -391,16 +391,16 @@ extends ClientBase {
         this.lastScrollTime = System.currentTimeMillis();
     }
 
-    public boolean isMouseOverPanel(int n, int n2, int n3, int n4, float f) {
-        int n5 = (int)(160.0f * f);
-        int n6 = (int)(20.0f * f);
-        int n7 = (int)(20.0f * f);
-        int n8 = (int)(400.0f * f);
-        int n9 = (int)(30.0f * f);
-        int n10 = n + n6 - (int)(8.0f * f);
-        int n11 = n2 + n7 + (int)(23.0f * f);
-        int n12 = n8 - 2 * n6 - (int)(20.0f * f);
-        return n3 >= n10 && n3 <= n10 + n5 && n4 >= n11 + n9 && n4 <= n11 + n12;
+    public boolean isMouseOverPanel(int originX, int originY, int mouseX, int mouseY, float scale) {
+        int panelWidth = (int)(160.0f * scale);
+        int marginX = (int)(20.0f * scale);
+        int marginY = (int)(20.0f * scale);
+        int baseSize = (int)(400.0f * scale);
+        int headerHeight = (int)(30.0f * scale);
+        int panelX = originX + marginX - (int)(8.0f * scale);
+        int panelY = originY + marginY + (int)(23.0f * scale);
+        int panelHeight = baseSize - 2 * marginX - (int)(20.0f * scale);
+        return mouseX >= panelX && mouseX <= panelX + panelWidth && mouseY >= panelY + headerHeight && mouseY <= panelY + panelHeight;
     }
 
     public Module getHoveredModule() {
@@ -411,25 +411,25 @@ extends ClientBase {
         this.hoveredModule = module;
     }
 
-    private void rescaleScroll(float f) {
-        List<Module> list;
+    private void rescaleScroll(float scale) {
+        List<Module> modules;
         if (this.lastScale <= 0.0f) {
             return;
         }
-        float f2 = f / this.lastScale;
-        this.scrollOffset *= f2;
-        this.scrollTarget *= f2;
-        int n = (int)(400.0f * f) - (int)(40.0f * f) - (int)(20.0f * f);
-        float f3 = 30.0f * f;
-        float f4 = (float)n - f3;
-        List<Module> list2 = list = !this.searchQuery.isEmpty() ? this.searchResults : this.currentModules;
-        if (list != null) {
-            this.totalContentHeight = list.size() * Math.round(18.0f * f);
+        float scaleRatio = scale / this.lastScale;
+        this.scrollOffset *= scaleRatio;
+        this.scrollTarget *= scaleRatio;
+        int contentHeight = (int)(400.0f * scale) - (int)(40.0f * scale) - (int)(20.0f * scale);
+        float headerHeight = 30.0f * scale;
+        float visibleHeight = (float)contentHeight - headerHeight;
+        List<Module> dup = modules = !this.searchQuery.isEmpty() ? this.searchResults : this.currentModules;
+        if (modules != null) {
+            this.totalContentHeight = modules.size() * Math.round(18.0f * scale);
         }
-        if (this.totalContentHeight > f4) {
-            float f5 = this.totalContentHeight - f4;
-            this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, f5));
-            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, f5));
+        if (this.totalContentHeight > visibleHeight) {
+            float maxScroll = this.totalContentHeight - visibleHeight;
+            this.scrollOffset = Math.max(0.0f, Math.min(this.scrollOffset, maxScroll));
+            this.scrollTarget = Math.max(0.0f, Math.min(this.scrollTarget, maxScroll));
         } else {
             this.scrollOffset = 0.0f;
             this.scrollTarget = 0.0f;

@@ -100,27 +100,27 @@ extends AntiKBMode {
         }
         Packet<ClientGamePacketListener> packet = receivePacketEvent.getPacket();
         if (this.webHitCount <= 0 || mc.player.isInWater() || mc.player.isUnderWater()) {
-            if (packet instanceof ClientboundSetEntityMotionPacket clientboundSetEntityMotionPacket) {
-                if (clientboundSetEntityMotionPacket.getId() != localPlayer.getId()) {
+            if (packet instanceof ClientboundSetEntityMotionPacket motionPacket) {
+                if (motionPacket.getId() != localPlayer.getId()) {
                     return;
                 }
                 AntiKB.rotation = null;
                 this.knockbackPacket = null;
-                if (clientboundSetEntityMotionPacket.getYa() > 0) {
+                if (motionPacket.getYa() > 0) {
                     this.sprintTick = 0;
                     if (KillAura.INSTANCE.isEnabled() && KillAura.target != null && AntiKB.INSTANCE.tryAttack.getValue()) {
                         this.shouldAttack = true;
                         this.wasSprinting = mc.player.isSprinting();
                     } else if (AntiKB.INSTANCE.rotate.getValue()) {
-                        float f = (float)((double)clientboundSetEntityMotionPacket.getXa() / 8000.0);
-                        float f2 = (float)((double)clientboundSetEntityMotionPacket.getZa() / 8000.0);
-                        float f3 = (float)Math.toDegrees(Math.atan2(f, -f2));
-                        AntiKB.rotation = new Rotation(f3, localPlayer.getXRot());
+                        float dx = (float)((double)motionPacket.getXa() / 8000.0);
+                        float dz = (float)((double)motionPacket.getZa() / 8000.0);
+                        float kbYaw = (float)Math.toDegrees(Math.atan2(dx, -dz));
+                        AntiKB.rotation = new Rotation(kbYaw, localPlayer.getXRot());
                     }
                     receivePacketEvent.setCancelled(true);
                     this.packetQueue.add(receivePacketEvent.getPacket());
                     this.isSuspending = true;
-                    this.knockbackPacket = clientboundSetEntityMotionPacket;
+                    this.knockbackPacket = motionPacket;
                 }
             }
             if (this.isSuspending) {
@@ -196,22 +196,22 @@ extends AntiKBMode {
     }
 
     private void applyKBDirection() {
-        float f = (float)((double)this.knockbackPacket.getXa() / 8000.0);
-        float f2 = (float)((double)this.knockbackPacket.getZa() / 8000.0);
-        float f3 = (float)Math.toDegrees(Math.atan2(f, -f2));
-        float f4 = Mth.wrapDegrees(f3 - mc.player.getYRot());
+        float dx = (float)((double)this.knockbackPacket.getXa() / 8000.0);
+        float dz = (float)((double)this.knockbackPacket.getZa() / 8000.0);
+        float kbYaw = (float)Math.toDegrees(Math.atan2(dx, -dz));
+        float yawDelta = Mth.wrapDegrees(kbYaw - mc.player.getYRot());
         this.restoreMovementKeys();
-        double d = Math.toRadians(f4);
-        double d2 = Math.sin(d);
-        double d3 = Math.cos(d);
-        if (d3 > 0.5) {
+        double yawRad = Math.toRadians(yawDelta);
+        double sinYaw = Math.sin(yawRad);
+        double cosYaw = Math.cos(yawRad);
+        if (cosYaw > 0.5) {
             mc.options.keyUp.setDown(true);
-        } else if (d3 < -0.5) {
+        } else if (cosYaw < -0.5) {
             mc.options.keyDown.setDown(true);
         }
-        if (d2 > 0.5) {
+        if (sinYaw > 0.5) {
             mc.options.keyRight.setDown(true);
-        } else if (d2 < -0.5) {
+        } else if (sinYaw < -0.5) {
             mc.options.keyLeft.setDown(true);
         }
     }
@@ -229,8 +229,8 @@ extends AntiKBMode {
             if (mc.player.hurtTime > 6 && !mc.options.keyJump.isDown()) {
                 mc.options.keyJump.setDown(true);
             } else if (!Scaffold.INSTANCE.isEnabled()) {
-                boolean bl = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
-                mc.options.keyJump.setDown(bl);
+                boolean jumpKeyDown = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
+                mc.options.keyJump.setDown(jumpKeyDown);
             }
         }
     }

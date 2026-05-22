@@ -13,34 +13,34 @@ implements EventMarker {
     private float blockRange;
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof UseItemRayTraceEvent useItemRayTraceEvent)) {
+        if (!(other instanceof UseItemRayTraceEvent otherEvent)) {
             return false;
         }
-        if (!useItemRayTraceEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        if (Float.compare(this.getRange(), useItemRayTraceEvent.getRange()) != 0) {
+        if (Float.compare(this.getRange(), otherEvent.getRange()) != 0) {
             return false;
         }
-        return Float.compare(this.getBlockRange(), useItemRayTraceEvent.getBlockRange()) == 0;
+        return Float.compare(this.getBlockRange(), otherEvent.getBlockRange()) == 0;
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof UseItemRayTraceEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof UseItemRayTraceEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.getRange());
-        n2 = n2 * 59 + Float.floatToIntBits(this.getBlockRange());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.getRange());
+        result = result * 59 + Float.floatToIntBits(this.getBlockRange());
+        return result;
     }
 
     @Generated
@@ -49,8 +49,8 @@ implements EventMarker {
     }
 
     @Generated
-    public UseItemRayTraceEvent(float f, float f2) {
-        this.range = f;
-        this.blockRange = f2;
+    public UseItemRayTraceEvent(float range, float blockRange) {
+        this.range = range;
+        this.blockRange = blockRange;
     }
 }

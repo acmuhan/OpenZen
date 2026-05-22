@@ -42,50 +42,50 @@ implements AutoCloseable {
     private Object shader;
     private boolean antialias = true;
 
-    public Paint setColor(int n) {
-        this.color = n;
+    public Paint setColor(int color) {
+        this.color = color;
         return this;
     }
 
-    public Paint setColorFromArray(float[] fArray) {
-        int n = (int)Math.max(0.0f, Math.min(255.0f, fArray[3] * 255.0f));
-        int n2 = (int)Math.max(0.0f, Math.min(255.0f, fArray[0] * 255.0f));
-        int n3 = (int)Math.max(0.0f, Math.min(255.0f, fArray[1] * 255.0f));
-        int n4 = (int)Math.max(0.0f, Math.min(255.0f, fArray[2] * 255.0f));
-        this.color = n << 24 | n2 << 16 | n3 << 8 | n4;
+    public Paint setColorFromArray(float[] rgba) {
+        int a = (int)Math.max(0.0f, Math.min(255.0f, rgba[3] * 255.0f));
+        int r = (int)Math.max(0.0f, Math.min(255.0f, rgba[0] * 255.0f));
+        int g = (int)Math.max(0.0f, Math.min(255.0f, rgba[1] * 255.0f));
+        int b = (int)Math.max(0.0f, Math.min(255.0f, rgba[2] * 255.0f));
+        this.color = a << 24 | r << 16 | g << 8 | b;
         return this;
     }
 
-    public Paint setColorARGB(int n, int n2, int n3, int n4) {
-        this.color = (n & 0xFF) << 24 | (n2 & 0xFF) << 16 | (n3 & 0xFF) << 8 | n4 & 0xFF;
+    public Paint setColorARGB(int a, int r, int g, int b) {
+        this.color = (a & 0xFF) << 24 | (r & 0xFF) << 16 | (g & 0xFF) << 8 | b & 0xFF;
         return this;
     }
 
-    public Paint setAlpha(float f) {
-        int n = (int)Math.max(0.0f, Math.min(255.0f, f * 255.0f));
-        this.color = this.color & 0xFFFFFF | n << 24;
+    public Paint setAlpha(float alpha) {
+        int a = (int)Math.max(0.0f, Math.min(255.0f, alpha * 255.0f));
+        this.color = this.color & 0xFFFFFF | a << 24;
         return this;
     }
 
-    public Paint setStrokeWidth(float f) {
-        this.strokeWidth = f;
+    public Paint setStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
         return this;
     }
 
-    public Paint setStrokeCap(Paint.StrokeCap paint$StrokeCap) {
-        this.capStyle = paint$StrokeCap;
+    public Paint setStrokeCap(Paint.StrokeCap capStyle) {
+        this.capStyle = capStyle;
         return this;
     }
 
-    public Paint setStrokeJoin(Paint.StrokeJoin paint$StrokeJoin) {
-        this.joinStyle = paint$StrokeJoin;
+    public Paint setStrokeJoin(Paint.StrokeJoin joinStyle) {
+        this.joinStyle = joinStyle;
         return this;
     }
 
-    public Paint setMaskFilter(Object object) {
-        if (object instanceof Paint.BlurMaskFilter) {
-            this.blurRadius = ((Paint.BlurMaskFilter)object).blurRadius;
-        } else if (object == null) {
+    public Paint setMaskFilter(Object maskFilter) {
+        if (maskFilter instanceof Paint.BlurMaskFilter) {
+            this.blurRadius = ((Paint.BlurMaskFilter)maskFilter).blurRadius;
+        } else if (maskFilter == null) {
             this.blurRadius = 0.0f;
         }
         return this;
@@ -101,13 +101,13 @@ implements AutoCloseable {
         return this;
     }
 
-    public Paint setShader(Object object) {
-        this.shader = object;
+    public Paint setShader(Object shader) {
+        this.shader = shader;
         return this;
     }
 
-    public Paint setAntialias(boolean bl) {
-        this.antialias = bl;
+    public Paint setAntialias(boolean antialias) {
+        this.antialias = antialias;
         return this;
     }
 

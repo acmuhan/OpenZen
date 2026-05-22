@@ -21,46 +21,46 @@ extends AbstractEasing {
         this.setSampleCount(30);
     }
 
-    public CubicBezier(int n) {
+    public CubicBezier(int sampleCount) {
         this();
-        this.setSampleCount(n);
+        this.setSampleCount(sampleCount);
     }
 
-    public CubicBezier(Point2d point2d, Point2d point2d2) {
-        this.localP1 = point2d;
-        this.localP2 = point2d2;
+    public CubicBezier(Point2d p1, Point2d p2) {
+        this.localP1 = p1;
+        this.localP2 = p2;
         this.setSampleCount(30);
     }
 
-    public CubicBezier(Point2d point2d, Point2d point2d2, int n) {
-        this(point2d, point2d2);
-        this.setSampleCount(n);
+    public CubicBezier(Point2d p1, Point2d p2, int sampleCount) {
+        this(p1, p2);
+        this.setSampleCount(sampleCount);
     }
 
-    public CubicBezier(CubicBezier cubicBezier) {
-        this.localP1 = cubicBezier.getP1();
-        this.localP2 = cubicBezier.getP2();
+    public CubicBezier(CubicBezier other) {
+        this.localP1 = other.getP1();
+        this.localP2 = other.getP2();
         this.setSampleCount(30);
     }
 
-    public CubicBezier(CubicBezier cubicBezier, int n) {
-        this(cubicBezier);
-        this.setSampleCount(n);
+    public CubicBezier(CubicBezier other, int sampleCount) {
+        this(other);
+        this.setSampleCount(sampleCount);
     }
 
-    public CubicBezier(String string) {
-        String[] stringArray = string.replace(" ", "").split(",");
-        if (stringArray.length != 4) {
-            throw new IllegalArgumentException("Couldn't parse " + string + ", please follow this format: x1,y1,x2,y2");
+    public CubicBezier(String spec) {
+        String[] parts = spec.replace(" ", "").split(",");
+        if (parts.length != 4) {
+            throw new IllegalArgumentException("Couldn't parse " + spec + ", please follow this format: x1,y1,x2,y2");
         }
-        this.localP1 = new Point2d(stringArray[0] + "," + stringArray[1]);
-        this.localP2 = new Point2d(stringArray[2] + "," + stringArray[3]);
+        this.localP1 = new Point2d(parts[0] + "," + parts[1]);
+        this.localP2 = new Point2d(parts[2] + "," + parts[3]);
         this.setSampleCount(30);
     }
 
-    public CubicBezier(String string, int n) {
-        this(string);
-        this.setSampleCount(n);
+    public CubicBezier(String spec, int sampleCount) {
+        this(spec);
+        this.setSampleCount(sampleCount);
     }
 
     private void buildLookupTable() {
@@ -68,61 +68,61 @@ extends AbstractEasing {
             return;
         }
         this.lookupTable.clear();
-        double d = 0.03333333333333333;
-        for (double d2 = 0.0; d2 <= 1.0; d2 += d) {
-            Point2d point2d = this.computeBezier(d2);
-            this.lookupTable.add(new Point2d(point2d.x, 1.0).sub(0.0, point2d.y));
+        double step = 0.03333333333333333;
+        for (double t = 0.0; t <= 1.0; t += step) {
+            Point2d point = this.computeBezier(t);
+            this.lookupTable.add(new Point2d(point.x, 1.0).sub(0.0, point.y));
         }
         this.lookupTable.add(new Point2d(1.0, 0.0));
     }
 
-    private Point2d computeBezier(double d) {
+    private Point2d computeBezier(double t) {
         if (this.localP1 == null || this.localP2 == null) {
             throw new NullPointerException("firstPoint or secondPoint is null");
         }
-        Point2d point2d = this.localP1.copy();
-        Point2d point2d2 = this.localP2.copy();
-        double d2 = 1.0 - d;
-        return new Point2d(this.p1.x * Math.pow(d2, 3.0) + 3.0 * point2d.x * d * Math.pow(d2, 2.0) + 3.0 * point2d2.x * Math.pow(d, 2.0) * d2 + this.p2.x * Math.pow(d, 3.0), this.p1.y * Math.pow(d2, 3.0) + 3.0 * point2d.y * d * Math.pow(d2, 2.0) + 3.0 * point2d2.y * Math.pow(d, 2.0) * d2 + this.p2.y * Math.pow(d, 3.0));
+        Point2d cp1 = this.localP1.copy();
+        Point2d cp2 = this.localP2.copy();
+        double inv = 1.0 - t;
+        return new Point2d(this.p1.x * Math.pow(inv, 3.0) + 3.0 * cp1.x * t * Math.pow(inv, 2.0) + 3.0 * cp2.x * Math.pow(t, 2.0) * inv + this.p2.x * Math.pow(t, 3.0), this.p1.y * Math.pow(inv, 3.0) + 3.0 * cp1.y * t * Math.pow(inv, 2.0) + 3.0 * cp2.y * Math.pow(t, 2.0) * inv + this.p2.y * Math.pow(t, 3.0));
     }
 
-    private Map.Entry<Point2d, Point2d> findClosestEntry(double d) {
+    private Map.Entry<Point2d, Point2d> findClosestEntry(double t) {
         if (this.lookupTable.isEmpty()) {
             return new AbstractMap.SimpleEntry(new Point2d(0.0, 0.0), new Point2d(0.0, 0.0));
         }
-        Point2d point2d = this.lookupTable.get(0);
-        Point2d point2d2 = this.lookupTable.get(this.lookupTable.size() - 1);
-        for (Point2d point2d3 : this.lookupTable) {
-            if (point2d3.x < d) {
-                point2d = point2d3;
+        Point2d lower = this.lookupTable.get(0);
+        Point2d upper = this.lookupTable.get(this.lookupTable.size() - 1);
+        for (Point2d entry : this.lookupTable) {
+            if (entry.x < t) {
+                lower = entry;
                 continue;
             }
-            if (!(point2d3.x > d) || !(point2d2.x >= point2d3.x)) continue;
-            point2d2 = point2d3;
+            if (!(entry.x > t) || !(upper.x >= entry.x)) continue;
+            upper = entry;
             break;
         }
-        if (point2d2.x < d) {
-            point2d2 = point2d;
+        if (upper.x < t) {
+            upper = lower;
         }
-        if (point2d.x > d) {
-            point2d = point2d2;
+        if (lower.x > t) {
+            lower = upper;
         }
-        return new AbstractMap.SimpleEntry(point2d, point2d2);
+        return new AbstractMap.SimpleEntry(lower, upper);
     }
 
     @Override
-    public double ease(double d) {
-        Point2d point2d;
+    public double ease(double t) {
+        Point2d upper;
         if (this.localP1 == null || this.localP2 == null) {
             return 0.0;
         }
-        Map.Entry<Point2d, Point2d> entry = this.findClosestEntry(d);
-        Point2d point2d2 = entry.getKey();
-        if (point2d2.equals(point2d = entry.getValue())) {
-            return 1.0 - point2d2.y;
+        Map.Entry<Point2d, Point2d> entry = this.findClosestEntry(t);
+        Point2d lower = entry.getKey();
+        if (lower.equals(upper = entry.getValue())) {
+            return 1.0 - lower.y;
         }
-        double d2 = (point2d.y - point2d2.y) / (point2d.x - point2d2.x) * (d - point2d2.x) + point2d2.y;
-        return 1.0 - d2;
+        double interpolatedY = (upper.y - lower.y) / (upper.x - lower.x) * (t - lower.x) + lower.y;
+        return 1.0 - interpolatedY;
     }
 
     public Point2d getP1() {
@@ -141,11 +141,11 @@ extends AbstractEasing {
         return this.sampleCount;
     }
 
-    public void setSampleCount(int n) {
-        if (this.sampleCount == n) {
+    public void setSampleCount(int sampleCount) {
+        if (this.sampleCount == sampleCount) {
             return;
         }
-        this.sampleCount = n;
+        this.sampleCount = sampleCount;
         this.buildLookupTable();
     }
 

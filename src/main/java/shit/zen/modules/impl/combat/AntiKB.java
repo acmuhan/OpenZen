@@ -34,8 +34,8 @@ extends Module {
     public final BooleanSetting tryAttack = new BooleanSetting("Try Attack", false, () -> mode.is("Mix"));
     public final BooleanSetting movementOverride = new BooleanSetting("Movement Override", false, () -> mode.is("Mix"));
     public final BooleanSetting followDirection = new BooleanSetting("Follow Direction", false, () -> mode.is("Jump Reset"));
-    public final NumberSetting rotateTicks = new NumberSetting("Rotate Ticks", Integer.valueOf(12), Integer.valueOf(3), Integer.valueOf(20), Integer.valueOf(1), () -> mode.is("Jump Reset") && (this.rotate.getValue() != false || this.followDirection.getValue() != false));
-    public final NumberSetting attackAmount = new NumberSetting("Attack amount", Double.valueOf(5.0), Double.valueOf(1.0), Double.valueOf(20.0), Integer.valueOf(1), () -> mode.is("NoXZ"));
+    public final NumberSetting rotateTicks = new NumberSetting("Rotate Ticks", 12, 3, 20, 1, () -> mode.is("Jump Reset") && (this.rotate.getValue() != false || this.followDirection.getValue() != false));
+    public final NumberSetting attackAmount = new NumberSetting("Attack amount", 5.0, 1.0, 20.0, 1, () -> mode.is("NoXZ"));
     public final BooleanSetting instantAttack = new BooleanSetting("Instant Attack", false, () -> mode.is("NoXZ"));
     public final BooleanSetting sprintStateCheck = new BooleanSetting("Sprint state check", true, () -> mode.is("NoXZ"));
 

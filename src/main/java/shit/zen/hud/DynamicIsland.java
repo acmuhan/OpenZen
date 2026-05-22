@@ -40,23 +40,23 @@ public class DynamicIsland {
     private long lastFrameTimestamp = 0L;
 
     public void onRender2D(Render2DEvent render2DEvent) {
-        float f;
-        float f2;
+        float islandY;
+        float outgoingY;
         IHudElement.Size size;
         if (ClientBase.mc.player == null) {
             return;
         }
-        long l = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
         if (this.lastFrameTimestamp == 0L) {
-            this.lastFrameTimestamp = l;
+            this.lastFrameTimestamp = now;
         }
-        float f3 = (float)(l - this.lastFrameTimestamp) / 1000.0f;
-        this.lastFrameTimestamp = l;
-        f3 = Math.min(f3, 0.033333335f);
-        IHudElement iHudElement = this.activeElementSelector.visible();
-        if (this.activeElement != iHudElement) {
+        float deltaSec = (float)(now - this.lastFrameTimestamp) / 1000.0f;
+        this.lastFrameTimestamp = now;
+        deltaSec = Math.min(deltaSec, 0.033333335f);
+        IHudElement visibleElement = this.activeElementSelector.visible();
+        if (this.activeElement != visibleElement) {
             this.outgoingElement = this.activeElement;
-            this.activeElement = iHudElement;
+            this.activeElement = visibleElement;
             this.transitionAnim.reset(0.0f);
             this.transitionAnim.setTargetValue(1.0f);
             if (this.outgoingElement == null) {
@@ -67,51 +67,51 @@ public class DynamicIsland {
             }
         }
         size = this.activeElement.getHudAlignment();
-        float f4 = size.width();
-        float f5 = size.height();
-        float f6 = this.transitionAnim.getValue();
-        if (this.outgoingElement != null && f6 < 1.0f) {
-            IHudElement.Size iHudElement$Size2 = this.outgoingElement.getHudAlignment();
-            f4 = Mth.lerp(f6, iHudElement$Size2.width(), size.width());
-            f5 = Mth.lerp(f6, iHudElement$Size2.height(), size.height());
+        float targetWidth = size.width();
+        float targetHeight = size.height();
+        float progress = this.transitionAnim.getValue();
+        if (this.outgoingElement != null && progress < 1.0f) {
+            IHudElement.Size outgoingSize = this.outgoingElement.getHudAlignment();
+            targetWidth = Mth.lerp(progress, outgoingSize.width(), size.width());
+            targetHeight = Mth.lerp(progress, outgoingSize.height(), size.height());
         }
-        this.widthAnim.setTargetValue(f4);
-        this.heightAnim.setTargetValue(f5);
-        this.widthAnim.update(f3);
-        this.heightAnim.update(f3);
-        this.transitionAnim.update(f3);
-        float f7 = Math.max(0.0f, this.widthAnim.getValue() + 30.0f);
-        float f8 = Math.max(0.0f, this.heightAnim.getValue() + 3.0f);
-        float f9 = ((float)ClientBase.mc.getWindow().getGuiScaledWidth() - f7) / 2.0f;
-        float f10 = 25.0f;
-        float f11 = 25.0f;
-        float f12 = f11 + f10 / 2.0f;
-        float f13 = this.activeElement.getHudSize() == IHudElement.Alignment.CENTER ? f12 - f8 / 2.0f : f11;
-        if (this.outgoingElement != null && f6 < 1.0f) {
-            f2 = this.outgoingElement.getHudSize() == IHudElement.Alignment.CENTER ? f12 - f8 / 2.0f : f11;
-            f = Mth.lerp(f6, f2, f13);
+        this.widthAnim.setTargetValue(targetWidth);
+        this.heightAnim.setTargetValue(targetHeight);
+        this.widthAnim.update(deltaSec);
+        this.heightAnim.update(deltaSec);
+        this.transitionAnim.update(deltaSec);
+        float islandWidth = Math.max(0.0f, this.widthAnim.getValue() + 30.0f);
+        float islandHeight = Math.max(0.0f, this.heightAnim.getValue() + 3.0f);
+        float islandX = ((float)ClientBase.mc.getWindow().getGuiScaledWidth() - islandWidth) / 2.0f;
+        float anchorSize = 25.0f;
+        float topMargin = 25.0f;
+        float anchorCenterY = topMargin + anchorSize / 2.0f;
+        float activeY = this.activeElement.getHudSize() == IHudElement.Alignment.CENTER ? anchorCenterY - islandHeight / 2.0f : topMargin;
+        if (this.outgoingElement != null && progress < 1.0f) {
+            outgoingY = this.outgoingElement.getHudSize() == IHudElement.Alignment.CENTER ? anchorCenterY - islandHeight / 2.0f : topMargin;
+            islandY = Mth.lerp(progress, outgoingY, activeY);
         } else {
-            f = f13;
+            islandY = activeY;
         }
-        f2 = 12.0f;
-        final float finalF = f;
-        final float finalF2 = f2;
+        outgoingY = 12.0f;
+        final float finalY = islandY;
+        final float finalCornerRadius = outgoingY;
         if (this.activeElement.hasBackground()) {
             Renderer.renderConsumer((drawContext -> {
                 try (Paint paint = new Paint()){
                     paint.setColor(new Color(0, 0, 0, 40).getRGB());
-                    drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(f9, finalF, f7, f8, finalF2), paint);
+                    drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(islandX, finalY, islandWidth, islandHeight, finalCornerRadius), paint);
                 }
                 drawContext.save();
-                drawContext.clipRoundedRect(RoundedRectangle.ofXYWHR(f9, finalF, f7, f8, finalF2), true);
-                this.activeElement.render(drawContext, f9, finalF, f7, f8, f6);
+                drawContext.clipRoundedRect(RoundedRectangle.ofXYWHR(islandX, finalY, islandWidth, islandHeight, finalCornerRadius), true);
+                this.activeElement.render(drawContext, islandX, finalY, islandWidth, islandHeight, progress);
                 drawContext.restore();
             }));
         }
-        RenderUtil.pushScissor((int)f9, (int)f, (int)f7, (int)f8);
-        this.activeElement.renderGui(render2DEvent.guiGraphics(), render2DEvent.poseStack(), f9, f, f7, f8, f6);
+        RenderUtil.pushScissor((int)islandX, (int)islandY, (int)islandWidth, (int)islandHeight);
+        this.activeElement.renderGui(render2DEvent.guiGraphics(), render2DEvent.poseStack(), islandX, islandY, islandWidth, islandHeight, progress);
         RenderUtil.popScissor();
-        if (f6 >= 1.0f) {
+        if (progress >= 1.0f) {
             this.outgoingElement = null;
         }
     }

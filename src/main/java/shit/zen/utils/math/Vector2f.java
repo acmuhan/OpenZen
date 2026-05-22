@@ -15,41 +15,41 @@ public final class Vector2f {
     @Getter @Setter
     public float y;
 
-    public Vector2f(Vector2f vector2f) {
-        this(vector2f.x, vector2f.y);
+    public Vector2f(Vector2f other) {
+        this(other.x, other.y);
     }
 
-    public Vector2f add(float f, float f2) {
-        return new Vector2f(this.x + f, this.y + f2);
+    public Vector2f add(float x, float y) {
+        return new Vector2f(this.x + x, this.y + y);
     }
 
-    public Vector2f fill(float f) {
-        this.x = f;
-        this.y = f;
+    public Vector2f fill(float value) {
+        this.x = value;
+        this.y = value;
         return this;
     }
 
-    public Vector2f set(float f, float f2) {
-        this.x = f;
-        this.y = f2;
+    public Vector2f set(float x, float y) {
+        this.x = x;
+        this.y = y;
         return this;
     }
 
-    public Vector2f fillD(double d) {
-        this.x = (float)d;
-        this.y = (float)d;
+    public Vector2f fillD(double value) {
+        this.x = (float)value;
+        this.y = (float)value;
         return this;
     }
 
-    public Vector2f setD(double d, double d2) {
-        this.x = (float)d;
-        this.y = (float)d2;
+    public Vector2f setD(double x, double y) {
+        this.x = (float)x;
+        this.y = (float)y;
         return this;
     }
 
-    public Vector2f fromArray(float[] fArray) {
-        this.x = fArray[0];
-        this.y = fArray[1];
+    public Vector2f fromArray(float[] values) {
+        this.x = values[0];
+        this.y = values[1];
         return this;
     }
 

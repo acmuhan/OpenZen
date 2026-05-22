@@ -23,182 +23,182 @@ public final class GlHelper {
         return drawContext;
     }
 
-    public static float drawText(String string, float f, float f2, FontRenderer fontRenderer, int n) {
-        Paint paint = GlHelper.toPaint(n);
-        return GlHelper.drawTextFormatted(string, f, f2, fontRenderer, paint, false);
+    public static float drawText(String text, float x, float y, FontRenderer fontRenderer, int color) {
+        Paint paint = GlHelper.toPaint(color);
+        return GlHelper.drawTextFormatted(text, x, y, fontRenderer, paint, false);
     }
 
     public static int getFontAscent(FontRenderer fontRenderer) {
         GlyphMetrics glyphMetrics = fontRenderer.getMetrics();
-        float f = (glyphMetrics.getLineGap() - glyphMetrics.ascent() - glyphMetrics.descent()) / 2.0f;
-        return (int)Math.ceil(f);
+        float ascent = (glyphMetrics.getLineGap() - glyphMetrics.ascent() - glyphMetrics.descent()) / 2.0f;
+        return (int)Math.ceil(ascent);
     }
 
     public static Texture wrapTexture(AbstractTexture abstractTexture) {
         if (abstractTexture == null) {
             return null;
         }
-        int n = abstractTexture.getId();
-        int n2 = GL11.glGetTexLevelParameteri(3553, 0, 4096);
-        int n3 = GL11.glGetTexLevelParameteri(3553, 0, 4097);
-        if (n2 <= 0) {
-            n2 = 64;
+        int glId = abstractTexture.getId();
+        int width = GL11.glGetTexLevelParameteri(3553, 0, 4096);
+        int height = GL11.glGetTexLevelParameteri(3553, 0, 4097);
+        if (width <= 0) {
+            width = 64;
         }
-        if (n3 <= 0) {
-            n3 = 64;
+        if (height <= 0) {
+            height = 64;
         }
-        return new Texture(n, n2, n3);
+        return new Texture(glId, width, height);
     }
 
-    public static void drawPlayerHead(AbstractClientPlayer abstractClientPlayer, float f, float f2, float f3, float f4, float f5) {
-        GlHelper.drawPlayerHeadRounded(abstractClientPlayer, f, f2, f3, f4, f5, 0.0f);
+    public static void drawPlayerHead(AbstractClientPlayer player, float x, float y, float width, float height, float alpha) {
+        GlHelper.drawPlayerHeadRounded(player, x, y, width, height, alpha, 0.0f);
     }
 
-    public static void drawPlayerHeadRounded(AbstractClientPlayer abstractClientPlayer, float f, float f2, float f3, float f4, float f5, float f6) {
-        ResourceLocation resourceLocation = abstractClientPlayer.getSkinTextureLocation();
+    public static void drawPlayerHeadRounded(AbstractClientPlayer player, float x, float y, float width, float height, float alpha, float radius) {
+        ResourceLocation resourceLocation = player.getSkinTextureLocation();
         if (resourceLocation == null || ClientBase.mc.getTextureManager().getTexture(resourceLocation) == null) {
             return;
         }
         AbstractTexture abstractTexture = ClientBase.mc.getTextureManager().getTexture(resourceLocation);
-        int n = abstractTexture.getId();
+        int glId = abstractTexture.getId();
         DrawContext drawContext = GlHelper.getCanvas();
-        int n2 = (int)Math.max(0.0f, Math.min(255.0f, f5 * 255.0f)) << 24 | 0xFFFFFF;
+        int packedColor = (int)Math.max(0.0f, Math.min(255.0f, alpha * 255.0f)) << 24 | 0xFFFFFF;
         RoundedRectShader roundedRectShader = DrawContext.getRoundedRectShader();
-        float f7 = 0.125f;
-        float f8 = 0.125f;
-        float f9 = 0.25f;
-        float f10 = 0.25f;
-        float f11 = 0.625f;
-        float f12 = 0.125f;
-        float f13 = 0.75f;
-        float f14 = 0.25f;
-        Matrix4f matrix4f = drawContext.getPoseStack().last().pose();
-        roundedRectShader.drawTextured(matrix4f, f, f2, f + f3, f2 + f4, f6, f6, f6, f6, n2, n, f7, f8, f9, f10);
-        roundedRectShader.drawTextured(matrix4f, f, f2, f + f3, f2 + f4, f6, f6, f6, f6, n2, n, f11, f12, f13, f14);
-        if (abstractClientPlayer.hurtTime > 0) {
-            int n3 = ColorUtil.withAlphaColor(new Color(255, 0, 0, abstractClientPlayer.hurtTime * 18), f5).getRGB();
-            Paint paint = new Paint().setColor(n3);
-            drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(f, f2, f3, f4, f6), paint);
+        float baseU1 = 0.125f;
+        float baseV1 = 0.125f;
+        float baseU2 = 0.25f;
+        float baseV2 = 0.25f;
+        float hatU1 = 0.625f;
+        float hatV1 = 0.125f;
+        float hatU2 = 0.75f;
+        float hatV2 = 0.25f;
+        Matrix4f pose = drawContext.getPoseStack().last().pose();
+        roundedRectShader.drawTextured(pose, x, y, x + width, y + height, radius, radius, radius, radius, packedColor, glId, baseU1, baseV1, baseU2, baseV2);
+        roundedRectShader.drawTextured(pose, x, y, x + width, y + height, radius, radius, radius, radius, packedColor, glId, hatU1, hatV1, hatU2, hatV2);
+        if (player.hurtTime > 0) {
+            int hurtColor = ColorUtil.withAlphaColor(new Color(255, 0, 0, player.hurtTime * 18), alpha).getRGB();
+            Paint paint = new Paint().setColor(hurtColor);
+            drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(x, y, width, height, radius), paint);
         }
     }
 
-    public static float drawTextFormatted(String string, float f, float f2, FontRenderer fontRenderer, Paint paint, boolean bl) {
-        if (string == null || string.isEmpty()) {
-            return f;
+    public static float drawTextFormatted(String text, float x, float y, FontRenderer fontRenderer, Paint paint, boolean keepColor) {
+        if (text == null || text.isEmpty()) {
+            return x;
         }
         DrawContext drawContext = GlHelper.getCanvas();
-        int n = paint.getColor();
-        float f3 = f;
-        float f4 = f2 + (float)GlHelper.getFontAscent(fontRenderer);
-        String[] stringArray = string.split("§");
-        for (int i = 0; i < stringArray.length; ++i) {
-            char c;
+        int color = paint.getColor();
+        float cursorX = x;
+        float baselineY = y + (float)GlHelper.getFontAscent(fontRenderer);
+        String[] parts = text.split("§");
+        for (int i = 0; i < parts.length; ++i) {
+            char code;
             ChatFormatting chatFormatting;
-            String string2 = stringArray[i];
-            if (i > 0 && !string2.isEmpty() && (chatFormatting = ChatFormatting.getByCode(c = string2.charAt(0))) != null) {
-                if (!bl && chatFormatting.getColor() != null) {
-                    n = ColorUtil.withAlpha(chatFormatting.getColor(), (float)(n >> 24 & 0xFF) / 255.0f);
+            String part = parts[i];
+            if (i > 0 && !part.isEmpty() && (chatFormatting = ChatFormatting.getByCode(code = part.charAt(0))) != null) {
+                if (!keepColor && chatFormatting.getColor() != null) {
+                    color = ColorUtil.withAlpha(chatFormatting.getColor(), (float)(color >> 24 & 0xFF) / 255.0f);
                 }
-                string2 = string2.substring(1);
+                part = part.substring(1);
             }
-            drawContext.drawString(string2, f3, f4, fontRenderer, paint.setColor(n));
-            f3 += GlHelper.getStringWidth(string2, fontRenderer);
+            drawContext.drawString(part, cursorX, baselineY, fontRenderer, paint.setColor(color));
+            cursorX += GlHelper.getStringWidth(part, fontRenderer);
         }
-        return f3;
+        return cursorX;
     }
 
-    public static float drawTextWithShadow(String string, float f, float f2, FontRenderer fontRenderer, Paint paint) {
-        int n = paint.getColor();
-        GlHelper.drawTextFormatted(string, f + 0.5f, f2 + 0.5f, fontRenderer, paint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)((float)ColorUtil.getAlpha(paint.getColor()) * 0.65f * 255.0f))), true);
-        paint.setColor(n);
-        return GlHelper.drawTextFormatted(string, f, f2, fontRenderer, paint, false);
+    public static float drawTextWithShadow(String text, float x, float y, FontRenderer fontRenderer, Paint paint) {
+        int color = paint.getColor();
+        GlHelper.drawTextFormatted(text, x + 0.5f, y + 0.5f, fontRenderer, paint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)((float)ColorUtil.getAlpha(paint.getColor()) * 0.65f * 255.0f))), true);
+        paint.setColor(color);
+        return GlHelper.drawTextFormatted(text, x, y, fontRenderer, paint, false);
     }
 
-    public static float drawTextShadowLegacy(String string, float f, float f2, FontRenderer fontRenderer, int n) {
-        Paint paint = GlHelper.toPaint(n);
-        float f3 = (float)(n >> 24 & 0xFF) / 255.0f;
-        GlHelper.drawTextFormatted(string, f + 0.5f, f2 + 0.5f, fontRenderer, GlHelper.toPaint(ColorUtil.fromARGB(0, 0, 0, (int)(f3 * 0.65f * 255.0f))), true);
-        return GlHelper.drawTextFormatted(string, f, f2, fontRenderer, paint, false);
+    public static float drawTextShadowLegacy(String text, float x, float y, FontRenderer fontRenderer, int color) {
+        Paint paint = GlHelper.toPaint(color);
+        float alpha = (float)(color >> 24 & 0xFF) / 255.0f;
+        GlHelper.drawTextFormatted(text, x + 0.5f, y + 0.5f, fontRenderer, GlHelper.toPaint(ColorUtil.fromARGB(0, 0, 0, (int)(alpha * 0.65f * 255.0f))), true);
+        return GlHelper.drawTextFormatted(text, x, y, fontRenderer, paint, false);
     }
 
-    public static float drawTextBlurred(String string, float f, float f2, FontRenderer fontRenderer, int n, int n2, float f3) {
-        if (string == null || string.isEmpty()) {
-            return f;
+    public static float drawTextBlurred(String text, float x, float y, FontRenderer fontRenderer, int color, int blurColor, float radius) {
+        if (text == null || text.isEmpty()) {
+            return x;
         }
         DrawContext drawContext = GlHelper.getCanvas();
-        float f4 = fontRenderer.getWidth(string);
-        float f5 = fontRenderer.getFont() != null ? fontRenderer.getFont().getFontHeight() : fontRenderer.getSize();
-        float f6 = Math.max(0.01f, f3 * 0.5f);
-        drawContext.drawBlur(f, f2 - f5, f4, f5 * 2.0f, f6, () -> drawContext.drawString(string, f, f2, fontRenderer, GlHelper.toPaint(n2)));
-        return GlHelper.drawText(string, f, f2, fontRenderer, n);
+        float width = fontRenderer.getWidth(text);
+        float height = fontRenderer.getFont() != null ? fontRenderer.getFont().getFontHeight() : fontRenderer.getSize();
+        float halfBlur = Math.max(0.01f, radius * 0.5f);
+        drawContext.drawBlur(x, y - height, width, height * 2.0f, halfBlur, () -> drawContext.drawString(text, x, y, fontRenderer, GlHelper.toPaint(blurColor)));
+        return GlHelper.drawText(text, x, y, fontRenderer, color);
     }
 
-    public static float drawTextCentered(float f, float f2, String string, FontRenderer fontRenderer, Paint paint) {
-        float f3 = fontRenderer.getWidth(string);
-        float f4 = fontRenderer.getFont() != null ? fontRenderer.getFont().getFontHeight() : fontRenderer.getSize();
-        return GlHelper.drawTextFormatted(string, f - f3 / 2.0f, f2 - f4 / 2.0f, fontRenderer, paint, false);
+    public static float drawTextCentered(float centerX, float centerY, String text, FontRenderer fontRenderer, Paint paint) {
+        float width = fontRenderer.getWidth(text);
+        float height = fontRenderer.getFont() != null ? fontRenderer.getFont().getFontHeight() : fontRenderer.getSize();
+        return GlHelper.drawTextFormatted(text, centerX - width / 2.0f, centerY - height / 2.0f, fontRenderer, paint, false);
     }
 
-    public static Paint toPaint(Object object) {
+    public static Paint toPaint(Object source) {
         Paint paint = new Paint();
-        if (object instanceof float[]) {
-            paint.setColorFromArray((float[])object);
-        } else if (object instanceof Color color) {
+        if (source instanceof float[]) {
+            paint.setColorFromArray((float[])source);
+        } else if (source instanceof Color color) {
             paint.setColorARGB(color.getAlpha(), color.getRed(), color.getGreen(), color.getBlue());
-        } else if (object instanceof Integer n) {
-            paint.setColor(n);
+        } else if (source instanceof Integer color) {
+            paint.setColor(color);
         }
         return paint;
     }
 
-    public static float getStringWidth(String string2, FontRenderer fontRenderer2) {
-        if (string2 == null || string2.isEmpty()) {
+    public static float getStringWidth(String text, FontRenderer fontRenderer) {
+        if (text == null || text.isEmpty()) {
             return 0.0f;
         }
-        return stringWidthCache.computeIfAbsent(fontRenderer2, fontRenderer -> new HashMap<>()).computeIfAbsent(string2, string -> string != null ? fontRenderer2.getWidth(string.replaceAll("§.", "")) : 0.0f);
+        return stringWidthCache.computeIfAbsent(fontRenderer, key -> new HashMap<>()).computeIfAbsent(text, key -> key != null ? fontRenderer.getWidth(key.replaceAll("§.", "")) : 0.0f);
     }
 
-    public static void drawRoundedRect(float f, float f2, float f3, float f4, float f5, Paint paint) {
-        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHR(f, f2, f3, f4, f5), paint);
+    public static void drawRoundedRect(float x, float y, float width, float height, float radius, Paint paint) {
+        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHR(x, y, width, height, radius), paint);
     }
 
-    public static void drawRoundedRectCorners(float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8, Paint paint) {
-        float[] fArray = new float[]{f5, f5, f6, f6, f7, f7, f8, f8};
-        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHRadii(f, f2, f3, f4, fArray), paint);
+    public static void drawRoundedRectCorners(float x, float y, float width, float height, float tlRadius, float trRadius, float brRadius, float blRadius, Paint paint) {
+        float[] radii = new float[]{tlRadius, tlRadius, trRadius, trRadius, brRadius, brRadius, blRadius, blRadius};
+        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHRadii(x, y, width, height, radii), paint);
     }
 
     private static int colorToInt(Color color) {
         return color.getAlpha() << 24 | color.getRed() << 16 | color.getGreen() << 8 | color.getBlue();
     }
 
-    public static void drawGradientRoundedRect(float f, float f2, float f3, float f4, float f5, Color color, Color color2) {
-        Paint.GradientCoords paint$GradientCoords = new Paint.GradientCoords(f, f2, f, f2 + f4, GlHelper.colorToInt(color), GlHelper.colorToInt(color2));
-        Paint paint = new Paint().setGradCoords(paint$GradientCoords);
-        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHR(f, f2, f3, f4, f5), paint);
+    public static void drawGradientRoundedRect(float x, float y, float width, float height, float radius, Color color, Color color2) {
+        Paint.GradientCoords gradCoords = new Paint.GradientCoords(x, y, x, y + height, GlHelper.colorToInt(color), GlHelper.colorToInt(color2));
+        Paint paint = new Paint().setGradCoords(gradCoords);
+        GlHelper.getCanvas().drawRoundedRect(RoundedRectangle.ofXYWHR(x, y, width, height, radius), paint);
     }
 
-    public static void drawBlurredRoundedRectColor(float f, float f2, float f3, float f4, float f5, Color color, float f6, float f7, float f8) {
-        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHR(f, f2, f3, f4, f5), f7, f8, f6, 1.0f, color.getRGB());
+    public static void drawBlurredRoundedRectColor(float x, float y, float width, float height, float radius, Color color, float blurRadius, float offsetX, float offsetY) {
+        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHR(x, y, width, height, radius), offsetX, offsetY, blurRadius, 1.0f, color.getRGB());
     }
 
-    public static void drawShadowRoundedRect(float f, float f2, float f3, float f4, float f5, Color color) {
-        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHR(f, f2, f3, f4, f5), 0.0f, 0.0f, 10.0f, 1.0f, color.getRGB());
+    public static void drawShadowRoundedRect(float x, float y, float width, float height, float radius, Color color) {
+        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHR(x, y, width, height, radius), 0.0f, 0.0f, 10.0f, 1.0f, color.getRGB());
     }
 
-    public static void drawRoundedRectCornersColor(float f, float f2, float f3, float f4, float f5, float f6, float f7, float f8, Color color) {
-        float[] fArray = new float[]{f5, f5, f6, f6, f7, f7, f8, f8};
-        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHRadii(f, f2, f3, f4, fArray), 0.0f, 0.0f, 10.0f, 1.0f, color.getRGB());
+    public static void drawRoundedRectCornersColor(float x, float y, float width, float height, float tlRadius, float trRadius, float brRadius, float blRadius, Color color) {
+        float[] radii = new float[]{tlRadius, tlRadius, trRadius, trRadius, brRadius, brRadius, blRadius, blRadius};
+        GlHelper.getCanvas().drawBlurredRoundedRect(RoundedRectangle.ofXYWHRadii(x, y, width, height, radii), 0.0f, 0.0f, 10.0f, 1.0f, color.getRGB());
     }
 
-    public static void drawRect(float f, float f2, float f3, float f4, Paint paint) {
-        GlHelper.getCanvas().drawRect(Rectangle.ofXYWH(f, f2, f3, f4), paint);
+    public static void drawRect(float x, float y, float width, float height, Paint paint) {
+        GlHelper.getCanvas().drawRect(Rectangle.ofXYWH(x, y, width, height), paint);
     }
 
-    public static void drawLine(float f, float f2, float f3, float f4, float f5, int n) {
-        Paint paint = GlHelper.toPaint(n);
-        paint.setStrokeWidth(f5);
+    public static void drawLine(float x1, float y1, float x2, float y2, float strokeWidth, int color) {
+        Paint paint = GlHelper.toPaint(color);
+        paint.setStrokeWidth(strokeWidth);
         paint.setStrokeCap(Paint.StrokeCap.STROKE);
-        GlHelper.getCanvas().drawLine(f, f2, f3, f4, paint);
+        GlHelper.getCanvas().drawLine(x1, y1, x2, y2, paint);
     }
 
     static {

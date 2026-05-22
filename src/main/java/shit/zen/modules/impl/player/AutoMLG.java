@@ -23,8 +23,8 @@ import shit.zen.event.EventTarget;
 public class AutoMLG
 extends Module {
     public static AutoMLG INSTANCE;
-    private final NumberSetting triggerDistanceSetting = new NumberSetting("Fall distance", Float.valueOf(3.0f), Float.valueOf(1.0f), Float.valueOf(10.0f), Float.valueOf(0.1f));
-    private final NumberSetting predictTicksSetting = new NumberSetting("Predict Ticks", Float.valueOf(2.0f), Float.valueOf(1.0f), Float.valueOf(5.0f), Float.valueOf(1.0f));
+    private final NumberSetting triggerDistanceSetting = new NumberSetting("Fall distance", 3.0f, 1.0f, 10.0f, 0.1f);
+    private final NumberSetting predictTicksSetting = new NumberSetting("Predict Ticks", 2.0f, 1.0f, 5.0f, 1.0f);
     private final BooleanSetting solidCheckSetting = new BooleanSetting("Solid check", true);
     private final BooleanSetting recoverySetting = new BooleanSetting("Recorvey", true);
     public Rotation targetRotation = null;
@@ -89,10 +89,10 @@ extends Module {
     @EventTarget
     public void onTick(TickEvent tickEvent) {
         Rotation rotation;
-        BlockHitResult blockHitResult;
-        BlockPos blockPos;
-        int n;
-        double d;
+        BlockHitResult hit;
+        BlockPos bucketPos;
+        int slot;
+        double deltaY;
         if (mc.player == null || mc.level == null) {
             return;
         }
@@ -102,9 +102,9 @@ extends Module {
         if (mc.player.onGround() || mc.player.getAbilities().flying || mc.player.isInWaterRainOrBubble() || mc.player.isInLava()) {
             this.accumulatedFall = 0.0f;
         } else {
-            d = mc.player.getY() - this.lastY;
-            if (d < 0.0) {
-                this.accumulatedFall -= (float)d;
+            deltaY = mc.player.getY() - this.lastY;
+            if (deltaY < 0.0) {
+                this.accumulatedFall -= (float)deltaY;
             }
         }
         this.lastY = mc.player.getY();
@@ -154,28 +154,28 @@ extends Module {
                 this.placedWaterPos = null;
                 return;
             }
-            Rotation rotation2 = RotationUtil.rotationToBlock(this.placedWaterPos, 0.0f);
-            BlockHitResult blockHitResult2 = this.raycastFluid(rotation2, 4.5);
-            if (blockHitResult2.getType() == HitResult.Type.MISS || !blockHitResult2.getBlockPos().equals(this.placedWaterPos)) {
+            Rotation recoveryRotation = RotationUtil.rotationToBlock(this.placedWaterPos, 0.0f);
+            BlockHitResult recoveryHit = this.raycastFluid(recoveryRotation, 4.5);
+            if (recoveryHit.getType() == HitResult.Type.MISS || !recoveryHit.getBlockPos().equals(this.placedWaterPos)) {
                 this.recoveryActive = false;
                 this.waterBucketSlot = null;
                 this.placedWaterPos = null;
                 return;
             }
-            this.setTargetRotation(rotation2);
+            this.setTargetRotation(recoveryRotation);
             this.selectSlot(this.waterBucketSlot);
-            this.useItem(rotation2);
+            this.useItem(recoveryRotation);
             return;
         }
-        if (!this.waterPlaced && !this.recoveryActive && this.placedWaterPos == null && this.postPlaceCooldown == 0 && this.postActionCooldown == 0 && this.accumulatedFall <= 0.5f && ItemUtil.findItemInRange(0, 9, Items.WATER_BUCKET) < 0 && (n = ItemUtil.findItemInRange(0, 9, Items.BUCKET)) >= 0 && (blockPos = this.findBucketPos()) != null && (blockHitResult = this.raycastFluid(rotation = RotationUtil.rotationToBlock(blockPos, 0.0f), 4.5)).getType() != HitResult.Type.MISS && blockHitResult.getBlockPos().equals(blockPos)) {
+        if (!this.waterPlaced && !this.recoveryActive && this.placedWaterPos == null && this.postPlaceCooldown == 0 && this.postActionCooldown == 0 && this.accumulatedFall <= 0.5f && ItemUtil.findItemInRange(0, 9, Items.WATER_BUCKET) < 0 && (slot = ItemUtil.findItemInRange(0, 9, Items.BUCKET)) >= 0 && (bucketPos = this.findBucketPos()) != null && (hit = this.raycastFluid(rotation = RotationUtil.rotationToBlock(bucketPos, 0.0f), 4.5)).getType() != HitResult.Type.MISS && hit.getBlockPos().equals(bucketPos)) {
             this.setTargetRotation(rotation);
-            this.selectSlot(n);
+            this.selectSlot(slot);
             this.useItem(rotation);
             this.postActionCooldown = 8;
             this.postPlaceCooldown = Math.max(this.postPlaceCooldown, 1);
             return;
         }
-        if (this.waterPlaced && !this.readyToPlace && mc.player.getDeltaMovement().y < 0.0 && (d = this.distanceToGround(2.5)) > 0.0 && d <= 1.05) {
+        if (this.waterPlaced && !this.readyToPlace && mc.player.getDeltaMovement().y < 0.0 && (deltaY = this.distanceToGround(2.5)) > 0.0 && deltaY <= 1.05) {
             this.readyToPlace = true;
         }
         if (this.waterPlaced) {
@@ -184,21 +184,21 @@ extends Module {
         if (this.accumulatedFall < this.triggerDistanceSetting.getValue().floatValue()) {
             return;
         }
-        n = ItemUtil.findItemInRange(0, 9, Items.WATER_BUCKET);
-        if (n < 0) {
+        slot = ItemUtil.findItemInRange(0, 9, Items.WATER_BUCKET);
+        if (slot < 0) {
             return;
         }
-        int n2 = this.ticksUntilGround();
-        if (n2 <= this.predictTicksSetting.getValue().intValue()) {
+        int ticksLeft = this.ticksUntilGround();
+        if (ticksLeft <= this.predictTicksSetting.getValue().intValue()) {
             if (this.solidCheckSetting.getValue() && !this.hasSolidBelow(BlockPos.containing(mc.player.getX(), mc.player.getY(), mc.player.getZ()))) {
                 return;
             }
             rotation = new Rotation(mc.player.getYRot(), 90.0f);
-            blockHitResult = this.raycastSolid(rotation, 5.0);
-            if (blockHitResult.getType() == HitResult.Type.MISS) {
+            hit = this.raycastSolid(rotation, 5.0);
+            if (hit.getType() == HitResult.Type.MISS) {
                 return;
             }
-            this.placeWaterBucket(n, true);
+            this.placeWaterBucket(slot, true);
         }
     }
 
@@ -206,16 +206,16 @@ extends Module {
         if (mc.player.getDeltaMovement().y >= 0.0) {
             return 999;
         }
-        double d = this.distanceToGround(30.0);
-        if (d == Double.POSITIVE_INFINITY) {
+        double distance = this.distanceToGround(30.0);
+        if (distance == Double.POSITIVE_INFINITY) {
             return 999;
         }
-        double d2 = 0.0;
-        double d3 = mc.player.getDeltaMovement().y;
+        double simulatedDrop = 0.0;
+        double simulatedVelocity = mc.player.getDeltaMovement().y;
         for (int i = 1; i <= 20; ++i) {
-            d2 += d3;
-            d3 = (d3 - 0.08) * 0.98;
-            if (!(Math.abs(d2) >= d)) continue;
+            simulatedDrop += simulatedVelocity;
+            simulatedVelocity = (simulatedVelocity - 0.08) * 0.98;
+            if (!(Math.abs(simulatedDrop) >= distance)) continue;
             return i;
         }
         return 999;
@@ -223,8 +223,8 @@ extends Module {
 
     private void useItem(Rotation rotation) {
         if (mc.gameMode != null && mc.player != null) {
-            float f = mc.player.getXRot();
-            float f2 = mc.player.getYRot();
+            float originalPitch = mc.player.getXRot();
+            float originalYaw = mc.player.getYRot();
             if (rotation != null) {
                 mc.player.setXRot(rotation.getPitch());
                 mc.player.setYRot(rotation.getYaw());
@@ -232,48 +232,48 @@ extends Module {
             mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
             mc.player.swing(InteractionHand.MAIN_HAND);
             if (rotation != null) {
-                mc.player.setXRot(f);
-                mc.player.setYRot(f2);
+                mc.player.setXRot(originalPitch);
+                mc.player.setYRot(originalYaw);
             }
         }
     }
 
     private BlockPos findBucketPos() {
-        BlockPos blockPos = BlockPos.containing(mc.player.getX(), mc.player.getY(), mc.player.getZ());
-        BlockPos blockPos2 = null;
-        double d = Double.POSITIVE_INFINITY;
-        int n = 4;
-        for (int i = -1; i <= 1; ++i) {
-            for (int j = -n; j <= n; ++j) {
-                for (int k = -n; k <= n; ++k) {
+        BlockPos playerPos = BlockPos.containing(mc.player.getX(), mc.player.getY(), mc.player.getZ());
+        BlockPos closestPos = null;
+        double closestDistSq = Double.POSITIVE_INFINITY;
+        int radius = 4;
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -radius; dx <= radius; ++dx) {
+                for (int dz = -radius; dz <= radius; ++dz) {
                     Rotation rotation;
-                    BlockHitResult blockHitResult;
-                    double d2;
-                    BlockPos blockPos3 = blockPos.offset(j, i, k);
-                    if (!this.isWaterSource(blockPos3) || (d2 = mc.player.position().distanceToSqr((double)blockPos3.getX() + 0.5, (double)blockPos3.getY() + 0.5, (double)blockPos3.getZ() + 0.5)) >= d || (blockHitResult = this.raycastFluid(rotation = RotationUtil.rotationToBlock(blockPos3, 0.0f), 4.5)).getType() == HitResult.Type.MISS || !blockHitResult.getBlockPos().equals(blockPos3)) continue;
-                    blockPos2 = blockPos3;
-                    d = d2;
+                    BlockHitResult hit;
+                    double distSq;
+                    BlockPos candidatePos = playerPos.offset(dx, dy, dz);
+                    if (!this.isWaterSource(candidatePos) || (distSq = mc.player.position().distanceToSqr((double)candidatePos.getX() + 0.5, (double)candidatePos.getY() + 0.5, (double)candidatePos.getZ() + 0.5)) >= closestDistSq || (hit = this.raycastFluid(rotation = RotationUtil.rotationToBlock(candidatePos, 0.0f), 4.5)).getType() == HitResult.Type.MISS || !hit.getBlockPos().equals(candidatePos)) continue;
+                    closestPos = candidatePos;
+                    closestDistSq = distSq;
                 }
             }
         }
-        return blockPos2;
+        return closestPos;
     }
 
     private void setTargetRotation(Rotation rotation) {
         this.targetRotation = rotation;
     }
 
-    private void selectSlot(int n) {
+    private void selectSlot(int slot) {
         this.slotToRestore = mc.player.getInventory().selected;
-        mc.player.getInventory().selected = n;
+        mc.player.getInventory().selected = slot;
     }
 
-    private void placeWaterBucket(int n, boolean bl) {
+    private void placeWaterBucket(int slot, boolean markPlaced) {
         Rotation rotation = new Rotation(mc.player.getYRot(), 90.0f);
         this.setTargetRotation(rotation);
-        this.selectSlot(n);
+        this.selectSlot(slot);
         this.useItem(rotation);
-        if (bl) {
+        if (markPlaced) {
             this.waterPlaced = true;
         }
         this.recoveryActive = this.recoverySetting.getValue();
@@ -284,25 +284,25 @@ extends Module {
     }
 
     private BlockPos getPlacementBlockPos(Rotation rotation) {
-        BlockHitResult blockHitResult = this.raycastSolid(rotation, 4.5);
-        if (blockHitResult.getType() == HitResult.Type.MISS) {
+        BlockHitResult hit = this.raycastSolid(rotation, 4.5);
+        if (hit.getType() == HitResult.Type.MISS) {
             return null;
         }
-        return blockHitResult.getBlockPos().relative(blockHitResult.getDirection());
+        return hit.getBlockPos().relative(hit.getDirection());
     }
 
-    private BlockHitResult raycastSolid(Rotation rotation, double d) {
-        Vec3 vec3 = mc.player.getEyePosition(1.0f);
-        Vec3 vec32 = Vec3.directionFromRotation(rotation.getPitch(), rotation.getYaw());
-        Vec3 vec33 = vec3.add(vec32.scale(d));
-        return mc.level.clip(new ClipContext(vec3, vec33, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
+    private BlockHitResult raycastSolid(Rotation rotation, double range) {
+        Vec3 eyePos = mc.player.getEyePosition(1.0f);
+        Vec3 direction = Vec3.directionFromRotation(rotation.getPitch(), rotation.getYaw());
+        Vec3 endPos = eyePos.add(direction.scale(range));
+        return mc.level.clip(new ClipContext(eyePos, endPos, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
     }
 
-    private BlockHitResult raycastFluid(Rotation rotation, double d) {
-        Vec3 vec3 = mc.player.getEyePosition(1.0f);
-        Vec3 vec32 = Vec3.directionFromRotation(rotation.getPitch(), rotation.getYaw());
-        Vec3 vec33 = vec3.add(vec32.scale(d));
-        return mc.level.clip(new ClipContext(vec3, vec33, ClipContext.Block.OUTLINE, ClipContext.Fluid.SOURCE_ONLY, mc.player));
+    private BlockHitResult raycastFluid(Rotation rotation, double range) {
+        Vec3 eyePos = mc.player.getEyePosition(1.0f);
+        Vec3 direction = Vec3.directionFromRotation(rotation.getPitch(), rotation.getYaw());
+        Vec3 endPos = eyePos.add(direction.scale(range));
+        return mc.level.clip(new ClipContext(eyePos, endPos, ClipContext.Block.OUTLINE, ClipContext.Fluid.SOURCE_ONLY, mc.player));
     }
 
     private boolean isWaterSource(BlockPos blockPos) {
@@ -316,18 +316,18 @@ extends Module {
 
     private boolean isSolidNonMenu(BlockPos blockPos) {
         BlockState blockState = mc.level.getBlockState(blockPos);
-        boolean bl = !blockState.getCollisionShape(mc.level, blockPos).isEmpty();
-        boolean bl2 = blockState.getMenuProvider(mc.level, blockPos) == null;
-        return bl && bl2;
+        boolean hasCollision = !blockState.getCollisionShape(mc.level, blockPos).isEmpty();
+        boolean noMenu = blockState.getMenuProvider(mc.level, blockPos) == null;
+        return hasCollision && noMenu;
     }
 
-    private double distanceToGround(double d) {
-        Vec3 vec3;
-        Vec3 vec32 = new Vec3(mc.player.getX(), mc.player.getBoundingBox().minY, mc.player.getZ());
-        BlockHitResult blockHitResult = mc.level.clip(new ClipContext(vec32, vec3 = vec32.add(0.0, -d, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
-        if (blockHitResult.getType() == HitResult.Type.MISS) {
+    private double distanceToGround(double maxDist) {
+        Vec3 endPos;
+        Vec3 startPos = new Vec3(mc.player.getX(), mc.player.getBoundingBox().minY, mc.player.getZ());
+        BlockHitResult hit = mc.level.clip(new ClipContext(startPos, endPos = startPos.add(0.0, -maxDist, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
+        if (hit.getType() == HitResult.Type.MISS) {
             return Double.POSITIVE_INFINITY;
         }
-        return vec32.y - blockHitResult.getLocation().y;
+        return startPos.y - hit.getLocation().y;
     }
 }

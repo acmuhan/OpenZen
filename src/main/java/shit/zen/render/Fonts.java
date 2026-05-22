@@ -51,10 +51,10 @@ public final class Fonts {
     }
 
     private static FontFormat detectFormat(String name) {
-        int n = name.lastIndexOf(46);
-        if (n < 0) {
+        int dotIndex = name.lastIndexOf(46);
+        if (dotIndex < 0) {
             return FontFormat.UNKNOWN;
         }
-        return FontFormat.fromExtension(name.substring(n + 1));
+        return FontFormat.fromExtension(name.substring(dotIndex + 1));
     }
 }

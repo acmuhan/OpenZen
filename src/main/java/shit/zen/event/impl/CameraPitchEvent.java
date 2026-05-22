@@ -11,12 +11,12 @@ implements EventMarker {
         return this.pitch;
     }
 
-    public void setPitch(float f) {
-        this.pitch = f;
+    public void setPitch(float pitch) {
+        this.pitch = pitch;
     }
 
     @Generated
-    public CameraPitchEvent(float f) {
-        this.pitch = f;
+    public CameraPitchEvent(float pitch) {
+        this.pitch = pitch;
     }
 }

@@ -9,98 +9,98 @@ public class Point2d {
         this.y = 0.0;
     }
 
-    public Point2d(double d, double d2) {
-        this.x = d;
-        this.y = d2;
+    public Point2d(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 
-    public Point2d(Point2d point2d) {
-        this.x = point2d.x;
-        this.y = point2d.y;
+    public Point2d(Point2d other) {
+        this.x = other.x;
+        this.y = other.y;
     }
 
-    public Point2d(String string) {
-        string = string.replace(" ", "");
-        if (!string.contains(",")) {
+    public Point2d(String spec) {
+        spec = spec.replace(" ", "");
+        if (!spec.contains(",")) {
             return;
         }
-        String[] stringArray = string.split(",");
-        if (stringArray.length <= 1) {
+        String[] parts = spec.split(",");
+        if (parts.length <= 1) {
             return;
         }
-        String string2 = stringArray[0];
-        String string3 = stringArray[1];
-        this.x = Double.parseDouble(string2.trim().replace("﻿", ""));
-        this.y = Double.parseDouble(string3.trim().replace("﻿", ""));
+        String xPart = parts[0];
+        String yPart = parts[1];
+        this.x = Double.parseDouble(xPart.trim().replace("﻿", ""));
+        this.y = Double.parseDouble(yPart.trim().replace("﻿", ""));
     }
 
     public Point2d copy() {
         return new Point2d(this);
     }
 
-    public Point2d scale(double d, double d2) {
-        this.x *= d;
-        this.y *= d2;
+    public Point2d scale(double sx, double sy) {
+        this.x *= sx;
+        this.y *= sy;
         return this;
     }
 
-    public Point2d scale(double d) {
-        return this.scale(d, d);
+    public Point2d scale(double scale) {
+        return this.scale(scale, scale);
     }
 
-    public Point2d scale(Point2d point2d) {
-        return this.scale(point2d.x, point2d.y);
+    public Point2d scale(Point2d other) {
+        return this.scale(other.x, other.y);
     }
 
-    public Point2d add(double d, double d2) {
-        this.x += d;
-        this.y += d2;
+    public Point2d add(double dx, double dy) {
+        this.x += dx;
+        this.y += dy;
         return this;
     }
 
-    public Point2d add(Point2d point2d) {
-        return this.add(point2d.x, point2d.y);
+    public Point2d add(Point2d other) {
+        return this.add(other.x, other.y);
     }
 
-    public Point2d add(double d) {
-        return this.add(d, d);
+    public Point2d add(double value) {
+        return this.add(value, value);
     }
 
-    public Point2d sub(double d, double d2) {
-        this.x -= d;
-        this.y -= d2;
+    public Point2d sub(double dx, double dy) {
+        this.x -= dx;
+        this.y -= dy;
         return this;
     }
 
-    public Point2d sub(Point2d point2d) {
-        return this.add(point2d.x, point2d.y);
+    public Point2d sub(Point2d other) {
+        return this.add(other.x, other.y);
     }
 
-    public Point2d sub(double d) {
-        return this.add(d, d);
+    public Point2d sub(double value) {
+        return this.add(value, value);
     }
 
-    public Point2d div(double d, double d2) {
-        this.x /= d;
-        this.y /= d2;
+    public Point2d div(double dx, double dy) {
+        this.x /= dx;
+        this.y /= dy;
         return this;
     }
 
-    public Point2d div(Point2d point2d) {
-        return this.div(point2d.x, point2d.y);
+    public Point2d div(Point2d other) {
+        return this.div(other.x, other.y);
     }
 
-    public Point2d div(double d) {
-        return this.div(d, d);
+    public Point2d div(double value) {
+        return this.div(value, value);
     }
 
-    public Point2d set(double d, double d2) {
-        this.x = d;
-        this.y = d2;
+    public Point2d set(double x, double y) {
+        this.x = x;
+        this.y = y;
         return this;
     }
 
-    public Point2d set(Point2d point2d) {
-        return this.set(point2d.x, point2d.y);
+    public Point2d set(Point2d other) {
+        return this.set(other.x, other.y);
     }
 }

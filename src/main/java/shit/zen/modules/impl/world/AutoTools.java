@@ -58,15 +58,15 @@ extends Module {
         }
         if (motionEvent.isPost()) {
             if (mc.gameMode.isDestroying()) {
-                int n;
-                ItemStack itemStack;
-                if (this.checkSword.getValue() && (itemStack = mc.player.getMainHandItem()).getItem() instanceof SwordItem) {
+                int bestSlot;
+                ItemStack heldStack;
+                if (this.checkSword.getValue() && (heldStack = mc.player.getMainHandItem()).getItem() instanceof SwordItem) {
                     return;
                 }
-                BlockHitResult blockHitResult;
-                if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK && (n = this.getBestTool((blockHitResult = (BlockHitResult)mc.hitResult).getBlockPos())) != -1 && n != mc.player.getInventory().selected) {
+                BlockHitResult blockHit;
+                if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK && (bestSlot = this.getBestTool((blockHit = (BlockHitResult)mc.hitResult).getBlockPos())) != -1 && bestSlot != mc.player.getInventory().selected) {
                     this.previousSlot = mc.player.getInventory().selected;
-                    mc.player.getInventory().selected = n;
+                    mc.player.getInventory().selected = bestSlot;
                 }
             }
         } else if (!mc.gameMode.isDestroying() && this.switchBack.getValue() && this.previousSlot != -1) {
@@ -78,22 +78,22 @@ extends Module {
     private int getBestTool(BlockPos blockPos) {
         BlockState blockState = mc.level.getBlockState(blockPos);
         Block block = blockState.getBlock();
-        int n = 0;
-        float f = 1.0f;
+        int bestSlot = 0;
+        float bestSpeed = 1.0f;
         for (int i = 0; i < 9; ++i) {
-            int n2;
+            int efficiencyLevel;
             ItemStack itemStack = mc.player.getInventory().getItem(i);
             if (ItemUtil.isWeaponItem(itemStack) || itemStack.isEmpty() || blockState.isAir() || itemStack.getItem() instanceof SwordItem && !(block instanceof WebBlock)) continue;
-            float f2 = itemStack.getItem().getDestroySpeed(itemStack, blockState);
-            if (f2 > 1.0f && !(block instanceof DropExperienceBlock) && !(block instanceof RedStoneOreBlock) && (n2 = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, itemStack)) > 0) {
-                f2 += (float)(n2 * n2 + 1);
+            float destroySpeed = itemStack.getItem().getDestroySpeed(itemStack, blockState);
+            if (destroySpeed > 1.0f && !(block instanceof DropExperienceBlock) && !(block instanceof RedStoneOreBlock) && (efficiencyLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, itemStack)) > 0) {
+                destroySpeed += (float)(efficiencyLevel * efficiencyLevel + 1);
             }
-            if (!(f2 > f)) continue;
-            n = i;
-            f = f2;
+            if (!(destroySpeed > bestSpeed)) continue;
+            bestSlot = i;
+            bestSpeed = destroySpeed;
         }
-        if (f > 1.0f) {
-            return n;
+        if (bestSpeed > 1.0f) {
+            return bestSlot;
         }
         return -1;
     }

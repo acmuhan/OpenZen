@@ -17,7 +17,7 @@ import shit.zen.event.EventTarget;
 public class NoFall
 extends Module {
     public static NoFall INSTANCE;
-    private final NumberSetting fallDistanceSetting = new NumberSetting("Fall Distance", Double.valueOf(3.0), Double.valueOf(0.0), Double.valueOf(10.0), Double.valueOf(0.5));
+    private final NumberSetting fallDistanceSetting = new NumberSetting("Fall Distance", 3.0, 0.0, 10.0, 0.5);
     private boolean isFalling = false;
     private boolean sentFlyPacket = false;
     public boolean jumpLandingBoost = false;

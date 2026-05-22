@@ -16,18 +16,18 @@ import shit.zen.manager.ConfigManager;
 public final class TextureUtil {
     private static final Map<String, DynamicTexture> textureCache = new HashMap<>();
 
-    public static DynamicTexture loadTexture(String string) {
-        File file = new File(ConfigManager.CONFIG_DIR, string);
+    public static DynamicTexture loadTexture(String fileName) {
+        File file = new File(ConfigManager.CONFIG_DIR, fileName);
         if (!file.exists()) {
             System.out.println("Failed to find target file!");
             return TextureUtil.getMissingTexture();
         }
-        DynamicTexture dynamicTexture = textureCache.get(string);
+        DynamicTexture dynamicTexture = textureCache.get(fileName);
         if (dynamicTexture == null) {
             try (FileInputStream fileInputStream = new FileInputStream(file)){
                 NativeImage nativeImage = NativeImage.read(fileInputStream);
                 dynamicTexture = new DynamicTexture(nativeImage);
-                textureCache.put(string, dynamicTexture);
+                textureCache.put(fileName, dynamicTexture);
             } catch (java.io.IOException ioException) {
                 return TextureUtil.getMissingTexture();
             }
@@ -49,23 +49,23 @@ public final class TextureUtil {
         return dynamicTexture;
     }
 
-    public static HashMap<String, String> parseQueryString(String string) {
-        String[] stringArray;
-        HashMap<String, String> hashMap = new HashMap<>();
-        if (string == null) {
-            return hashMap;
+    public static HashMap<String, String> parseQueryString(String queryString) {
+        String[] pairs;
+        HashMap<String, String> result = new HashMap<>();
+        if (queryString == null) {
+            return result;
         }
-        for (String string2 : stringArray = string.split("&")) {
-            int n = string2.indexOf(61);
-            if (n != -1) {
-                String string3 = string2.substring(0, n);
-                String string4 = string2.substring(n + 1);
-                hashMap.put(URLDecoder.decode(string3, StandardCharsets.UTF_8), URLDecoder.decode(string4, StandardCharsets.UTF_8));
+        for (String pair : pairs = queryString.split("&")) {
+            int equalsIndex = pair.indexOf(61);
+            if (equalsIndex != -1) {
+                String key = pair.substring(0, equalsIndex);
+                String value = pair.substring(equalsIndex + 1);
+                result.put(URLDecoder.decode(key, StandardCharsets.UTF_8), URLDecoder.decode(value, StandardCharsets.UTF_8));
                 continue;
             }
-            hashMap.put(URLDecoder.decode(string2, StandardCharsets.UTF_8), "");
+            result.put(URLDecoder.decode(pair, StandardCharsets.UTF_8), "");
         }
-        return hashMap;
+        return result;
     }
 
     @Generated

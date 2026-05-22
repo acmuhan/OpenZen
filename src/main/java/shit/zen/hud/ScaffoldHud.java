@@ -34,62 +34,62 @@ implements IHudElement {
     }
 
     @Override
-    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float f, float f2, float f3, float f4, float f5) {
-        if (mc == null || mc.player == null || f5 <= 0.01f) {
+    public void renderGui(GuiGraphics guiGraphics, PoseStack poseStack, float x, float y, float width, float height, float alpha) {
+        if (mc == null || mc.player == null || alpha <= 0.01f) {
             return;
         }
-        ItemStack itemStack = this.getBlockItem();
-        if (itemStack.isEmpty()) {
+        ItemStack blockItem = this.getBlockItem();
+        if (blockItem.isEmpty()) {
             return;
         }
-        float f6 = f4 - 16.0f;
-        float f7 = f + 8.0f;
-        float f8 = f2 + 8.0f;
-        if (f5 > 0.1f && f6 - 4.0f > 0.0f) {
-            guiGraphics.renderItem(itemStack, (int)f7 + 2, (int)f8 + 2, 0, (int)f6 - 4);
+        float iconSize = height - 16.0f;
+        float iconX = x + 8.0f;
+        float iconY = y + 8.0f;
+        if (alpha > 0.1f && iconSize - 4.0f > 0.0f) {
+            guiGraphics.renderItem(blockItem, (int)iconX + 2, (int)iconY + 2, 0, (int)iconSize - 4);
         }
     }
 
     @Override
-    public void render(DrawContext drawContext, float f, float f2, float f3, float f4, float f5) {
-        if (mc == null || mc.player == null || f5 <= 0.01f) {
+    public void render(DrawContext drawContext, float x, float y, float width, float height, float alpha) {
+        if (mc == null || mc.player == null || alpha <= 0.01f) {
             return;
         }
-        ItemStack itemStack = this.getBlockItem();
-        if (itemStack.isEmpty()) {
+        ItemStack blockItem = this.getBlockItem();
+        if (blockItem.isEmpty()) {
             return;
         }
-        float f6 = f4 - 16.0f;
-        int n = itemStack.getCount();
-        String string = n + " blocks";
-        double d = MovementUtil.getSpeedBps();
-        String string2 = String.format("%.2fb/s", new Object[]{d});
-        float f7 = blockCountFont.getWidth(string);
-        float f8 = speedFont.getWidth(string2);
-        float f9 = Math.max(f7, f8);
-        float f10 = f3 - f6 - f9 - 32.0f;
-        float f11 = 6.0f;
-        float f12 = f + 8.0f + f6 + 8.0f;
-        float f13 = f2 + f4 / 2.0f - f11 / 2.0f;
-        float f14 = Math.min(1.0f, (float)n / 64.0f);
-        this.setX(f14);
+        float iconSize = height - 16.0f;
+        int blockCount = blockItem.getCount();
+        String countText = blockCount + " blocks";
+        double speedBps = MovementUtil.getSpeedBps();
+        String speedText = String.format("%.2fb/s", new Object[]{speedBps});
+        float countWidth = blockCountFont.getWidth(countText);
+        float speedWidth = speedFont.getWidth(speedText);
+        float maxTextWidth = Math.max(countWidth, speedWidth);
+        float barWidth = width - iconSize - maxTextWidth - 32.0f;
+        float barHeight = 6.0f;
+        float barX = x + 8.0f + iconSize + 8.0f;
+        float barY = y + height / 2.0f - barHeight / 2.0f;
+        float progressPct = Math.min(1.0f, (float)blockCount / 64.0f);
+        this.setX(progressPct);
         try (Paint paint = new Paint()){
-            paint.setColor(this.colorWithAlpha(new Color(30, 30, 30).getRGB(), f5));
-            drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(f12, f13, f10, f11, f11 / 2.0f), paint);
+            paint.setColor(this.colorWithAlpha(new Color(30, 30, 30).getRGB(), alpha));
+            drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(barX, barY, barWidth, barHeight, barHeight / 2.0f), paint);
             if (this.progressAnim.getValue() > 0.0f) {
-                paint.setColor(this.colorWithAlpha(new Color(153, 0, 255).getRGB(), f5));
-                drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(f12, f13, f10 * this.progressAnim.getValue(), f11, f11 / 2.0f), paint);
+                paint.setColor(this.colorWithAlpha(new Color(153, 0, 255).getRGB(), alpha));
+                drawContext.drawRoundedRect(RoundedRectangle.ofXYWHR(barX, barY, barWidth * this.progressAnim.getValue(), barHeight, barHeight / 2.0f), paint);
             }
         }
-        float f15 = f12 + f10 + 8.0f;
-        float f16 = f2 + f4 / 2.0f;
-        float f17 = f15 + (f9 - f7) / 2.0f;
-        float f18 = f15 + (f9 - f8) / 2.0f;
+        float textX = barX + barWidth + 8.0f;
+        float centerY = y + height / 2.0f;
+        float countX = textX + (maxTextWidth - countWidth) / 2.0f;
+        float speedX = textX + (maxTextWidth - speedWidth) / 2.0f;
         try (Paint paint = new Paint()){
-            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), f5));
-            drawContext.drawString(string, f17, f16 - blockCountFont.getMetrics().capHeight() / 2.0f + 2.0f, blockCountFont, paint);
-            paint.setColor(this.colorWithAlpha(Color.GRAY.getRGB(), f5));
-            drawContext.drawString(string2, f18, f16 + speedFont.getMetrics().capHeight() / 2.0f + 8.0f, speedFont, paint);
+            paint.setColor(this.colorWithAlpha(Color.WHITE.getRGB(), alpha));
+            drawContext.drawString(countText, countX, centerY - blockCountFont.getMetrics().capHeight() / 2.0f + 2.0f, blockCountFont, paint);
+            paint.setColor(this.colorWithAlpha(Color.GRAY.getRGB(), alpha));
+            drawContext.drawString(speedText, speedX, centerY + speedFont.getMetrics().capHeight() / 2.0f + 8.0f, speedFont, paint);
         }
     }
 
@@ -97,33 +97,33 @@ implements IHudElement {
         if (mc.player == null) {
             return ItemStack.EMPTY;
         }
-        ItemStack itemStack = mc.player.getMainHandItem();
-        if (itemStack.getItem() instanceof BlockItem) {
-            return itemStack;
+        ItemStack mainHand = mc.player.getMainHandItem();
+        if (mainHand.getItem() instanceof BlockItem) {
+            return mainHand;
         }
         for (int i = 0; i < 9; ++i) {
-            ItemStack itemStack2 = mc.player.getInventory().getItem(i);
-            if (!(itemStack2.getItem() instanceof BlockItem)) continue;
-            return itemStack2;
+            ItemStack slotItem = mc.player.getInventory().getItem(i);
+            if (!(slotItem.getItem() instanceof BlockItem)) continue;
+            return slotItem;
         }
         return ItemStack.EMPTY;
     }
 
-    private void setX(float f) {
-        long l = System.currentTimeMillis();
-        if (this.lastUpdateTime == 0L || l - this.lastUpdateTime > 1000L) {
-            this.lastUpdateTime = l;
-            this.progressAnim.setValue(f);
-            this.progressAnim.setTargetValue(f);
+    private void setX(float progressPct) {
+        long now = System.currentTimeMillis();
+        if (this.lastUpdateTime == 0L || now - this.lastUpdateTime > 1000L) {
+            this.lastUpdateTime = now;
+            this.progressAnim.setValue(progressPct);
+            this.progressAnim.setTargetValue(progressPct);
             return;
         }
-        float f2 = (float)(l - this.lastUpdateTime) / 1000.0f;
-        if (f2 <= 0.0f) {
+        float deltaSec = (float)(now - this.lastUpdateTime) / 1000.0f;
+        if (deltaSec <= 0.0f) {
             return;
         }
-        this.lastUpdateTime = l;
-        this.progressAnim.setTargetValue(f);
-        this.progressAnim.update(f2);
+        this.lastUpdateTime = now;
+        this.progressAnim.setTargetValue(progressPct);
+        this.progressAnim.update(deltaSec);
     }
 
     @Override

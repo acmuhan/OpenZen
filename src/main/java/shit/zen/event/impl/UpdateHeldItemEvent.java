@@ -17,46 +17,46 @@ implements EventMarker {
     private ItemStack itemStack;
 
     @Generated
-    public UpdateHeldItemEvent(InteractionHand interactionHand, ItemStack itemStack) {
-        this.hand = interactionHand;
+    public UpdateHeldItemEvent(InteractionHand hand, ItemStack itemStack) {
+        this.hand = hand;
         this.itemStack = itemStack;
     }
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof UpdateHeldItemEvent updateHeldItemEvent)) {
+        if (!(other instanceof UpdateHeldItemEvent otherEvent)) {
             return false;
         }
-        if (!updateHeldItemEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        InteractionHand interactionHand = this.getHand();
-        InteractionHand interactionHand2 = updateHeldItemEvent.getHand();
-        if (!Objects.equals(interactionHand, interactionHand2)) {
+        InteractionHand thisHand = this.getHand();
+        InteractionHand otherHand = otherEvent.getHand();
+        if (!Objects.equals(thisHand, otherHand)) {
             return false;
         }
-        ItemStack itemStack = this.getItemStack();
-        ItemStack itemStack2 = updateHeldItemEvent.getItemStack();
-        return !(!Objects.equals(itemStack, itemStack2));
+        ItemStack thisStack = this.getItemStack();
+        ItemStack otherStack = otherEvent.getItemStack();
+        return !(!Objects.equals(thisStack, otherStack));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof UpdateHeldItemEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof UpdateHeldItemEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        InteractionHand interactionHand = this.getHand();
-        n2 = n2 * 59 + (interactionHand == null ? 43 : interactionHand.hashCode());
-        ItemStack itemStack = this.getItemStack();
-        n2 = n2 * 59 + (itemStack == null ? 43 : itemStack.hashCode());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        InteractionHand hand = this.getHand();
+        result = result * 59 + (hand == null ? 43 : hand.hashCode());
+        ItemStack stack = this.getItemStack();
+        result = result * 59 + (stack == null ? 43 : stack.hashCode());
+        return result;
     }
 
     @Generated

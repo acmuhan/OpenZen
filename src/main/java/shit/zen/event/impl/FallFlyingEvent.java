@@ -12,30 +12,30 @@ implements EventMarker {
     private static final String TO_STRING_PREFIX = "FallFlyingEvent(pitch=";
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof FallFlyingEvent fallFlyingEvent)) {
+        if (!(other instanceof FallFlyingEvent otherEvent)) {
             return false;
         }
-        if (!fallFlyingEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        return Float.compare(this.getSpeed(), fallFlyingEvent.getSpeed()) == 0;
+        return Float.compare(this.getSpeed(), otherEvent.getSpeed()) == 0;
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof FallFlyingEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof FallFlyingEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.getSpeed());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.getSpeed());
+        return result;
     }
 
     @Generated
@@ -44,7 +44,7 @@ implements EventMarker {
     }
 
     @Generated
-    public FallFlyingEvent(float f) {
-        this.speed = f;
+    public FallFlyingEvent(float speed) {
+        this.speed = speed;
     }
 }

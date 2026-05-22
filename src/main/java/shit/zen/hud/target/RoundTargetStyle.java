@@ -57,30 +57,30 @@ extends TargetStyle {
     }
 
     @Override
-    public void render(Render2DEvent render2DEvent, LivingEntity livingEntity, SmoothAnimationTimer smoothAnimationTimer, SmoothAnimationTimer smoothAnimationTimer2, float f, float f2, float f3) {
-        float f4;
-        boolean bl;
+    public void render(Render2DEvent render2DEvent, LivingEntity livingEntity, SmoothAnimationTimer healthAnim, SmoothAnimationTimer healthLagAnim, float healthPct, float x, float y) {
+        float fade;
+        boolean shouldShow;
         for (int i = 0; i < this.equipmentSlots.length; ++i) {
             this.equipmentSlots[i] = ItemStack.EMPTY;
         }
-        float f5 = 120.0f;
-        float f6 = 38.0f;
-        float f7 = 3.0f;
-        float f8 = 5.0f;
-        boolean bl2 = livingEntity != null;
-        long l = System.currentTimeMillis();
-        boolean bl3 = false;
-        if (bl2) {
-            this.lastActiveTime = l;
+        float panelWidth = 120.0f;
+        float panelHeight = 38.0f;
+        float healthBarRadius = 3.0f;
+        float panelRadius = 5.0f;
+        boolean hasTarget = livingEntity != null;
+        long now = System.currentTimeMillis();
+        boolean targetChanged = false;
+        if (hasTarget) {
+            this.lastActiveTime = now;
             if (this.currentTarget != livingEntity) {
                 this.currentTarget = livingEntity;
                 this.lastTarget = livingEntity;
-                bl3 = true;
+                targetChanged = true;
             }
         }
-        boolean bl4 = bl = bl2 || l - this.lastActiveTime < 300L;
-        if (bl != this.visible) {
-            this.visible = bl;
+        boolean visibleNow = shouldShow = hasTarget || now - this.lastActiveTime < 300L;
+        if (shouldShow != this.visible) {
+            this.visible = shouldShow;
             if (this.visible) {
                 this.fadeAnim.animate(1.0, 0.35, Easings.EASE_OUT_POW3);
                 this.slideAnim.setCurrentValue(5.0);
@@ -94,7 +94,7 @@ extends TargetStyle {
                 this.slideAnim.animate(5.0, 0.15, Easings.EASE_IN_POW3);
                 this.contentAnim.animate(0.0, 0.15, Easings.EASE_IN_POW3);
             }
-        } else if (bl3 && this.visible) {
+        } else if (targetChanged && this.visible) {
             this.fadeAnim.animate(1.0, 0.35, Easings.EASE_OUT_POW3);
             this.slideAnim.setCurrentValue(5.0);
             this.slideAnim.setStartTime(0L);
@@ -118,84 +118,84 @@ extends TargetStyle {
         if (this.contentAnim.getStartTime() != 0L) {
             this.contentAnim.tick();
         }
-        if ((f4 = this.fadeAnim.getValueF()) <= 0.01f) {
+        if ((fade = this.fadeAnim.getValueF()) <= 0.01f) {
             return;
         }
-        LivingEntity livingEntity2 = this.currentTarget;
-        if (livingEntity2 == null) {
+        LivingEntity target = this.currentTarget;
+        if (target == null) {
             return;
         }
-        float f9 = 30.0f;
-        float f10 = 4.0f;
-        float f11 = f2 + 4.0f + 30.0f + 4.0f;
-        float f12 = 120.0f - (f11 - f2) - 3.0f;
-        float f13 = f3 + 3.0f + 2.0f;
-        float f14 = GlHelper.getFontAscent(this.nameFont);
-        float f15 = f13 + f14 + 4.0f;
+        float headBoxSize = 30.0f;
+        float headPadding = 4.0f;
+        float contentX = x + 4.0f + 30.0f + 4.0f;
+        float contentWidth = 120.0f - (contentX - x) - 3.0f;
+        float nameY = y + 3.0f + 2.0f;
+        float nameAscent = GlHelper.getFontAscent(this.nameFont);
+        float belowNameY = nameY + nameAscent + 4.0f;
         PoseStack poseStack = render2DEvent.guiGraphics().pose();
         poseStack.pushPose();
-        RenderUtil.drawBlurredRect(poseStack, f2, f3, 120.0f, 38.0f, 5.0f, 15.0f, 0.95f * f4, 0);
+        RenderUtil.drawBlurredRect(poseStack, x, y, 120.0f, 38.0f, 5.0f, 15.0f, 0.95f * fade, 0);
         poseStack.popPose();
         Renderer.renderConsumer((drawContext -> {
-            this.panelPaint.setColor(new Color(0, 0, 0, (int)((float)COLOR_PANEL_BG.getAlpha() * f4)).getRGB());
-            GlHelper.drawRoundedRect(f2, f3, 120.0f, 38.0f, 5.0f, this.panelPaint);
-            if (bl2 && livingEntity.hurtTime > this.lastHurtTime) {
+            this.panelPaint.setColor(new Color(0, 0, 0, (int)((float)COLOR_PANEL_BG.getAlpha() * fade)).getRGB());
+            GlHelper.drawRoundedRect(x, y, 120.0f, 38.0f, 5.0f, this.panelPaint);
+            if (hasTarget && livingEntity.hurtTime > this.lastHurtTime) {
                 this.scaleAnim.setCurrentValue(0.7f);
                 this.scaleAnim.animate(1.0, 1.5, Easings.EASE_OUT_ELASTIC);
             }
-            if (bl2) {
+            if (hasTarget) {
                 this.lastHurtTime = livingEntity.hurtTime;
             }
             this.scaleAnim.tick();
             float scaleValue = this.scaleAnim.getValueF();
-            float minScale = (float)Math.max(0.7, f4);
+            float minScale = (float)Math.max(0.7, fade);
             float combinedScale = scaleValue * minScale;
             float headSize = 30.0f * combinedScale;
-            float headX = f2 + 4.0f + (30.0f - headSize) / 2.0f;
-            float headY = f3 + (38.0f - headSize) / 2.0f;
-            if (livingEntity2 instanceof AbstractClientPlayer abstractClientPlayer) {
-                GlHelper.drawPlayerHeadRounded(abstractClientPlayer, headX, headY, headSize, headSize, f4, 5.0f * combinedScale);
+            float headX = x + 4.0f + (30.0f - headSize) / 2.0f;
+            float headY = y + (38.0f - headSize) / 2.0f;
+            if (target instanceof AbstractClientPlayer abstractClientPlayer) {
+                GlHelper.drawPlayerHeadRounded(abstractClientPlayer, headX, headY, headSize, headSize, fade, 5.0f * combinedScale);
             }
             float slideOff = this.slideAnim.getValueF();
-            String string = livingEntity2 == mc.player ? NameProtect.getProtectedName() : livingEntity2.getName().getString();
-            GlHelper.drawTextShadowLegacy(string, f11, f13 + 1.0f + slideOff, this.nameFont, new Color(1.0f, 1.0f, 1.0f, f4).getRGB());
-            float healthY = f15 + 16.0f;
+            String displayName = target == mc.player ? NameProtect.getProtectedName() : target.getName().getString();
+            GlHelper.drawTextShadowLegacy(displayName, contentX, nameY + 1.0f + slideOff, this.nameFont, new Color(1.0f, 1.0f, 1.0f, fade).getRGB());
+            float healthY = belowNameY + 16.0f;
             float healthH = 4.0f;
-            float healthW = f12 - 2.0f;
-            this.healthBgPaint.setColor(new Color(0, 0, 0, (int)((float)COLOR_HEALTH_BG.getAlpha() * f4)).getRGB());
-            GlHelper.drawRoundedRect(f11, healthY, healthW, healthH, 3.0f, this.healthBgPaint);
-            this.healthLagPaint.setColor(new Color(99, 99, 99, (int)((float)COLOR_HEALTH_LAG.getAlpha() * f4)).getRGB());
-            float lagWidth = smoothAnimationTimer2.getValueF() * healthW;
-            GlHelper.drawRoundedRect(f11, healthY, lagWidth, healthH, 3.0f, this.healthLagPaint);
+            float healthW = contentWidth - 2.0f;
+            this.healthBgPaint.setColor(new Color(0, 0, 0, (int)((float)COLOR_HEALTH_BG.getAlpha() * fade)).getRGB());
+            GlHelper.drawRoundedRect(contentX, healthY, healthW, healthH, 3.0f, this.healthBgPaint);
+            this.healthLagPaint.setColor(new Color(99, 99, 99, (int)((float)COLOR_HEALTH_LAG.getAlpha() * fade)).getRGB());
+            float lagWidth = healthLagAnim.getValueF() * healthW;
+            GlHelper.drawRoundedRect(contentX, healthY, lagWidth, healthH, 3.0f, this.healthLagPaint);
             float contentVal = this.contentAnim.getValueF();
-            float barWidth = smoothAnimationTimer.getValueF() * healthW * contentVal;
-            Color color = new Color(COLOR_HEALTH_BAR.getRed(), COLOR_HEALTH_BAR.getGreen(), COLOR_HEALTH_BAR.getBlue(), (int)(255.0f * f4));
-            Color color2 = new Color(COLOR_HEALTH_BAR2.getRed(), COLOR_HEALTH_BAR2.getGreen(), COLOR_HEALTH_BAR2.getBlue(), (int)(255.0f * f4));
-            GlHelper.drawGradientRoundedRect(f11, healthY, barWidth, healthH, 3.0f, color, color2);
+            float barWidth = healthAnim.getValueF() * healthW * contentVal;
+            Color barColor1 = new Color(COLOR_HEALTH_BAR.getRed(), COLOR_HEALTH_BAR.getGreen(), COLOR_HEALTH_BAR.getBlue(), (int)(255.0f * fade));
+            Color barColor2 = new Color(COLOR_HEALTH_BAR2.getRed(), COLOR_HEALTH_BAR2.getGreen(), COLOR_HEALTH_BAR2.getBlue(), (int)(255.0f * fade));
+            GlHelper.drawGradientRoundedRect(contentX, healthY, barWidth, healthH, 3.0f, barColor1, barColor2);
         }));
-        if (livingEntity2 != null) {
-            this.equipmentSlots[0] = livingEntity2.getItemBySlot(EquipmentSlot.HEAD);
-            this.equipmentSlots[1] = livingEntity2.getItemBySlot(EquipmentSlot.CHEST);
-            this.equipmentSlots[2] = livingEntity2.getItemBySlot(EquipmentSlot.LEGS);
-            this.equipmentSlots[3] = livingEntity2.getItemBySlot(EquipmentSlot.FEET);
+        if (target != null) {
+            this.equipmentSlots[0] = target.getItemBySlot(EquipmentSlot.HEAD);
+            this.equipmentSlots[1] = target.getItemBySlot(EquipmentSlot.CHEST);
+            this.equipmentSlots[2] = target.getItemBySlot(EquipmentSlot.LEGS);
+            this.equipmentSlots[3] = target.getItemBySlot(EquipmentSlot.FEET);
         }
-        float f16 = f11;
-        float f17 = 0.8f;
-        float f18 = 16.0f * f17;
-        float f19 = 2.0f;
+        float itemX = contentX;
+        float itemScale = 0.8f;
+        float itemSize = 16.0f * itemScale;
+        float itemGap = 2.0f;
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         for (ItemStack itemStack : this.equipmentSlots) {
             if (itemStack != null && !itemStack.isEmpty()) {
-                PoseStack poseStack2 = render2DEvent.guiGraphics().pose();
-                poseStack2.pushPose();
-                poseStack2.translate(f16, f15, 0.0f);
-                poseStack2.scale(f17, f17, 1.0f);
-                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, f4);
+                PoseStack itemPose = render2DEvent.guiGraphics().pose();
+                itemPose.pushPose();
+                itemPose.translate(itemX, belowNameY, 0.0f);
+                itemPose.scale(itemScale, itemScale, 1.0f);
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, fade);
                 render2DEvent.guiGraphics().renderItem(itemStack, 0, 0);
-                poseStack2.popPose();
+                itemPose.popPose();
             }
-            f16 += f18 + f19;
+            itemX += itemSize + itemGap;
         }
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();

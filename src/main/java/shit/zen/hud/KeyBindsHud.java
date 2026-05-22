@@ -44,78 +44,110 @@ extends HudElement {
 
     public static final class KeyBindRow {
         public final KeyBindsHud parent;
-        public Module module;
-        public KeyBindsHud.KeyBindEntry entry;
-        public String name;
-        public String key;
-        public boolean enabled = true;
+        public final Module module;
+        public String displayName;
+        public String keyName;
+        public boolean enabled;
         public boolean visible = true;
-        public boolean rightAligned = false;
+        public final boolean rightAligned;
+        public boolean animatingOut = false;
         public boolean animatingIn = false;
-        public float alpha = 1.0f;
-        public float targetY;
-        public float currentY;
-        public float nameWidth;
+        public boolean removing = false;
         public float slideX;
         public float opacity;
         public float widthValue;
         public float rowHeightValue;
         public float alphaValue;
-        public String displayName;
-        public String keyName;
-
-        public float getKeyWidth() {
-            return this.widthValue;
-        }
-
-        public shit.zen.render.FontRenderer getFittingFont(shit.zen.render.FontRenderer base, float maxWidth) {
-            return base;
-        }
-        public boolean removing = false;
-        public final shit.zen.utils.animation.SmoothAnimationTimer fadeAnim = new shit.zen.utils.animation.SmoothAnimationTimer();
-        public final shit.zen.utils.animation.SmoothAnimationTimer slideAnim = new shit.zen.utils.animation.SmoothAnimationTimer();
-        public final shit.zen.utils.animation.SmoothAnimationTimer heightAnim = new shit.zen.utils.animation.SmoothAnimationTimer();
-        public final shit.zen.utils.animation.SmoothAnimationTimer alphaAnim = new shit.zen.utils.animation.SmoothAnimationTimer();
-        public final shit.zen.utils.animation.SmoothAnimationTimer widthAnim = new shit.zen.utils.animation.SmoothAnimationTimer();
-
-        public void tick() {
-            float target = this.removing ? 0.0f : 1.0f;
-            this.alpha += (target - this.alpha) * 0.18f;
-            this.fadeAnim.tick();
-            this.slideAnim.tick();
-            this.heightAnim.tick();
-            this.alphaAnim.tick();
-            this.widthAnim.tick();
-        }
+        private float nameWidth;
+        private FontRenderer cachedFont;
+        private String cachedKeyName;
+        private float cachedMaxWidth;
+        private float cachedKeyWidth;
+        public final SmoothAnimationTimer slideAnim = new SmoothAnimationTimer();
+        public final SmoothAnimationTimer fadeAnim = new SmoothAnimationTimer();
+        public final SmoothAnimationTimer heightAnim = new SmoothAnimationTimer();
+        public final SmoothAnimationTimer alphaAnim = new SmoothAnimationTimer();
 
         public KeyBindRow(KeyBindsHud parent, Module module, KeyBindsHud.KeyBindEntry entry) {
             this.parent = parent;
             this.module = module;
-            this.entry = entry;
-            this.name = entry != null ? entry.name : module.getName();
-            this.key = entry != null ? entry.key : module.getBind().getName();
+            this.update(entry);
+            this.rightAligned = parent.isRightAligned;
+            this.slideAnim.setCurrentValue(this.rightAligned ? 20.0 : -20.0);
+            this.heightAnim.setCurrentValue(0.0);
+            this.alphaAnim.setCurrentValue(0.0);
+        }
+
+        public void update(KeyBindsHud.KeyBindEntry entry) {
+            this.displayName = entry.name;
+            String newKey = entry.key;
+            if (!java.util.Objects.equals(this.keyName, newKey)) {
+                this.cachedFont = null;
+            }
+            this.keyName = newKey;
+            this.enabled = entry.enabled;
+            this.nameWidth = GlHelper.getStringWidth(this.displayName, this.parent.keyFont);
         }
 
         public void startRemove() {
+            if (this.removing) return;
             this.removing = true;
+            this.animatingOut = true;
+            this.animatingIn = false;
+            float distance = 40.0f;
+            this.slideAnim.animate(this.rightAligned ? distance : -distance, 0.2, Easings.EASE_IN_POW3);
+            this.heightAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
+            this.alphaAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
         }
 
         public void cancelRemove() {
+            if (!this.removing) return;
             this.removing = false;
+            this.animatingOut = false;
+            this.animatingIn = true;
         }
 
-        public void Đ(KeyBindsHud.KeyBindEntry e) {
-            this.entry = e;
-            this.name = e != null ? e.name : this.module.getName();
-            this.key = e != null ? e.key : this.module.getBind().getName();
-        }
-
-        public boolean isRemoveDone() {
-            return this.removing && this.alpha <= 0.01f;
+        public void tick() {
+            this.slideAnim.tick();
+            this.fadeAnim.tick();
+            this.heightAnim.tick();
+            this.alphaAnim.tick();
         }
 
         public float getNameWidth() {
             return this.nameWidth;
+        }
+
+        public boolean isRemoveDone() {
+            return this.removing && this.heightAnim.isDone() && this.alphaAnim.isDone();
+        }
+
+        public FontRenderer getFittingFont(FontRenderer baseFont, float maxWidth) {
+            if (this.keyName == null) {
+                return baseFont;
+            }
+            if (this.cachedFont != null
+                    && this.keyName.equals(this.cachedKeyName)
+                    && this.cachedMaxWidth == maxWidth) {
+                return this.cachedFont;
+            }
+            float baseWidth = GlHelper.getStringWidth(this.keyName, baseFont);
+            FontRenderer fit = baseFont;
+            if (baseWidth > maxWidth) {
+                float scale = maxWidth / baseWidth;
+                fit = new FontRenderer(baseFont.getFontName(), baseFont.getSize() * scale);
+                this.cachedKeyWidth = GlHelper.getStringWidth(this.keyName, fit);
+            } else {
+                this.cachedKeyWidth = baseWidth;
+            }
+            this.cachedFont = fit;
+            this.cachedKeyName = this.keyName;
+            this.cachedMaxWidth = maxWidth;
+            return fit;
+        }
+
+        public float getKeyWidth() {
+            return this.cachedKeyWidth;
         }
     }
 
@@ -152,9 +184,9 @@ extends HudElement {
         if (this.maxWidth >= 0.0f) {
             return;
         }
-        this.maxWidth = GlHelper.getStringWidth("", this.bindFont);
+        this.maxWidth = GlHelper.getStringWidth("\uE1C6", this.bindFont);
         this.totalHeight = GlHelper.getStringWidth("Hotkeys", this.nameFont);
-        this.visibleHeight = GlHelper.getStringWidth("", this.bindFont);
+        this.visibleHeight = GlHelper.getStringWidth("\uE9F6", this.bindFont);
         this.scrollOffset = GlHelper.getFontAscent(this.nameFont);
         this.alpha = GlHelper.getFontAscent(this.keyFont);
         this.rowHeight = GlHelper.getFontAscent(this.bindFont);
@@ -162,7 +194,6 @@ extends HudElement {
 
     @EventTarget
     public void onTick(TickEvent tickEvent) {
-        Object object;
         if (mc.player == null) {
             this.rowList.clear();
             this.rowMap.clear();
@@ -171,8 +202,8 @@ extends HudElement {
         }
         this.rowMap.clear();
         this.removedRows.clear();
-        List<Module> list = ZenClient.getInstance().getModuleManager().getModules();
-        for (Module module : list) {
+        List<Module> moduleList = ZenClient.getInstance().getModuleManager().getModules();
+        for (Module module : moduleList) {
             KeyBindsHud.KeyBindEntry entry = null;
             if (module instanceof TripleProvider tp) {
                 Triple<String, String, Boolean> triple = (Triple<String, String, Boolean>) tp.getTriple();
@@ -194,30 +225,30 @@ extends HudElement {
             if (this.rowMap.containsKey(row.module)) continue;
             row.startRemove();
         }
-        boolean bl = false;
+        boolean added = false;
         for (java.util.Map.Entry<Module, KeyBindsHud.KeyBindEntry> e : this.rowMap.entrySet()) {
             KeyBindsHud.KeyBindRow existing = this.removedRows.get(e.getKey());
             if (existing != null) {
                 if (existing.removing) existing.cancelRemove();
-                existing.Đ(e.getValue());
+                existing.update(e.getValue());
                 continue;
             }
             this.rowList.add(new KeyBindsHud.KeyBindRow(this, e.getKey(), e.getValue()));
-            bl = true;
+            added = true;
         }
-        if (bl) {
+        if (added) {
             this.rowList.sort((a, b) -> Double.compare(b.getNameWidth(), a.getNameWidth()));
         }
     }
 
     @Override
-    public void onRender2D(Render2DEvent render2DEvent, float f, float f2) {
+    public void onRender2D(Render2DEvent render2DEvent, float x, float y) {
     }
 
     @Override
-    public void onGlRender(GlRenderEvent glRenderEvent, float f, float f2) {
-        float f3;
-        boolean bl;
+    public void onGlRender(GlRenderEvent glRenderEvent, float x, float y) {
+        float panelWidth;
+        boolean rightAligned;
         this.initSettings();
         this.rowList.removeIf(KeyBindsHud.KeyBindRow::isRemoveDone);
         this.rowList.forEach(KeyBindsHud.KeyBindRow::tick);
@@ -226,82 +257,82 @@ extends HudElement {
         if (this.rowList.isEmpty() && this.scrollAnim.isDone() && this.fadeAnim.isDone()) {
             return;
         }
-        boolean bl2 = bl = f > (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
-        if (this.isRightAligned != bl) {
-            this.isRightAligned = bl;
+        boolean rightSide = rightAligned = x > (float)mc.getWindow().getGuiScaledWidth() / 2.0f;
+        if (this.isRightAligned != rightAligned) {
+            this.isRightAligned = rightAligned;
         }
-        float f4 = this.scrollOffset + 10.0f;
-        float f5 = this.maxWidth + 3.0f + this.totalHeight + 10.0f;
-        float f6 = this.alpha + 10.0f;
-        float f7 = f5;
+        float headerHeight = this.scrollOffset + 10.0f;
+        float headerWidth = this.maxWidth + 3.0f + this.totalHeight + 10.0f;
+        float rowH = this.alpha + 10.0f;
+        float targetWidth = headerWidth;
         if (!this.rowList.isEmpty()) {
-            f3 = 0.0f;
-            for (KeyBindsHud.KeyBindRow keyBindsHud$KeyBindRow : this.rowList) {
-                float f8 = keyBindsHud$KeyBindRow.enabled ? f6 + 3.0f : 0.0f;
-                float f9 = f8 + (keyBindsHud$KeyBindRow.getNameWidth() + 10.0f);
-                if (!(f9 > f3)) continue;
-                f3 = f9;
+            panelWidth = 0.0f;
+            for (KeyBindsHud.KeyBindRow row : this.rowList) {
+                float keyBoxWidth = row.enabled ? rowH + 3.0f : 0.0f;
+                float rowWidth = keyBoxWidth + (row.getNameWidth() + 10.0f);
+                if (!(rowWidth > panelWidth)) continue;
+                panelWidth = rowWidth;
             }
-            f7 = Math.max(f5, f3);
+            targetWidth = Math.max(headerWidth, panelWidth);
         }
         if (this.scrollAnim.isDone() && this.rowList.isEmpty()) {
-            this.scrollAnim.setCurrentValue(f7);
+            this.scrollAnim.setCurrentValue(targetWidth);
         }
-        this.scrollAnim.animate(f7, 0.2, Easings.EASE_OUT_SINE);
+        this.scrollAnim.animate(targetWidth, 0.2, Easings.EASE_OUT_SINE);
         if (this.rowList.isEmpty()) {
             this.fadeAnim.animate(0.0, 0.2, Easings.EASE_IN_POW3);
         } else {
             this.fadeAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
         }
-        f3 = this.scrollAnim.getValueF();
-        float f10 = this.fadeAnim.getValueF();
-        float f11 = f2 + f4 + 3.0f;
-        for (KeyBindsHud.KeyBindRow keyBindsHud$KeyBindRow : this.rowList) {
-            if (keyBindsHud$KeyBindRow.visible) {
-                keyBindsHud$KeyBindRow.visible = false;
-                keyBindsHud$KeyBindRow.fadeAnim.setCurrentValue(f11);
-                keyBindsHud$KeyBindRow.slideAnim.setCurrentValue(keyBindsHud$KeyBindRow.rightAligned ? 20.0 : -20.0);
-                keyBindsHud$KeyBindRow.heightAnim.setCurrentValue(0.0);
-                keyBindsHud$KeyBindRow.alphaAnim.setCurrentValue(0.0);
-                keyBindsHud$KeyBindRow.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
-                keyBindsHud$KeyBindRow.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
-                keyBindsHud$KeyBindRow.alphaAnim.animate(f6 + 3.0f, 0.2, Easings.EASE_OUT_POW3);
-            } else if (keyBindsHud$KeyBindRow.animatingIn) {
-                keyBindsHud$KeyBindRow.animatingIn = false;
-                keyBindsHud$KeyBindRow.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
-                keyBindsHud$KeyBindRow.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
-                keyBindsHud$KeyBindRow.alphaAnim.animate(f6 + 3.0f, 0.2, Easings.EASE_OUT_POW3);
+        panelWidth = this.scrollAnim.getValueF();
+        float globalAlpha = this.fadeAnim.getValueF();
+        float rowY = y + headerHeight + 3.0f;
+        for (KeyBindsHud.KeyBindRow row : this.rowList) {
+            if (row.visible) {
+                row.visible = false;
+                row.fadeAnim.setCurrentValue(rowY);
+                row.slideAnim.setCurrentValue(row.rightAligned ? 20.0 : -20.0);
+                row.heightAnim.setCurrentValue(0.0);
+                row.alphaAnim.setCurrentValue(0.0);
+                row.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
+                row.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
+                row.alphaAnim.animate(rowH + 3.0f, 0.2, Easings.EASE_OUT_POW3);
+            } else if (row.animatingIn) {
+                row.animatingIn = false;
+                row.slideAnim.animate(0.0, 0.2, Easings.EASE_OUT_POW3);
+                row.heightAnim.animate(1.0, 0.2, Easings.EASE_OUT_POW3);
+                row.alphaAnim.animate(rowH + 3.0f, 0.2, Easings.EASE_OUT_POW3);
             }
-            keyBindsHud$KeyBindRow.fadeAnim.animate(f11, 0.15, Easings.EASE_OUT_SINE);
-            f11 += keyBindsHud$KeyBindRow.alphaAnim.getValueF();
+            row.fadeAnim.animate(rowY, 0.15, Easings.EASE_OUT_SINE);
+            rowY += row.alphaAnim.getValueF();
         }
-        Object object = glRenderEvent.drawContext();
-        this.renderRows((DrawContext)object, f, f2, f3, this.isRightAligned, f10, f4, f6);
-        this.setWidth(f3);
-        this.setHeight(f11 - f2);
+        Object drawCtx = glRenderEvent.drawContext();
+        this.renderRows((DrawContext)drawCtx, x, y, panelWidth, this.isRightAligned, globalAlpha, headerHeight, rowH);
+        this.setWidth(panelWidth);
+        this.setHeight(rowY - y);
     }
 
-    private void renderRows(DrawContext drawContext, float f, float f2, float f3, boolean bl, float f4, float f5, float f6) {
-        float f7;
-        float f8;
-        float f9;
-        float f10;
-        if (f4 <= 0.01f) {
+    private void renderRows(DrawContext drawContext, float x, float y, float width, boolean rightAligned, float alpha, float headerHeight, float rowH) {
+        float keyBoxLeft;
+        float boxWidth;
+        float rowAlpha;
+        float rowHeightFactor;
+        if (alpha <= 0.01f) {
             return;
         }
-        this.enabledPaint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(190.0f * f4)));
-        GlHelper.drawRoundedRect(f, f2, f3, f5, 4.5f, this.enabledPaint);
-        float f11 = f2 + 5.0f + (f5 - 10.0f - this.scrollOffset) / 2.0f + 1.0f;
-        int n = ColorUtil.fromARGB(255, 255, 255, (int)(255.0f * f4));
-        this.disabledPaint.setColor(n);
-        if (bl) {
-            float f12 = f + f3 - 5.0f - this.maxWidth;
-            float f13 = f12 - 3.0f - this.totalHeight;
-            GlHelper.drawTextWithShadow("Hotkeys", f13, f11, this.nameFont, this.disabledPaint);
-            GlHelper.drawTextWithShadow("", f12, f11 + 1.0f, this.bindFont, this.disabledPaint);
+        this.enabledPaint.setColor(ColorUtil.fromARGB(0, 0, 0, (int)(190.0f * alpha)));
+        GlHelper.drawRoundedRect(x, y, width, headerHeight, 4.5f, this.enabledPaint);
+        float headerTextY = y + 5.0f + (headerHeight - 10.0f - this.scrollOffset) / 2.0f + 1.0f;
+        int whiteColor = ColorUtil.fromARGB(255, 255, 255, (int)(255.0f * alpha));
+        this.disabledPaint.setColor(whiteColor);
+        if (rightAligned) {
+            float iconX = x + width - 5.0f - this.maxWidth;
+            float titleX = iconX - 3.0f - this.totalHeight;
+            GlHelper.drawTextWithShadow("Hotkeys", titleX, headerTextY, this.nameFont, this.disabledPaint);
+            GlHelper.drawTextWithShadow("\uE1C6", iconX, headerTextY + 1.0f, this.bindFont, this.disabledPaint);
         } else {
-            GlHelper.drawTextWithShadow("", f + 5.0f, f11 + 1.0f, this.bindFont, this.disabledPaint);
-            GlHelper.drawTextWithShadow("Hotkeys", f + 5.0f + this.maxWidth + 3.0f, f11, this.nameFont, this.disabledPaint);
+            GlHelper.drawTextWithShadow("\uE1C6", x + 5.0f, headerTextY + 1.0f, this.bindFont, this.disabledPaint);
+            GlHelper.drawTextWithShadow("Hotkeys", x + 5.0f + this.maxWidth + 3.0f, headerTextY, this.nameFont, this.disabledPaint);
         }
         if (this.rowList.isEmpty()) {
             return;
@@ -311,85 +342,85 @@ extends HudElement {
             this.iconPaths[i].reset();
             this.iconLoaded[i] = false;
         }
-        for (KeyBindsHud.KeyBindRow keyBindsHud$KeyBindRow : this.rowList) {
-            f10 = keyBindsHud$KeyBindRow.heightAnim.getValueF();
-            if (f10 <= 0.0f) {
-                keyBindsHud$KeyBindRow.slideX = 0.0f;
+        for (KeyBindsHud.KeyBindRow row : this.rowList) {
+            rowHeightFactor = row.heightAnim.getValueF();
+            if (rowHeightFactor <= 0.0f) {
+                row.slideX = 0.0f;
                 continue;
             }
-            f9 = f4 * f10;
-            if (f9 <= 0.0f) {
-                keyBindsHud$KeyBindRow.slideX = 0.0f;
+            rowAlpha = alpha * rowHeightFactor;
+            if (rowAlpha <= 0.0f) {
+                row.slideX = 0.0f;
                 continue;
             }
-            keyBindsHud$KeyBindRow.slideX = f9;
-            float f14 = f + keyBindsHud$KeyBindRow.slideAnim.getValueF();
-            float f15 = keyBindsHud$KeyBindRow.fadeAnim.getValueF();
-            f8 = keyBindsHud$KeyBindRow.getNameWidth() + 10.0f;
-            keyBindsHud$KeyBindRow.opacity = f15;
-            keyBindsHud$KeyBindRow.widthValue = f8;
-            int n2 = Math.max(0, Math.min(90, Math.round(90.0f * f9)));
-            Path path = this.iconPaths[n2];
+            row.slideX = rowAlpha;
+            float rowX = x + row.slideAnim.getValueF();
+            float rowFadeY = row.fadeAnim.getValueF();
+            boxWidth = row.getNameWidth() + 10.0f;
+            row.opacity = rowFadeY;
+            row.widthValue = boxWidth;
+            int alphaBucket = Math.max(0, Math.min(90, Math.round(90.0f * rowAlpha)));
+            Path path = this.iconPaths[alphaBucket];
             if (path == null) {
-                this.iconPaths[n2] = path = new Path();
+                this.iconPaths[alphaBucket] = path = new Path();
             }
-            this.iconLoaded[n2] = true;
-            if (keyBindsHud$KeyBindRow.enabled) {
-                if (bl) {
-                    f7 = f14 + f3 - f6;
-                    float f16 = f7 - 3.0f - f8;
-                    keyBindsHud$KeyBindRow.rowHeightValue = f7;
-                    keyBindsHud$KeyBindRow.alphaValue = f16;
-                    path.addRoundedRect(RoundedRectangle.ofXYWHR(f16, f15, f8, f6, 4.5f));
-                    path.addRoundedRect(RoundedRectangle.ofXYWHR(f7, f15, f6, f6, 4.5f));
+            this.iconLoaded[alphaBucket] = true;
+            if (row.enabled) {
+                if (rightAligned) {
+                    keyBoxLeft = rowX + width - rowH;
+                    float nameBoxLeft = keyBoxLeft - 3.0f - boxWidth;
+                    row.rowHeightValue = keyBoxLeft;
+                    row.alphaValue = nameBoxLeft;
+                    path.addRoundedRect(RoundedRectangle.ofXYWHR(nameBoxLeft, rowFadeY, boxWidth, rowH, 4.5f));
+                    path.addRoundedRect(RoundedRectangle.ofXYWHR(keyBoxLeft, rowFadeY, rowH, rowH, 4.5f));
                     continue;
                 }
-                keyBindsHud$KeyBindRow.rowHeightValue = f14;
-                keyBindsHud$KeyBindRow.alphaValue = f14 + f6 + 3.0f;
-                path.addRoundedRect(RoundedRectangle.ofXYWHR(f14, f15, f6, f6, 4.5f));
-                path.addRoundedRect(RoundedRectangle.ofXYWHR(keyBindsHud$KeyBindRow.alphaValue, f15, f8, f6, 4.5f));
+                row.rowHeightValue = rowX;
+                row.alphaValue = rowX + rowH + 3.0f;
+                path.addRoundedRect(RoundedRectangle.ofXYWHR(rowX, rowFadeY, rowH, rowH, 4.5f));
+                path.addRoundedRect(RoundedRectangle.ofXYWHR(row.alphaValue, rowFadeY, boxWidth, rowH, 4.5f));
                 continue;
             }
-            keyBindsHud$KeyBindRow.alphaValue = f7 = bl ? f14 + f3 - f8 : f14;
-            keyBindsHud$KeyBindRow.rowHeightValue = f7;
-            path.addRoundedRect(RoundedRectangle.ofXYWHR(f7, f15, f8, f6, 4.5f));
+            row.alphaValue = keyBoxLeft = rightAligned ? rowX + width - boxWidth : rowX;
+            row.rowHeightValue = keyBoxLeft;
+            path.addRoundedRect(RoundedRectangle.ofXYWHR(keyBoxLeft, rowFadeY, boxWidth, rowH, 4.5f));
         }
         for (int i = 0; i < this.iconPaths.length; ++i) {
             if (!this.iconLoaded[i]) continue;
             this.backgroundPaint.setColor(ColorUtil.fromARGB(0, 0, 0, i));
             drawContext.drawPath(this.iconPaths[i], this.backgroundPaint);
         }
-        for (KeyBindsHud.KeyBindRow keyBindsHud$KeyBindRow : this.rowList) {
-            if (keyBindsHud$KeyBindRow.slideX <= 0.0f) continue;
-            f10 = keyBindsHud$KeyBindRow.opacity;
-            f9 = keyBindsHud$KeyBindRow.widthValue;
-            int n3 = (int)(255.0f * keyBindsHud$KeyBindRow.slideX);
-            int n4 = ColorUtil.fromARGB(255, 255, 255, n3);
-            f8 = f10 + 5.0f + (f6 - 10.0f - this.alpha) / 2.0f;
-            float f17 = f10 + 5.0f + (f6 - 10.0f - this.rowHeight) / 2.0f + 2.5f;
-            this.disabledPaint.setColor(n4);
-            if (keyBindsHud$KeyBindRow.enabled) {
-                float f18 = keyBindsHud$KeyBindRow.rowHeightValue;
-                f7 = keyBindsHud$KeyBindRow.alphaValue;
-                if (bl) {
-                    float f19 = f7 + f9 - 5.0f - keyBindsHud$KeyBindRow.getNameWidth();
-                    GlHelper.drawTextWithShadow(keyBindsHud$KeyBindRow.displayName, f19, f8, this.keyFont, this.disabledPaint);
+        for (KeyBindsHud.KeyBindRow row : this.rowList) {
+            if (row.slideX <= 0.0f) continue;
+            rowHeightFactor = row.opacity;
+            rowAlpha = row.widthValue;
+            int alphaInt = (int)(255.0f * row.slideX);
+            int rowColor = ColorUtil.fromARGB(255, 255, 255, alphaInt);
+            boxWidth = rowHeightFactor + 5.0f + (rowH - 10.0f - this.alpha) / 2.0f;
+            float keyTextY = rowHeightFactor + 5.0f + (rowH - 10.0f - this.rowHeight) / 2.0f + 2.5f;
+            this.disabledPaint.setColor(rowColor);
+            if (row.enabled) {
+                float keyBoxX = row.rowHeightValue;
+                keyBoxLeft = row.alphaValue;
+                if (rightAligned) {
+                    float nameX = keyBoxLeft + rowAlpha - 5.0f - row.getNameWidth();
+                    GlHelper.drawTextWithShadow(row.displayName, nameX, boxWidth, this.keyFont, this.disabledPaint);
                 } else {
-                    GlHelper.drawTextWithShadow(keyBindsHud$KeyBindRow.displayName, f7 + 5.0f, f8, this.keyFont, this.disabledPaint);
+                    GlHelper.drawTextWithShadow(row.displayName, keyBoxLeft + 5.0f, boxWidth, this.keyFont, this.disabledPaint);
                 }
-                if (keyBindsHud$KeyBindRow.keyName == null) {
-                    float f20 = f18 + (f6 - this.visibleHeight) / 2.0f;
-                    GlHelper.drawTextWithShadow("", f20, f17, this.bindFont, this.disabledPaint);
+                if (row.keyName == null) {
+                    float iconX = keyBoxX + (rowH - this.visibleHeight) / 2.0f;
+                    GlHelper.drawTextWithShadow("\uE9F6", iconX, keyTextY, this.bindFont, this.disabledPaint);
                     continue;
                 }
-                FontRenderer fontRenderer = keyBindsHud$KeyBindRow.getFittingFont(this.keyFont, f6 - 5.0f);
-                float f21 = keyBindsHud$KeyBindRow.getKeyWidth();
-                float f22 = f18 + (f6 - f21) / 2.0f;
-                float f23 = f10 + 5.0f + (f6 - 10.0f - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f;
-                GlHelper.drawTextWithShadow(keyBindsHud$KeyBindRow.keyName, f22, f23, fontRenderer, this.disabledPaint);
+                FontRenderer fontRenderer = row.getFittingFont(this.keyFont, rowH - 5.0f);
+                float keyWidth = row.getKeyWidth();
+                float keyTextX = keyBoxX + (rowH - keyWidth) / 2.0f;
+                float keyDrawY = rowHeightFactor + 5.0f + (rowH - 10.0f - (float)GlHelper.getFontAscent(fontRenderer)) / 2.0f;
+                GlHelper.drawTextWithShadow(row.keyName, keyTextX, keyDrawY, fontRenderer, this.disabledPaint);
                 continue;
             }
-            GlHelper.drawTextWithShadow(keyBindsHud$KeyBindRow.displayName, keyBindsHud$KeyBindRow.alphaValue + 5.0f, f8, this.keyFont, this.disabledPaint);
+            GlHelper.drawTextWithShadow(row.displayName, row.alphaValue + 5.0f, boxWidth, this.keyFont, this.disabledPaint);
         }
     }
 

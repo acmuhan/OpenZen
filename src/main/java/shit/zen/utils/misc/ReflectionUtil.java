@@ -56,50 +56,50 @@ public final class ReflectionUtil {
         }
     }
 
-    public static void setClassRedefinedCount(Class<?> clazz, int n) {
+    public static void setClassRedefinedCount(Class<?> clazz, int count) {
         if (clazz == null) return;
         try {
             Field field = Class.class.getDeclaredField("classRedefinedCount");
             UnsafeUtil.makeAccessible(field);
-            field.setInt(clazz, n);
+            field.setInt(clazz, count);
         } catch (Throwable throwable) {
             throw new Error(throwable);
         }
     }
 
-    public static void incrementClassRedefinedCount(Class<?> clazz, int n) {
+    public static void incrementClassRedefinedCount(Class<?> clazz, int delta) {
         if (clazz == null) return;
         try {
             Field field = Class.class.getDeclaredField("classRedefinedCount");
             UnsafeUtil.makeAccessible(field);
-            field.setInt(clazz, field.getInt(clazz) + n);
+            field.setInt(clazz, field.getInt(clazz) + delta);
         } catch (Throwable throwable) {
             throw new Error(throwable);
         }
     }
 
-    public static void setJumpDelay(int n) {
+    public static void setJumpDelay(int delay) {
         if (ClientBase.mc == null || ClientBase.mc.player == null) return;
-        setJumpDelay(ClientBase.mc.player, n);
+        setJumpDelay(ClientBase.mc.player, delay);
     }
 
-    public static void setJumpDelay(LivingEntity livingEntity, int n) {
+    public static void setJumpDelay(LivingEntity livingEntity, int delay) {
         if (livingEntity == null) return;
         try {
             Field field = findField(livingEntity.getClass(), "noJumpDelay", "f_20889_");
-            field.setInt(livingEntity, n);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to set noJumpDelay field", exception);
+            field.setInt(livingEntity, delay);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to set noJumpDelay field", ex);
         }
     }
 
-    public static void setRightClickDelay(int n) {
+    public static void setRightClickDelay(int delay) {
         if (ClientBase.mc == null) return;
         try {
             Field field = findField(ClientBase.mc.getClass(), "rightClickDelay", "f_91076_");
-            field.setInt(ClientBase.mc, n);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to set rightClickDelay field", exception);
+            field.setInt(ClientBase.mc, delay);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to set rightClickDelay field", ex);
         }
     }
 
@@ -108,8 +108,8 @@ public final class ReflectionUtil {
         Field field = findField(packet.getClass(), ZenClient.isMCPMapped ? "f_134121_" : "yRot");
         try {
             return field.getFloat(packet);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to get yrot field", exception);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to get yrot field", ex);
             return 0.0f;
         }
     }
@@ -119,38 +119,38 @@ public final class ReflectionUtil {
         Field field = findField(packet.getClass(), ZenClient.isMCPMapped ? "f_134122_" : "xRot");
         try {
             return field.getFloat(packet);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to get xrot field", exception);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to get xrot field", ex);
             return 0.0f;
         }
     }
 
-    public static void setYRot(ServerboundMovePlayerPacket packet, float f) {
+    public static void setYRot(ServerboundMovePlayerPacket packet, float yaw) {
         if (ClientBase.mc.gameMode == null) return;
         Field field = findField(packet.getClass(), ZenClient.isMCPMapped ? "f_134121_" : "yRot");
         try {
-            field.setFloat(packet, f);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to set yrot field", exception);
+            field.setFloat(packet, yaw);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to set yrot field", ex);
         }
     }
 
-    public static void setDepthBufferId(RenderTarget renderTarget, int n) {
+    public static void setDepthBufferId(RenderTarget renderTarget, int depthBufferId) {
         Field field = findField(renderTarget.getClass(), ZenClient.isMCPMapped ? "f_83924_" : "depthBufferId");
         try {
-            field.setInt(renderTarget, n);
-        } catch (Exception exception) {
-            exception.printStackTrace();
+            field.setInt(renderTarget, depthBufferId);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
-    public static void setXRot(ServerboundMovePlayerPacket packet, float f) {
+    public static void setXRot(ServerboundMovePlayerPacket packet, float pitch) {
         if (ClientBase.mc.gameMode == null) return;
         Field field = findField(packet.getClass(), ZenClient.isMCPMapped ? "f_134122_" : "xRot");
         try {
-            field.setFloat(packet, f);
-        } catch (Exception exception) {
-            ClientBase.logger.error("Failed to set xrot field", exception);
+            field.setFloat(packet, pitch);
+        } catch (Exception ex) {
+            ClientBase.logger.error("Failed to set xrot field", ex);
         }
     }
 
@@ -159,8 +159,8 @@ public final class ReflectionUtil {
         Field field = findField(menu.getClass(), ZenClient.isMCPMapped ? "f_39086_" : "brewingStand");
         try {
             return (Container) field.get(menu);
-        } catch (Exception exception) {
-            exception.printStackTrace();
+        } catch (Exception ex) {
+            ex.printStackTrace();
             return null;
         }
     }
@@ -185,21 +185,21 @@ public final class ReflectionUtil {
         throw new ReflectionException(last);
     }
 
-    public static void setMissTime(int n) {
+    public static void setMissTime(int missTime) {
         Field field = findField(ClientBase.mc.getClass(), "missTime", "f_91078_");
         try {
-            field.setInt(ClientBase.mc, n);
-        } catch (Exception exception) {
-            exception.printStackTrace();
+            field.setInt(ClientBase.mc, missTime);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
-    public static String getMappedFieldName(Class<?> clazz, String string) {
-        return string;
+    public static String getMappedFieldName(Class<?> clazz, String fieldName) {
+        return fieldName;
     }
 
-    public static String getMappedMethodName(Class<?> clazz, String string, String string2) {
-        return string;
+    public static String getMappedMethodName(Class<?> clazz, String methodName, String descriptor) {
+        return methodName;
     }
 
     private static long getFieldOffset(Class<?> clazz, String name) {

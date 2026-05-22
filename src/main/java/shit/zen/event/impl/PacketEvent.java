@@ -23,8 +23,8 @@ extends Event {
     }
 
     @Generated
-    public PacketEvent(Packet<?> packet, boolean bl) {
+    public PacketEvent(Packet<?> packet, boolean incoming) {
         this.packet = packet;
-        this.incoming = bl;
+        this.incoming = incoming;
     }
 }

@@ -27,13 +27,13 @@ extends Event {
     }
 
     @Generated
-    public MotionEvent(boolean bl, double d, double d2, double d3, float f, float f2, boolean bl2) {
-        this.pre = bl;
-        this.x = d;
-        this.y = d2;
-        this.z = d3;
-        this.yaw = f;
-        this.pitch = f2;
-        this.onGround = bl2;
+    public MotionEvent(boolean pre, double x, double y, double z, float yaw, float pitch, boolean onGround) {
+        this.pre = pre;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.yaw = yaw;
+        this.pitch = pitch;
+        this.onGround = onGround;
     }
 }

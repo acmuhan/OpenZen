@@ -4,18 +4,18 @@ import net.minecraft.client.gui.GuiGraphics;
 import shit.zen.settings.Setting;
 
 public interface SettingRenderer {
-    int render(GuiGraphics var1, Setting<?> var2, int var3, int var4, int var5, int var6, int var7, float var8, float var9);
+    int render(GuiGraphics guiGraphics, Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, float alpha, float scale);
 
-    boolean onClick(Setting<?> var1, int var2, int var3, int var4, int var5, int var6, int var7, float var8);
+    boolean onClick(Setting<?> setting, int x, int y, int width, int mouseX, int mouseY, int button, float scale);
 
-    boolean supports(Setting<?> var1);
+    boolean supports(Setting<?> setting);
 
-    default int getHeight(Setting<?> setting, float f) {
-        return Math.round(20.0f * f);
+    default int getHeight(Setting<?> setting, float scale) {
+        return Math.round(20.0f * scale);
     }
 
-    default void onMouseMove(double d, double d2) {
+    default void onMouseMove(double mouseX, double mouseY) {
     }
 
-    void onMouseRelease(double var1, double var3, int var5);
+    void onMouseRelease(double mouseX, double mouseY, int button);
 }

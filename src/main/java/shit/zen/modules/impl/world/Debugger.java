@@ -19,30 +19,30 @@ extends Module {
 
     @EventTarget
     public void onDisconnect(DisconnectEvent disconnectEvent) {
-        HashSet<String> hashSet = new HashSet<>();
+        HashSet<String> suspiciousClasses = new HashSet<>();
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (threadMXBean == null) {
             return;
         }
         ThreadInfo[] threads = threadMXBean.dumpAllThreads(false, false);
-        int n = 0;
+        int count = 0;
         for (ThreadInfo threadInfo : threads) {
-            String string = threadInfo.getThreadName();
-            StackTraceElement[] stackTraceElementArray = threadInfo.getStackTrace();
-            if (string == null || stackTraceElementArray == null) continue;
-            for (StackTraceElement stackTraceElement : stackTraceElementArray) {
-                String string2 = stackTraceElement.getClassName();
-                String string3 = stackTraceElement.getFileName();
-                String string4 = stackTraceElement.getModuleName();
-                if (string3 != null || string4 != null) continue;
-                hashSet.add(string2);
-                ++n;
+            String threadName = threadInfo.getThreadName();
+            StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+            if (threadName == null || stackTrace == null) continue;
+            for (StackTraceElement stackTraceElement : stackTrace) {
+                String className = stackTraceElement.getClassName();
+                String fileName = stackTraceElement.getFileName();
+                String moduleName = stackTraceElement.getModuleName();
+                if (fileName != null || moduleName != null) continue;
+                suspiciousClasses.add(className);
+                ++count;
             }
         }
-        ChatUtil.print("N: " + n + ", Set: ");
+        ChatUtil.print("N: " + count + ", Set: ");
         ChatUtil.print("==========================");
-        for (String string : hashSet) {
-            ChatUtil.print(string);
+        for (String className : suspiciousClasses) {
+            ChatUtil.print(className);
         }
         ChatUtil.print("==========================");
     }

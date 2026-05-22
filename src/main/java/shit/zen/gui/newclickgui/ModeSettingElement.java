@@ -29,55 +29,55 @@ extends SettingElement<ModeSetting> {
     }
 
     @Override
-    public void render(NewClickGui newClickGui, GuiGraphics guiGraphics, PoseStack poseStack, int n, int n2, float f, float f2) {
-        float f3;
-        float f4;
-        float f5 = 36.0f;
-        float f6 = this.y + f5 / 2.0f + 2.0f - 2.0f;
-        float f7 = 108.0f;
-        float f8 = 14.0f;
+    public void render(NewClickGui clickGui, GuiGraphics guiGraphics, PoseStack poseStack, int mouseX, int mouseY, float alpha, float partialTicks) {
+        float hoverAmount;
+        float dropdownHeight;
+        float totalHeight = 36.0f;
+        float dropdownY = this.y + totalHeight / 2.0f + 2.0f - 2.0f;
+        float dropdownWidth = 108.0f;
+        float itemHeight = 14.0f;
         this.hoveredMode = null;
-        this.isDropdownHovered = CursorUtil.isInBounds(n, n2, this.x + 6.0f, f6, f7, f8);
+        this.isDropdownHovered = CursorUtil.isInBounds(mouseX, mouseY, this.x + 6.0f, dropdownY, dropdownWidth, itemHeight);
         this.hoverTimer.animate(this.isDropdownHovered ? 1.0 : 0.0, 0.22, Easings.EASE_OUT_POW2);
         this.hoverTimer.tick();
         this.visibilityTimer.animate(this.setting.getVisibility().displayable() ? 1.0 : 0.0, 0.2, Easings.EASE_OUT_POW2);
         this.visibilityTimer.tick();
         this.visTimer.animate(this.isOpen ? 1.0 : 0.0, 0.2, Easings.EASE_OUT_POW2);
         this.visTimer.tick();
-        if (Mth.equal(f *= this.visibilityTimer.getValueF(), 0.0f)) {
+        if (Mth.equal(alpha *= this.visibilityTimer.getValueF(), 0.0f)) {
             return;
         }
-        float f9 = this.y + (f5 / 2.0f - FontStore.AXIFORMA_REGULAR_14.getFontHeight()) / 2.0f + 1.0f;
-        FontStore.AXIFORMA_REGULAR_14.drawString(poseStack, this.setting.getName(), this.x + 6.0f, f9, ColorUtil.withAlpha(-1, f * 0.8f));
-        float f10 = this.visTimer.getValueF();
-        if (f10 > 0.0f) {
-            f4 = f8 + (float) this.setting.getModes().length * f8 * f10;
-            RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, f6, f7, f4, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB(60, 60, 60), f * f10));
-            f3 = (f8 - FontStore.AXIFORMA_BOLD_13.getFontHeight()) / 2.0f;
-            float f11 = f6 + f3 + f8;
-            for (String string : this.setting.getModes()) {
-                if (CursorUtil.isInBounds(n, n2, this.x + 6.0f, f11 - f3, f7, f8)) {
-                    this.hoveredMode = string;
-                    this.highlightYTimer.animate(f11 - f3, 0.2, Easings.EASE_OUT_POW2);
+        float nameY = this.y + (totalHeight / 2.0f - FontStore.AXIFORMA_REGULAR_14.getFontHeight()) / 2.0f + 1.0f;
+        FontStore.AXIFORMA_REGULAR_14.drawString(poseStack, this.setting.getName(), this.x + 6.0f, nameY, ColorUtil.withAlpha(-1, alpha * 0.8f));
+        float openAmount = this.visTimer.getValueF();
+        if (openAmount > 0.0f) {
+            dropdownHeight = itemHeight + (float) this.setting.getModes().length * itemHeight * openAmount;
+            RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, dropdownY, dropdownWidth, dropdownHeight, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB(60, 60, 60), alpha * openAmount));
+            hoverAmount = (itemHeight - FontStore.AXIFORMA_BOLD_13.getFontHeight()) / 2.0f;
+            float itemY = dropdownY + hoverAmount + itemHeight;
+            for (String mode : this.setting.getModes()) {
+                if (CursorUtil.isInBounds(mouseX, mouseY, this.x + 6.0f, itemY - hoverAmount, dropdownWidth, itemHeight)) {
+                    this.hoveredMode = mode;
+                    this.highlightYTimer.animate(itemY - hoverAmount, 0.2, Easings.EASE_OUT_POW2);
                 }
-                if (f6 + f4 > f11 + FontStore.AXIFORMA_BOLD_13.getFontHeight()) {
-                    FontStore.AXIFORMA_BOLD_13.drawStringCentered(poseStack, string, this.x + 60.0f, f11, ColorUtil.withAlpha(-1, f * 0.8f * f10));
+                if (dropdownY + dropdownHeight > itemY + FontStore.AXIFORMA_BOLD_13.getFontHeight()) {
+                    FontStore.AXIFORMA_BOLD_13.drawStringCentered(poseStack, mode, this.x + 60.0f, itemY, ColorUtil.withAlpha(-1, alpha * 0.8f * openAmount));
                 }
-                f11 += f8;
+                itemY += itemHeight;
             }
         }
         this.highlightTimer.animate(this.hoveredMode == null || !this.isOpen ? 0.0 : 1.0, 0.18, Easings.EASE_OUT_POW2);
         this.highlightTimer.tick();
         this.highlightYTimer.tick();
-        f4 = this.highlightTimer.getValueF();
-        if (f4 > 0.0f) {
-            RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, this.highlightYTimer.getValueF(), f7, f8, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB(255, 255, 255), f * f4 * 1.0f * 0.1f));
+        dropdownHeight = this.highlightTimer.getValueF();
+        if (dropdownHeight > 0.0f) {
+            RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, this.highlightYTimer.getValueF(), dropdownWidth, itemHeight, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB(255, 255, 255), alpha * dropdownHeight * 1.0f * 0.1f));
         }
-        f3 = this.hoverTimer.getValueF();
-        RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, f6, f7, f8, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB((int)(60.0f + 30.0f * f3), (int)(60.0f + 30.0f * f3), (int)(60.0f + 30.0f * f3)), f));
-        FontStore.AXIFORMA_BOLD_13.drawStringCentered(poseStack, this.setting.getValue(), this.x + 60.0f, f6 + (f8 - FontStore.AXIFORMA_BOLD_13.getFontHeight()) / 2.0f, ColorUtil.withAlpha(-1, f * 0.8f));
-        String string = String.valueOf('\ueb5d');
-        FontStore.MATERIAL_20.drawStringCentered(poseStack, string, this.x + 6.0f + f7 - FontStore.MATERIAL_20.getStringWidth(string) + 2.0f, f6 + (f8 - FontStore.MATERIAL_20.getFontHeight()) / 2.0f + 0.5f, ColorUtil.withAlpha(-1, f * 0.8f));
+        hoverAmount = this.hoverTimer.getValueF();
+        RenderUtil.drawRoundedRect(poseStack, this.x + 6.0f, dropdownY, dropdownWidth, itemHeight, 3.0f, ColorUtil.withAlpha(ColorUtil.fromRGB((int)(60.0f + 30.0f * hoverAmount), (int)(60.0f + 30.0f * hoverAmount), (int)(60.0f + 30.0f * hoverAmount)), alpha));
+        FontStore.AXIFORMA_BOLD_13.drawStringCentered(poseStack, this.setting.getValue(), this.x + 60.0f, dropdownY + (itemHeight - FontStore.AXIFORMA_BOLD_13.getFontHeight()) / 2.0f, ColorUtil.withAlpha(-1, alpha * 0.8f));
+        String arrowIcon = String.valueOf('\ueb5d');
+        FontStore.MATERIAL_20.drawStringCentered(poseStack, arrowIcon, this.x + 6.0f + dropdownWidth - FontStore.MATERIAL_20.getStringWidth(arrowIcon) + 2.0f, dropdownY + (itemHeight - FontStore.MATERIAL_20.getFontHeight()) / 2.0f + 0.5f, ColorUtil.withAlpha(-1, alpha * 0.8f));
     }
 
     @Override
@@ -91,7 +91,7 @@ extends SettingElement<ModeSetting> {
     }
 
     @Override
-    public boolean mouseClicked(double d, double d2, int n) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.isDropdownHovered) {
             this.isOpen = !this.isOpen;
             return true;

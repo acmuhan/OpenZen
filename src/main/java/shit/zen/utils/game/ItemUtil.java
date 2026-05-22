@@ -42,8 +42,8 @@ extends ClientBase {
     public static boolean hasServerItem() {
         return ItemUtil.getAllItems().stream().anyMatch(itemStack -> {
             if (!itemStack.isEmpty()) {
-                String string = itemStack.getDisplayName().getString();
-                return string.contains("长按点击") || string.contains("点击使用") || string.contains("离开游戏") || string.contains("选择一个队伍") || string.contains("再来一局");
+                String displayName = itemStack.getDisplayName().getString();
+                return displayName.contains("长按点击") || displayName.contains("点击使用") || displayName.contains("离开游戏") || displayName.contains("选择一个队伍") || displayName.contains("再来一局");
             }
             return false;
         });
@@ -107,13 +107,13 @@ extends ClientBase {
     }
 
     public static List<ItemStack> getAllItems() {
-        ArrayList<ItemStack> arrayList = new ArrayList<>(40);
+        ArrayList<ItemStack> items = new ArrayList<>(40);
         if (mc.player == null) {
-            return arrayList;
+            return items;
         }
-        arrayList.addAll(mc.player.getInventory().items);
-        arrayList.addAll(mc.player.getInventory().armor);
-        return arrayList;
+        items.addAll(mc.player.getInventory().items);
+        items.addAll(mc.player.getInventory().armor);
+        return items;
     }
 
     public static float getBestArmorScore(EquipmentSlot equipmentSlot) {
@@ -160,11 +160,11 @@ extends ClientBase {
             return 0.0f;
         }
         if (itemStack.getItem() instanceof BowItem) {
-            float f = 10.0f;
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PUNCH_ARROWS, itemStack);
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.INFINITY_ARROWS, itemStack);
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FLAMING_ARROWS, itemStack);
-            return (f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.POWER_ARROWS, itemStack) / 10.0f) + (float)itemStack.getDamageValue() / (float)itemStack.getMaxDamage();
+            float score = 10.0f;
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PUNCH_ARROWS, itemStack);
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.INFINITY_ARROWS, itemStack);
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FLAMING_ARROWS, itemStack);
+            return (score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.POWER_ARROWS, itemStack) / 10.0f) + (float)itemStack.getDamageValue() / (float)itemStack.getMaxDamage();
         }
         return 0.0f;
     }
@@ -177,17 +177,17 @@ extends ClientBase {
             return 0.0f;
         }
         if (itemStack.getItem() instanceof BowItem) {
-            float f = 10.0f;
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PUNCH_ARROWS, itemStack) / 10.0f;
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.INFINITY_ARROWS, itemStack);
-            f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FLAMING_ARROWS, itemStack);
-            return (f += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.POWER_ARROWS, itemStack)) + (float)itemStack.getDamageValue() / (float)itemStack.getMaxDamage();
+            float score = 10.0f;
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PUNCH_ARROWS, itemStack) / 10.0f;
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.INFINITY_ARROWS, itemStack);
+            score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FLAMING_ARROWS, itemStack);
+            return (score += (float)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.POWER_ARROWS, itemStack)) + (float)itemStack.getDamageValue() / (float)itemStack.getMaxDamage();
         }
         return 0.0f;
     }
 
     public static float getDigSpeed(ItemStack itemStack) {
-        float f = 0.0f;
+        float speed = 0.0f;
         if (itemStack == null) {
             return 0.0f;
         }
@@ -201,24 +201,24 @@ extends ClientBase {
             return 0.0f;
         }
         if (itemStack.getItem() instanceof PickaxeItem) {
-            f += itemStack.getDestroySpeed(Blocks.STONE.defaultBlockState());
+            speed += itemStack.getDestroySpeed(Blocks.STONE.defaultBlockState());
         } else if (itemStack.getItem() instanceof AxeItem) {
-            f += itemStack.getDestroySpeed(Blocks.OAK_LOG.defaultBlockState());
+            speed += itemStack.getDestroySpeed(Blocks.OAK_LOG.defaultBlockState());
         } else if (itemStack.getItem() instanceof ShovelItem) {
-            f += itemStack.getDestroySpeed(Blocks.DIRT.defaultBlockState());
+            speed += itemStack.getDestroySpeed(Blocks.DIRT.defaultBlockState());
         } else {
             return 0.0f;
         }
-        int n = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, itemStack);
-        if (n > 0) {
-            f += (float)n * 0.0075f;
+        int efficiencyLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, itemStack);
+        if (efficiencyLevel > 0) {
+            speed += (float)efficiencyLevel * 0.0075f;
         }
-        return f;
+        return speed;
     }
 
     public static float getAxeDamage(ItemStack itemStack) {
-        int n;
-        float f = 0.0f;
+        int sharpnessLevel;
+        float damage = 0.0f;
         if (itemStack == null) {
             return 0.0f;
         }
@@ -229,28 +229,28 @@ extends ClientBase {
         if (item instanceof AxeItem axeItem) {
             if (ItemUtil.isLegitAxe(itemStack)) {
                 if (axeItem == Items.WOODEN_AXE) {
-                    f += 4.0f;
+                    damage += 4.0f;
                 } else if (axeItem == Items.STONE_AXE) {
-                    f += 5.0f;
+                    damage += 5.0f;
                 } else if (axeItem == Items.IRON_AXE) {
-                    f += 6.0f;
+                    damage += 6.0f;
                 } else if (axeItem == Items.GOLDEN_AXE) {
-                    f += 4.0f;
+                    damage += 4.0f;
                 } else if (axeItem == Items.DIAMOND_AXE) {
-                    f += 7.0f;
+                    damage += 7.0f;
                 }
             }
         }
-        if ((n = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack)) > 0) {
-            float f2 = Enchantments.SHARPNESS.getDamageBonus(n, MobType.UNDEFINED);
-            f += f2;
+        if ((sharpnessLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack)) > 0) {
+            float sharpnessBonus = Enchantments.SHARPNESS.getDamageBonus(sharpnessLevel, MobType.UNDEFINED);
+            damage += sharpnessBonus;
         }
-        return f;
+        return damage;
     }
 
     public static float getSwordDamage(ItemStack itemStack) {
-        int n;
-        float f = 0.0f;
+        int sharpnessLevel;
+        float damage = 0.0f;
         if (itemStack == null) {
             return 0.0f;
         }
@@ -259,35 +259,35 @@ extends ClientBase {
         }
         Item item = itemStack.getItem();
         if (item instanceof SwordItem swordItem) {
-            f += swordItem.getDamage() + 1.0f;
+            damage += swordItem.getDamage() + 1.0f;
         }
-        if ((n = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack)) > 0) {
-            float f2 = Enchantments.SHARPNESS.getDamageBonus(n, MobType.UNDEFINED);
-            f += f2;
+        if ((sharpnessLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack)) > 0) {
+            float sharpnessBonus = Enchantments.SHARPNESS.getDamageBonus(sharpnessLevel, MobType.UNDEFINED);
+            damage += sharpnessBonus;
         }
-        return f;
+        return damage;
     }
 
     public static float getArmorScore(ItemStack itemStack) {
-        int n = 0;
+        int score = 0;
         if (itemStack == null || itemStack.isEmpty()) {
             return 0.0f;
         }
         Item item = itemStack.getItem();
         if (item instanceof ArmorItem armorItem) {
             net.minecraft.world.item.ArmorMaterial material = armorItem.getMaterial();
-            if (material == ArmorMaterials.LEATHER) n += 100;
-            else if (material == ArmorMaterials.CHAIN) n += 200;
-            else if (material == ArmorMaterials.IRON) n += 400;
-            else if (material == ArmorMaterials.GOLD) n += 300;
-            else if (material == ArmorMaterials.DIAMOND) n += 500;
-            else if (material == ArmorMaterials.NETHERITE) n += 600;
+            if (material == ArmorMaterials.LEATHER) score += 100;
+            else if (material == ArmorMaterials.CHAIN) score += 200;
+            else if (material == ArmorMaterials.IRON) score += 400;
+            else if (material == ArmorMaterials.GOLD) score += 300;
+            else if (material == ArmorMaterials.DIAMOND) score += 500;
+            else if (material == ArmorMaterials.NETHERITE) score += 600;
         }
-        return n + EnchantmentHelper.getItemEnchantmentLevel(Enchantments.ALL_DAMAGE_PROTECTION, itemStack);
+        return score + EnchantmentHelper.getItemEnchantmentLevel(Enchantments.ALL_DAMAGE_PROTECTION, itemStack);
     }
 
     public static float getCrossbowScore(ItemStack itemStack) {
-        int n = 0;
+        int score = 0;
         if (itemStack == null) {
             return 0.0f;
         }
@@ -295,11 +295,11 @@ extends ClientBase {
             return 0.0f;
         }
         if (itemStack.getItem() instanceof CrossbowItem) {
-            n += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.QUICK_CHARGE, itemStack);
-            n += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.MULTISHOT, itemStack);
-            n += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PIERCING, itemStack);
+            score += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.QUICK_CHARGE, itemStack);
+            score += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.MULTISHOT, itemStack);
+            score += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PIERCING, itemStack);
         }
-        return n;
+        return score;
     }
 
     public static boolean isWeaponItem(ItemStack itemStack) {
@@ -319,20 +319,20 @@ extends ClientBase {
     }
 
     public static double getAttackDamage(ItemStack itemStack) {
-        double d = 0.0;
-        Multimap<Attribute, AttributeModifier> multimap = itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-        for (Attribute attribute : multimap.keySet()) {
+        double damage = 0.0;
+        Multimap<Attribute, AttributeModifier> modifiers = itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
+        for (Attribute attribute : modifiers.keySet()) {
             if (!attribute.getDescriptionId().equals("attribute.name.generic.attack_damage")) continue;
-            Iterator<AttributeModifier> iterator = multimap.get(attribute).iterator();
+            Iterator<AttributeModifier> iterator = modifiers.get(attribute).iterator();
             if (!iterator.hasNext()) break;
-            d += iterator.next().getAmount();
+            damage += iterator.next().getAmount();
             break;
         }
         if (itemStack.hasFoil()) {
-            d += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FIRE_ASPECT, itemStack);
-            d += (double)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack) * 1.25;
+            damage += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FIRE_ASPECT, itemStack);
+            damage += (double)EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack) * 1.25;
         }
-        return d;
+        return damage;
     }
 
     public static boolean isSkullItem(ItemStack itemStack) {
@@ -363,16 +363,16 @@ extends ClientBase {
         if (!(itemStack.getItem() instanceof AxeItem)) {
             return false;
         }
-        int n = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack);
-        return n >= 8 && n < 50;
+        int sharpnessLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, itemStack);
+        return sharpnessLevel >= 8 && sharpnessLevel < 50;
     }
 
     public static boolean isOtherCheat(ItemStack itemStack) {
         if (itemStack.isEmpty()) {
             return false;
         }
-        String string = itemStack.getDisplayName().getString();
-        if (string.contains("一刀")) {
+        String displayName = itemStack.getDisplayName().getString();
+        if (displayName.contains("一刀")) {
             return true;
         }
         if (itemStack.getTag() != null && itemStack.getTag().toString().contains("一刀")) {
@@ -519,35 +519,35 @@ extends ClientBase {
             if (itemStack.getItem() instanceof PlayerHeadItem) {
                 return false;
             }
-            String string = itemStack.getDisplayName().getString();
-            if (string.contains("Click")) {
+            String displayName = itemStack.getDisplayName().getString();
+            if (displayName.contains("Click")) {
                 return false;
             }
-            if (string.contains("Right")) {
+            if (displayName.contains("Right")) {
                 return false;
             }
-            if (string.contains("点击")) {
+            if (displayName.contains("点击")) {
                 return false;
             }
-            if (string.contains("Teleport")) {
+            if (displayName.contains("Teleport")) {
                 return false;
             }
-            if (string.contains("使用")) {
+            if (displayName.contains("使用")) {
                 return false;
             }
-            if (string.contains("传送")) {
+            if (displayName.contains("传送")) {
                 return false;
             }
-            return !string.contains("再来");
+            return !displayName.contains("再来");
         }
         return true;
     }
 
-    public static int findItemInRange(int n, int n2, Item item) {
+    public static int findItemInRange(int startSlot, int endSlot, Item item) {
         if (mc.player == null) {
             return -1;
         }
-        for (int i = n; i < n2; ++i) {
+        for (int i = startSlot; i < endSlot; ++i) {
             ItemStack itemStack = mc.player.getInventory().getItem(i);
             if (itemStack.isEmpty() || itemStack.getItem() != item) continue;
             return i;

@@ -37,9 +37,9 @@ extends ClientBase {
         Renderer.setGuiScale((float)mc.getWindow().getGuiScale());
     }
 
-    public static void setGuiScale(float f) {
+    public static void setGuiScale(float scale) {
         RenderSystem.assertOnRenderThread();
-        guiScale = f;
+        guiScale = scale;
         Renderer.verify();
     }
 
@@ -92,12 +92,12 @@ extends ClientBase {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
         DrawContext drawContext = new DrawContext(guiGraphics);
-        DrawContext drawContext2 = currentCanvas;
+        DrawContext previousCanvas = currentCanvas;
         currentCanvas = drawContext;
         try {
             consumer.accept(drawContext);
         } finally {
-            currentCanvas = drawContext2;
+            currentCanvas = previousCanvas;
             drawContext.clearClipStack();
         }
         Renderer.resetRenderState();
@@ -111,7 +111,7 @@ extends ClientBase {
         Renderer.render(null, consumer);
     }
 
-    public static void setGuiScaleVerified(float f) {
-        Renderer.setGuiScale(f);
+    public static void setGuiScaleVerified(float scale) {
+        Renderer.setGuiScale(scale);
     }
 }

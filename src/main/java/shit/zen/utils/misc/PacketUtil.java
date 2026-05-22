@@ -50,20 +50,20 @@ extends ClientBase {
             return;
         }
         try {
-            String string = ReflectionUtil.getMappedFieldName(ClientLevel.class, "blockStatePredictionHandler");
-            if (string == null) {
+            String fieldName = ReflectionUtil.getMappedFieldName(ClientLevel.class, "blockStatePredictionHandler");
+            if (fieldName == null) {
                 return;
             }
-            Field field = ClientLevel.class.getDeclaredField(string);
+            Field field = ClientLevel.class.getDeclaredField(fieldName);
             field.setAccessible(true);
-            BlockStatePredictionHandler blockStatePredictionHandler = (BlockStatePredictionHandler)field.get(mc.level);
-            try (BlockStatePredictionHandler blockStatePredictionHandler2 = blockStatePredictionHandler.startPredicting()){
-                int n = blockStatePredictionHandler2.currentSequence();
-                mc.getConnection().send(predictiveAction.predict(n));
+            BlockStatePredictionHandler predictionHandler = (BlockStatePredictionHandler)field.get(mc.level);
+            try (BlockStatePredictionHandler predicting = predictionHandler.startPredicting()){
+                int sequence = predicting.currentSequence();
+                mc.getConnection().send(predictiveAction.predict(sequence));
             }
-        } catch (Exception exception) {
-            logger.error(exception);
-            exception.printStackTrace();
+        } catch (Exception ex) {
+            logger.error(ex);
+            ex.printStackTrace();
         }
     }
 
@@ -72,20 +72,20 @@ extends ClientBase {
             return;
         }
         try {
-            String string = ReflectionUtil.getMappedFieldName(ClientLevel.class, "blockStatePredictionHandler");
-            if (string == null) {
+            String fieldName = ReflectionUtil.getMappedFieldName(ClientLevel.class, "blockStatePredictionHandler");
+            if (fieldName == null) {
                 return;
             }
-            Field field = ClientLevel.class.getDeclaredField(string);
+            Field field = ClientLevel.class.getDeclaredField(fieldName);
             field.setAccessible(true);
-            BlockStatePredictionHandler blockStatePredictionHandler = (BlockStatePredictionHandler)field.get(mc.level);
-            try (BlockStatePredictionHandler blockStatePredictionHandler2 = blockStatePredictionHandler.startPredicting()){
-                int n = blockStatePredictionHandler2.currentSequence();
-                PacketUtil.sendQueued(predictiveAction.predict(n));
+            BlockStatePredictionHandler predictionHandler = (BlockStatePredictionHandler)field.get(mc.level);
+            try (BlockStatePredictionHandler predicting = predictionHandler.startPredicting()){
+                int sequence = predicting.currentSequence();
+                PacketUtil.sendQueued(predictiveAction.predict(sequence));
             }
-        } catch (Exception exception) {
-            logger.error(exception);
-            exception.printStackTrace();
+        } catch (Exception ex) {
+            logger.error(ex);
+            ex.printStackTrace();
         }
     }
 

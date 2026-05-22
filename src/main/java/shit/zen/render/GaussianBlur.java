@@ -9,133 +9,133 @@ public class GaussianBlur {
     protected Kernel kernel;
     private static final String NAME = "Blur/Gaussian Blur...";
 
-    public GaussianBlur(float f) {
-        this.setRadius(f);
+    public GaussianBlur(float radius) {
+        this.setRadius(radius);
     }
 
-    public static void convolve(Kernel kernel, int[] nArray, int[] nArray2, int n, int n2, boolean bl, boolean bl2, boolean bl3, int n3) {
-        float[] fArray = kernel.getKernelData(null);
-        int n4 = kernel.getWidth();
-        int n5 = n4 / 2;
-        for (int i = 0; i < n2; ++i) {
-            int n6 = i;
-            int n7 = i * n;
-            for (int j = 0; j < n; ++j) {
-                int n8;
-                int n9;
-                int n10;
-                float f = 0.0f;
-                float f2 = 0.0f;
-                float f3 = 0.0f;
-                float f4 = 0.0f;
-                int n11 = n5;
-                for (n10 = -n5; n10 <= n5; ++n10) {
-                    float f5 = fArray[n11 + n10];
-                    if (f5 == 0.0f) continue;
-                    n9 = j + n10;
-                    if (n9 < 0) {
-                        if (n3 == 1) {
-                            n9 = 0;
-                        } else if (n3 == 2) {
-                            n9 = (j + n) % n;
+    public static void convolve(Kernel kernel, int[] src, int[] dst, int width, int height, boolean alphaChannel, boolean premultiply, boolean unpremultiply, int edgeAction) {
+        float[] kernelData = kernel.getKernelData(null);
+        int kernelWidth = kernel.getWidth();
+        int half = kernelWidth / 2;
+        for (int i = 0; i < height; ++i) {
+            int dstIndex = i;
+            int srcRowStart = i * width;
+            for (int j = 0; j < width; ++j) {
+                int argb;
+                int srcX;
+                int k;
+                float red = 0.0f;
+                float green = 0.0f;
+                float blue = 0.0f;
+                float alpha = 0.0f;
+                int kernelOffset = half;
+                for (k = -half; k <= half; ++k) {
+                    float weight = kernelData[kernelOffset + k];
+                    if (weight == 0.0f) continue;
+                    srcX = j + k;
+                    if (srcX < 0) {
+                        if (edgeAction == 1) {
+                            srcX = 0;
+                        } else if (edgeAction == 2) {
+                            srcX = (j + width) % width;
                         }
-                    } else if (n9 >= n) {
-                        if (n3 == 1) {
-                            n9 = n - 1;
-                        } else if (n3 == 2) {
-                            n9 = (j + n) % n;
+                    } else if (srcX >= width) {
+                        if (edgeAction == 1) {
+                            srcX = width - 1;
+                        } else if (edgeAction == 2) {
+                            srcX = (j + width) % width;
                         }
                     }
-                    n8 = nArray[n7 + n9];
-                    int n12 = n8 >> 24 & 0xFF;
-                    int n13 = n8 >> 16 & 0xFF;
-                    int n14 = n8 >> 8 & 0xFF;
-                    int n15 = n8 & 0xFF;
-                    if (bl2) {
-                        float f6 = (float)n12 * 0.003921569f;
-                        n13 = (int)((float)n13 * f6);
-                        n14 = (int)((float)n14 * f6);
-                        n15 = (int)((float)n15 * f6);
+                    argb = src[srcRowStart + srcX];
+                    int a = argb >> 24 & 0xFF;
+                    int r = argb >> 16 & 0xFF;
+                    int g = argb >> 8 & 0xFF;
+                    int b = argb & 0xFF;
+                    if (premultiply) {
+                        float scale = (float)a * 0.003921569f;
+                        r = (int)((float)r * scale);
+                        g = (int)((float)g * scale);
+                        b = (int)((float)b * scale);
                     }
-                    f4 += f5 * (float)n12;
-                    f += f5 * (float)n13;
-                    f2 += f5 * (float)n14;
-                    f3 += f5 * (float)n15;
+                    alpha += weight * (float)a;
+                    red += weight * (float)r;
+                    green += weight * (float)g;
+                    blue += weight * (float)b;
                 }
-                if (bl3 && f4 != 0.0f && f4 != 255.0f) {
-                    float f7 = 255.0f / f4;
-                    f *= f7;
-                    f2 *= f7;
-                    f3 *= f7;
+                if (unpremultiply && alpha != 0.0f && alpha != 255.0f) {
+                    float invAlpha = 255.0f / alpha;
+                    red *= invAlpha;
+                    green *= invAlpha;
+                    blue *= invAlpha;
                 }
-                n10 = bl ? GaussianBlur.clamp((int)((double)f4 + 0.5)) : 255;
-                int n16 = GaussianBlur.clamp((int)((double)f + 0.5));
-                n9 = GaussianBlur.clamp((int)((double)f2 + 0.5));
-                n8 = GaussianBlur.clamp((int)((double)f3 + 0.5));
-                nArray2[n6] = n10 << 24 | n16 << 16 | n9 << 8 | n8;
-                n6 += n2;
+                k = alphaChannel ? GaussianBlur.clamp((int)((double)alpha + 0.5)) : 255;
+                int outR = GaussianBlur.clamp((int)((double)red + 0.5));
+                srcX = GaussianBlur.clamp((int)((double)green + 0.5));
+                argb = GaussianBlur.clamp((int)((double)blue + 0.5));
+                dst[dstIndex] = k << 24 | outR << 16 | srcX << 8 | argb;
+                dstIndex += height;
             }
         }
     }
 
-    public static int clamp(int n) {
-        if (n < 0) {
+    public static int clamp(int value) {
+        if (value < 0) {
             return 0;
         }
-        return Math.min(n, 255);
+        return Math.min(value, 255);
     }
 
-    public static Kernel makeKernel(float f) {
-        int n;
-        int n2 = (int)Math.ceil(f);
-        int n3 = n2 * 2 + 1;
-        float[] fArray = new float[n3];
-        float f2 = f / 3.0f;
-        float f3 = 2.0f * f2 * f2;
-        float f4 = (float)Math.PI * 2 * f2;
-        float f5 = (float)Math.sqrt(f4);
-        float f6 = f * f;
-        float f7 = 0.0f;
-        int n4 = 0;
-        for (n = -n2; n <= n2; ++n) {
-            float f8 = n * n;
-            fArray[n4] = f8 > f6 ? 0.0f : (float)Math.exp(-f8 / f3) / f5;
-            f7 += fArray[n4];
-            ++n4;
+    public static Kernel makeKernel(float radius) {
+        int i;
+        int kernelHalf = (int)Math.ceil(radius);
+        int kernelSize = kernelHalf * 2 + 1;
+        float[] kernelData = new float[kernelSize];
+        float sigma = radius / 3.0f;
+        float twoSigmaSq = 2.0f * sigma * sigma;
+        float sigmaSqTwoPi = (float)Math.PI * 2 * sigma;
+        float sqrtTwoPiSigma = (float)Math.sqrt(sigmaSqTwoPi);
+        float radiusSq = radius * radius;
+        float sum = 0.0f;
+        int index = 0;
+        for (i = -kernelHalf; i <= kernelHalf; ++i) {
+            float distSq = i * i;
+            kernelData[index] = distSq > radiusSq ? 0.0f : (float)Math.exp(-distSq / twoSigmaSq) / sqrtTwoPiSigma;
+            sum += kernelData[index];
+            ++index;
         }
-        for (n = 0; n < n3; ++n) {
-            fArray[n] = fArray[n] / f7;
+        for (i = 0; i < kernelSize; ++i) {
+            kernelData[i] = kernelData[i] / sum;
         }
-        return new Kernel(n3, 1, fArray);
+        return new Kernel(kernelSize, 1, kernelData);
     }
 
-    public void setRadius(float f) {
-        this.radius = f;
-        this.kernel = GaussianBlur.makeKernel(f);
+    public void setRadius(float radius) {
+        this.radius = radius;
+        this.kernel = GaussianBlur.makeKernel(radius);
     }
 
-    public BufferedImage filter(BufferedImage bufferedImage, BufferedImage bufferedImage2) {
-        int n = bufferedImage.getWidth();
-        int n2 = bufferedImage.getHeight();
-        if (bufferedImage2 == null) {
-            bufferedImage2 = this.createCompatibleDestImage(bufferedImage, null);
+    public BufferedImage filter(BufferedImage source, BufferedImage dest) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        if (dest == null) {
+            dest = this.createCompatibleDestImage(source, null);
         }
-        int[] nArray = new int[n * n2];
-        int[] nArray2 = new int[n * n2];
-        bufferedImage.getRGB(0, 0, n, n2, nArray, 0, n);
+        int[] srcPixels = new int[width * height];
+        int[] dstPixels = new int[width * height];
+        source.getRGB(0, 0, width, height, srcPixels, 0, width);
         if (this.radius > 0.0f) {
-            GaussianBlur.convolve(this.kernel, nArray, nArray2, n, n2, true, true, false, 1);
-            GaussianBlur.convolve(this.kernel, nArray2, nArray, n2, n, true, false, true, 1);
+            GaussianBlur.convolve(this.kernel, srcPixels, dstPixels, width, height, true, true, false, 1);
+            GaussianBlur.convolve(this.kernel, dstPixels, srcPixels, height, width, true, false, true, 1);
         }
-        bufferedImage2.setRGB(0, 0, n, n2, nArray, 0, n);
-        return bufferedImage2;
+        dest.setRGB(0, 0, width, height, srcPixels, 0, width);
+        return dest;
     }
 
-    public BufferedImage createCompatibleDestImage(BufferedImage bufferedImage, ColorModel colorModel) {
+    public BufferedImage createCompatibleDestImage(BufferedImage source, ColorModel colorModel) {
         if (colorModel == null) {
-            colorModel = bufferedImage.getColorModel();
+            colorModel = source.getColorModel();
         }
-        return new BufferedImage(colorModel, colorModel.createCompatibleWritableRaster(bufferedImage.getWidth(), bufferedImage.getHeight()), colorModel.isAlphaPremultiplied(), null);
+        return new BufferedImage(colorModel, colorModel.createCompatibleWritableRaster(source.getWidth(), source.getHeight()), colorModel.isAlphaPremultiplied(), null);
     }
 
     public String toString() {

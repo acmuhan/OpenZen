@@ -7,8 +7,8 @@ public class KeyBind {
     private int keyCode;
     private static final Map<Integer, String> bindings = new HashMap<>();
 
-    public KeyBind(int n) {
-        this.keyCode = n;
+    public KeyBind(int keyCode) {
+        this.keyCode = keyCode;
     }
 
     public String getName() {
@@ -18,8 +18,8 @@ public class KeyBind {
         return bindings.getOrDefault(this.keyCode, "Unknown");
     }
 
-    public void setKey(int n) {
-        this.keyCode = n;
+    public void setKey(int keyCode) {
+        this.keyCode = keyCode;
     }
 
     public int getKey() {

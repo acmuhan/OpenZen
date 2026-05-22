@@ -17,7 +17,7 @@ EventMarker {
     }
 
     @Override
-    public void setCancelled(boolean bl) {
-        this.cancelled = bl;
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 }

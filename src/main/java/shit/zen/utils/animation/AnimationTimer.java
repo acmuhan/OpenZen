@@ -20,14 +20,14 @@ public abstract class AnimationTimer {
     private boolean debug;
 
     public boolean tick() {
-        boolean bl = this.isAnimating();
-        if (bl) {
+        boolean animating = this.isAnimating();
+        if (animating) {
             this.currentValue = this.lerp(this.getFromValue(), this.getToValue(), this.getEasing().ease(this.getProgress()));
         } else {
             this.setStartTime(0L);
             this.currentValue = this.getToValue();
         }
-        return bl;
+        return animating;
     }
 
     public boolean isAnimating() {
@@ -42,8 +42,8 @@ public abstract class AnimationTimer {
         return (double)(System.currentTimeMillis() - this.getStartTime()) / this.getDuration();
     }
 
-    public double lerp(double d, double d2, double d3) {
-        return d + (d2 - d) * d3;
+    public double lerp(double from, double to, double progress) {
+        return from + (to - from) * progress;
     }
 
     public float getValueF() {

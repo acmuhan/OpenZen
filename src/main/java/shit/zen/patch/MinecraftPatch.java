@@ -70,11 +70,9 @@ public class MinecraftPatch {
         }
     }
 
-    @Inject(method = "close", desc = "()V")
+    @Inject(method = "close", desc = "()V", at = @At(At.Type.HEAD))
     public static void onClose(Minecraft minecraft, CallbackInfo callbackInfo) {
-        if (ZenClient.isReady()) {
-            ZenClient.getInstance().disconnectFromServer();
-        }
+        ZenClient.getInstance().shutdown();
     }
 
     @Inject(method = "setLevel", desc = "(Lnet/minecraft/client/multiplayer/ClientLevel;)V")

@@ -78,53 +78,53 @@ implements Closeable {
     private float letterSpacing = 0.0f;
     private FontMetricsImpl fontMetrics;
 
-    public CustomFont(Font font, float f, int n, int n2, @Nullable String string) {
-        this.fontSize = f;
-        this.pageSize = n;
-        this.charsPerPage = n2;
-        this.preloadChars = string;
+    public CustomFont(Font font, float fontSize, int pageSize, int charsPerPage, @Nullable String preloadChars) {
+        this.fontSize = fontSize;
+        this.pageSize = pageSize;
+        this.charsPerPage = charsPerPage;
+        this.preloadChars = preloadChars;
         this.fontMetrics = new FontMetricsImpl(font);
-        this.initFont(font, f);
+        this.initFont(font, fontSize);
     }
 
-    public CustomFont(Font font, float f) {
-        this(font, f, 256, 5, null);
+    public CustomFont(Font font, float fontSize) {
+        this(font, fontSize, 256, 5, null);
     }
 
-    private static int alignToPageBoundary(int n, int n2) {
-        return n2 * (int)Math.floor((double)n / (double)n2);
+    private static int alignToPageBoundary(int value, int pageSize) {
+        return pageSize * (int)Math.floor((double)value / (double)pageSize);
     }
 
-    public static String stripFormatting(String string) {
-        char[] cArray = string.toCharArray();
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < cArray.length; ++i) {
-            char c = cArray[i];
+    public static String stripFormatting(String text) {
+        char[] chars = text.toCharArray();
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < chars.length; ++i) {
+            char c = chars[i];
             if (c == '§') {
                 ++i;
                 continue;
             }
-            stringBuilder.append(c);
+            result.append(c);
         }
-        return stringBuilder.toString();
+        return result.toString();
     }
 
     private void checkGuiScaleChanged() {
-        int n = (int)ClientBase.mc.getWindow().getGuiScale();
-        if (n != this.guiScaleCache) {
+        int guiScale = (int)ClientBase.mc.getWindow().getGuiScale();
+        if (guiScale != this.guiScaleCache) {
             this.close();
             this.initFont(this.scaledFont, this.fontSize);
         }
     }
 
-    private void initFont(Font font, float f) {
+    private void initFont(Font font, float fontSize) {
         if (this.initialized) {
             throw new IllegalStateException("Double call to init()");
         }
         this.initialized = true;
         this.guiScaleCache = (int)ClientBase.mc.getWindow().getGuiScale();
         this.scale = Math.max(2, this.guiScaleCache * 2);
-        this.scaledFont = font.deriveFont(f * (float)this.scale);
+        this.scaledFont = font.deriveFont(fontSize * (float)this.scale);
         this.fontMetrics = new FontMetricsImpl(this.scaledFont);
         if (this.preloadChars != null && !this.preloadChars.isEmpty()) {
             this.preloadFuture = this.startPreload();
@@ -141,8 +141,8 @@ implements Closeable {
         });
     }
 
-    private GlyphPage createGlyphPage(char c, char c2) {
-        GlyphPage glyphPage = new GlyphPage(c, c2, this.scaledFont, CustomFont.getTempResourceLocation(), this.charsPerPage);
+    private GlyphPage createGlyphPage(char startChar, char endChar) {
+        GlyphPage glyphPage = new GlyphPage(startChar, endChar, this.scaledFont, CustomFont.getTempResourceLocation(), this.charsPerPage);
         this.glyphPages.add(glyphPage);
         return glyphPage;
     }
@@ -152,8 +152,8 @@ implements Closeable {
             if (!existing.contains(c)) continue;
             return existing.getGlyph(c);
         }
-        int n = CustomFont.alignToPageBoundary(c, this.pageSize);
-        GlyphPage page = this.createGlyphPage((char)n, (char)(n + this.pageSize));
+        int pageStart = CustomFont.alignToPageBoundary(c, this.pageSize);
+        GlyphPage page = this.createGlyphPage((char)pageStart, (char)(pageStart + this.pageSize));
         return page.getGlyph(c);
     }
 
@@ -162,185 +162,185 @@ implements Closeable {
         return this.glyphCache.computeIfAbsent(c, this::loadGlyph);
     }
 
-    public void drawString(PoseStack poseStack, String string, double d, double d2, int n) {
-        float f = (float)(n >> 16 & 0xFF) / 255.0f;
-        float f2 = (float)(n >> 8 & 0xFF) / 255.0f;
-        float f3 = (float)(n & 0xFF) / 255.0f;
-        float f4 = (float)(n >> 24 & 0xFF) / 255.0f;
-        this.drawStringRGB(poseStack, string, (float)d, (float)d2, f, f2, f3, f4);
+    public void drawString(PoseStack poseStack, String text, double x, double y, int color) {
+        float r = (float)(color >> 16 & 0xFF) / 255.0f;
+        float g = (float)(color >> 8 & 0xFF) / 255.0f;
+        float b = (float)(color & 0xFF) / 255.0f;
+        float a = (float)(color >> 24 & 0xFF) / 255.0f;
+        this.drawStringRGB(poseStack, text, (float)x, (float)y, r, g, b, a);
     }
 
-    public void drawStringShadow(PoseStack poseStack, String string, double d, double d2, int n) {
-        float f = (float)(n >> 16 & 0xFF) / 255.0f;
-        float f2 = (float)(n >> 8 & 0xFF) / 255.0f;
-        float f3 = (float)(n & 0xFF) / 255.0f;
-        float f4 = (float)(n >> 24 & 0xFF) / 255.0f;
-        this.drawStringRGB(poseStack, string, (float)d, (float)d2, f, f2, f3, f4);
+    public void drawStringShadow(PoseStack poseStack, String text, double x, double y, int color) {
+        float r = (float)(color >> 16 & 0xFF) / 255.0f;
+        float g = (float)(color >> 8 & 0xFF) / 255.0f;
+        float b = (float)(color & 0xFF) / 255.0f;
+        float a = (float)(color >> 24 & 0xFF) / 255.0f;
+        this.drawStringRGB(poseStack, text, (float)x, (float)y, r, g, b, a);
     }
 
-    public void drawStringWithShadow(PoseStack poseStack, String string, double d, double d2, int n) {
-        this.drawStringColor(poseStack, string, (double)((float)d) + 0.5, (double)((float)d2) + 0.5, SHADOW_COLOR);
-        this.drawString(poseStack, string, (float)d, (float)d2, n);
+    public void drawStringWithShadow(PoseStack poseStack, String text, double x, double y, int color) {
+        this.drawStringColor(poseStack, text, (double)((float)x) + 0.5, (double)((float)y) + 0.5, SHADOW_COLOR);
+        this.drawString(poseStack, text, (float)x, (float)y, color);
     }
 
-    public void drawStringColor(PoseStack poseStack, String string, double d, double d2, Color color) {
-        this.drawStringRGB(poseStack, string, (float)d, (float)d2, (float)color.getRed() / 255.0f, (float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f, color.getAlpha());
+    public void drawStringColor(PoseStack poseStack, String text, double x, double y, Color color) {
+        this.drawStringRGB(poseStack, text, (float)x, (float)y, (float)color.getRed() / 255.0f, (float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f, color.getAlpha());
     }
 
-    public void drawStringRGB(PoseStack poseStack, String string, float f, float f2, float f3, float f4, float f5, float f6) {
-        this.drawStringRGBFull(poseStack, string, f, f2, f3, f4, f5, f6, false, 0);
+    public void drawStringRGB(PoseStack poseStack, String text, float x, float y, float r, float g, float b, float a) {
+        this.drawStringRGBFull(poseStack, text, x, y, r, g, b, a, false, 0);
     }
-    public void drawStringRGBFull(PoseStack var1, String var2, float var3, float var4, float var5, float var6, float var7, float var8, boolean var9, int var10) {
+    public void drawStringRGBFull(PoseStack poseStack, String text, float x, float y, float baseR, float baseG, float baseB, float alpha, boolean rainbow, int rainbowOffset) {
         if (this.preloadFuture != null && !this.preloadFuture.isDone()) {
             try {
                 this.preloadFuture.get();
-            } catch (ExecutionException | InterruptedException var44) {
+            } catch (ExecutionException | InterruptedException ex) {
             }
         }
 
         this.checkGuiScaleChanged();
-        float var13 = var5;
-        float var14 = var6;
-        float var15 = var7;
-        var1.pushPose();
-        var1.translate(MathUtil.round(var3, 1), MathUtil.round(--var4, 1), 0.0);
-        var1.scale(1.0F / this.scale, 1.0F / this.scale, 1.0F);
+        float curR = baseR;
+        float curG = baseG;
+        float curB = baseB;
+        poseStack.pushPose();
+        poseStack.translate(MathUtil.round(x, 1), MathUtil.round(--y, 1), 0.0);
+        poseStack.scale(1.0F / this.scale, 1.0F / this.scale, 1.0F);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        Matrix4f var16 = var1.last().pose();
-        char[] var17 = var2.toCharArray();
-        float var18 = 0.0F;
-        float var19 = 0.0F;
-        boolean var20 = false;
-        int var21 = 0;
+        Matrix4f pose = poseStack.last().pose();
+        char[] chars = text.toCharArray();
+        float penX = 0.0F;
+        float penY = 0.0F;
+        boolean inFormatting = false;
+        int lineStart = 0;
         synchronized (this.glyphPageMap) {
-            for (int var23 = 0; var23 < var17.length; var23++) {
-                char var24 = var17[var23];
-                if (var20) {
-                    var20 = false;
-                    char var25 = Character.toUpperCase(var24);
-                    if (MC_COLOR_CODES.containsKey(var25)) {
-                        int var26 = MC_COLOR_CODES.get(var25);
-                        int[] var27 = colorToRGB(var26);
-                        var13 = var27[0] / 255.0F;
-                        var14 = var27[1] / 255.0F;
-                        var15 = var27[2] / 255.0F;
-                    } else if (var25 == 'R') {
-                        var13 = var5;
-                        var14 = var6;
-                        var15 = var7;
+            for (int i = 0; i < chars.length; i++) {
+                char ch = chars[i];
+                if (inFormatting) {
+                    inFormatting = false;
+                    char upper = Character.toUpperCase(ch);
+                    if (MC_COLOR_CODES.containsKey(upper)) {
+                        int packed = MC_COLOR_CODES.get(upper);
+                        int[] rgb = colorToRGB(packed);
+                        curR = rgb[0] / 255.0F;
+                        curG = rgb[1] / 255.0F;
+                        curB = rgb[2] / 255.0F;
+                    } else if (upper == 'R') {
+                        curR = baseR;
+                        curG = baseG;
+                        curB = baseB;
                     }
-                } else if (var24 == 167) {
-                    var20 = true;
-                } else if (var24 == '\n') {
-                    var19 += this.getStringHeight(var2.substring(var21, var23)) * this.scale;
-                    var18 = 0.0F;
-                    var21 = var23 + 1;
+                } else if (ch == 167) {
+                    inFormatting = true;
+                } else if (ch == '\n') {
+                    penY += this.getStringHeight(text.substring(lineStart, i)) * this.scale;
+                    penX = 0.0F;
+                    lineStart = i + 1;
                 } else {
-                    Glyph var49 = this.getOrLoadGlyph(var24);
-                    if (var49 != null) {
-                        if (var49.value() != ' ') {
-                            ResourceLocation var51 = var49.owner().textureLocation;
-                            GlyphEntry var53 = new GlyphEntry(var18, var19, var13, var14, var15, var49);
-                            this.glyphPageMap.computeIfAbsent(var51, var0 -> new ObjectArrayList<>()).add(var53);
+                    Glyph glyph = this.getOrLoadGlyph(ch);
+                    if (glyph != null) {
+                        if (glyph.value() != ' ') {
+                            ResourceLocation textureLocation = glyph.owner().textureLocation;
+                            GlyphEntry entry = new GlyphEntry(penX, penY, curR, curG, curB, glyph);
+                            this.glyphPageMap.computeIfAbsent(textureLocation, key -> new ObjectArrayList<>()).add(entry);
                         }
 
-                        var18 += var49.width() + this.letterSpacing;
+                        penX += glyph.width() + this.letterSpacing;
                     }
                 }
             }
 
-            for (ResourceLocation var48 : this.glyphPageMap.keySet()) {
-                RenderSystem.setShaderTexture(0, var48);
-                List<GlyphEntry> var50 = this.glyphPageMap.get(var48);
-                Tesselator var52 = Tesselator.getInstance();
-                BufferBuilder var28 = var52.getBuilder();
-                var28.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            for (ResourceLocation textureLocation : this.glyphPageMap.keySet()) {
+                RenderSystem.setShaderTexture(0, textureLocation);
+                List<GlyphEntry> entries = this.glyphPageMap.get(textureLocation);
+                Tesselator tesselator = Tesselator.getInstance();
+                BufferBuilder bufferBuilder = tesselator.getBuilder();
+                bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
 
-                for (GlyphEntry var29 : var50) {
-                    float var30 = var29.atX;
-                    float var31 = var29.atY;
-                    float var32 = var29.r;
-                    float var33 = var29.g;
-                    float var34 = var29.b;
-                    Glyph var35 = var29.toDraw;
-                    GlyphPage var36 = var35.owner();
-                    float var37 = var35.width();
-                    float var38 = var35.height();
-                    float var39 = (float) var35.u() / var36.imageWidth;
-                    float var40 = (float) var35.v() / var36.imageHeight;
-                    float var41 = (float) (var35.u() + var35.width()) / var36.imageWidth;
-                    float var42 = (float) (var35.v() + var35.height()) / var36.imageHeight;
-                    var28.vertex(var16, var30 + 0.0F, var31 + var38, 0.0F).uv(var39, var42).color(var32, var33, var34, var8).endVertex();
-                    var28.vertex(var16, var30 + var37, var31 + var38, 0.0F).uv(var41, var42).color(var32, var33, var34, var8).endVertex();
-                    var28.vertex(var16, var30 + var37, var31 + 0.0F, 0.0F).uv(var41, var40).color(var32, var33, var34, var8).endVertex();
-                    var28.vertex(var16, var30 + 0.0F, var31 + 0.0F, 0.0F).uv(var39, var40).color(var32, var33, var34, var8).endVertex();
+                for (GlyphEntry entry : entries) {
+                    float atX = entry.atX;
+                    float atY = entry.atY;
+                    float r = entry.r;
+                    float g = entry.g;
+                    float b = entry.b;
+                    Glyph glyph = entry.toDraw;
+                    GlyphPage page = glyph.owner();
+                    float glyphWidth = glyph.width();
+                    float glyphHeight = glyph.height();
+                    float u1 = (float) glyph.u() / page.imageWidth;
+                    float v1 = (float) glyph.v() / page.imageHeight;
+                    float u2 = (float) (glyph.u() + glyph.width()) / page.imageWidth;
+                    float v2 = (float) (glyph.v() + glyph.height()) / page.imageHeight;
+                    bufferBuilder.vertex(pose, atX + 0.0F, atY + glyphHeight, 0.0F).uv(u1, v2).color(r, g, b, alpha).endVertex();
+                    bufferBuilder.vertex(pose, atX + glyphWidth, atY + glyphHeight, 0.0F).uv(u2, v2).color(r, g, b, alpha).endVertex();
+                    bufferBuilder.vertex(pose, atX + glyphWidth, atY + 0.0F, 0.0F).uv(u2, v1).color(r, g, b, alpha).endVertex();
+                    bufferBuilder.vertex(pose, atX + 0.0F, atY + 0.0F, 0.0F).uv(u1, v1).color(r, g, b, alpha).endVertex();
                 }
 
-                var52.end();
+                tesselator.end();
             }
 
             this.glyphPageMap.clear();
         }
 
-        var1.popPose();
+        poseStack.popPose();
         RenderSystem.disableBlend();
     }
 
-    public void drawStringCentered(PoseStack poseStack, String string, double d, double d2, int n) {
-        float f = (float)(n >> 16 & 0xFF) / 255.0f;
-        float f2 = (float)(n >> 8 & 0xFF) / 255.0f;
-        float f3 = (float)(n & 0xFF) / 255.0f;
-        float f4 = (float)(n >> 24 & 0xFF) / 255.0f;
-        this.drawStringRGB(poseStack, string, (float)(d - (double)(this.getStringWidth(string) / 2.0f)), (float)d2, f, f2, f3, f4);
+    public void drawStringCentered(PoseStack poseStack, String text, double x, double y, int color) {
+        float r = (float)(color >> 16 & 0xFF) / 255.0f;
+        float g = (float)(color >> 8 & 0xFF) / 255.0f;
+        float b = (float)(color & 0xFF) / 255.0f;
+        float a = (float)(color >> 24 & 0xFF) / 255.0f;
+        this.drawStringRGB(poseStack, text, (float)(x - (double)(this.getStringWidth(text) / 2.0f)), (float)y, r, g, b, a);
     }
 
-    public void drawStringCenteredColor(PoseStack poseStack, String string, double d, double d2, Color color) {
-        this.drawStringRGB(poseStack, string, (float)(d - (double)(this.getStringWidth(string) / 2.0f)), (float)d2, (float)color.getRed() / 255.0f, (float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f, (float)color.getAlpha() / 255.0f);
+    public void drawStringCenteredColor(PoseStack poseStack, String text, double x, double y, Color color) {
+        this.drawStringRGB(poseStack, text, (float)(x - (double)(this.getStringWidth(text) / 2.0f)), (float)y, (float)color.getRed() / 255.0f, (float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f, (float)color.getAlpha() / 255.0f);
     }
 
-    public void drawStringCenteredRGB(PoseStack poseStack, String string, float f, float f2, float f3, float f4, float f5, float f6) {
-        this.drawStringRGB(poseStack, string, f - this.getStringWidth(string) / 2.0f, f2, f3, f4, f5, f6);
+    public void drawStringCenteredRGB(PoseStack poseStack, String text, float x, float y, float r, float g, float b, float a) {
+        this.drawStringRGB(poseStack, text, x - this.getStringWidth(text) / 2.0f, y, r, g, b, a);
     }
 
-    public float getStringWidth(String string) {
-        char[] cArray = CustomFont.stripFormatting(string).toCharArray();
-        float f = 0.0f;
-        float f2 = 0.0f;
-        for (char c : cArray) {
+    public float getStringWidth(String text) {
+        char[] chars = CustomFont.stripFormatting(text).toCharArray();
+        float lineWidth = 0.0f;
+        float maxWidth = 0.0f;
+        for (char c : chars) {
             if (c == '\n') {
-                f2 = Math.max(f, f2);
-                f = 0.0f;
+                maxWidth = Math.max(lineWidth, maxWidth);
+                lineWidth = 0.0f;
                 continue;
             }
             Glyph glyph = this.getOrLoadGlyph(c);
-            f += (glyph == null ? 0.0f : (float)glyph.width() / (float)this.scale) + this.letterSpacing;
+            lineWidth += (glyph == null ? 0.0f : (float)glyph.width() / (float)this.scale) + this.letterSpacing;
         }
-        return Math.max(f, f2);
+        return Math.max(lineWidth, maxWidth);
     }
 
-    public float getStringHeight(String string) {
-        char[] cArray = CustomFont.stripFormatting(string).toCharArray();
-        if (cArray.length == 0) {
-            cArray = new char[]{' '};
+    public float getStringHeight(String text) {
+        char[] chars = CustomFont.stripFormatting(text).toCharArray();
+        if (chars.length == 0) {
+            chars = new char[]{' '};
         }
-        float f = 0.0f;
-        float f2 = 0.0f;
-        for (char c : cArray) {
+        float lineHeight = 0.0f;
+        float totalHeight = 0.0f;
+        for (char c : chars) {
             if (c == '\n') {
-                if (f == 0.0f) {
-                    f = this.getOrLoadGlyph(' ') == null ? 0.0f : (float)((Glyph)(Objects.requireNonNull((Object)(this.getOrLoadGlyph(' '))))).height() / (float)this.scale;
+                if (lineHeight == 0.0f) {
+                    lineHeight = this.getOrLoadGlyph(' ') == null ? 0.0f : (float)((Glyph)(Objects.requireNonNull((Object)(this.getOrLoadGlyph(' '))))).height() / (float)this.scale;
                 }
-                f2 += f;
-                f = 0.0f;
+                totalHeight += lineHeight;
+                lineHeight = 0.0f;
                 continue;
             }
             Glyph glyph = this.getOrLoadGlyph(c);
-            f = Math.max(glyph == null ? 0.0f : (float)glyph.height() / (float)this.scale, f);
+            lineHeight = Math.max(glyph == null ? 0.0f : (float)glyph.height() / (float)this.scale, lineHeight);
         }
-        return f + f2;
+        return lineHeight + totalHeight;
     }
 
     public float getFontHeight() {
@@ -380,26 +380,26 @@ implements Closeable {
     }
 
     private static String generateRandomName() {
-        return IntStream.range(0, 32).mapToObj(n -> String.valueOf((char)new Random().nextInt(97, 123))).collect(Collectors.joining());
+        return IntStream.range(0, 32).mapToObj(i -> String.valueOf((char)new Random().nextInt(97, 123))).collect(Collectors.joining());
     }
 
-    public static int @NotNull [] colorToRGB(int n) {
-        int n2 = n >> 16 & 0xFF;
-        int n3 = n >> 8 & 0xFF;
-        int n4 = n & 0xFF;
-        return new int[]{n2, n3, n4};
+    public static int @NotNull [] colorToRGB(int color) {
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
+        int b = color & 0xFF;
+        return new int[]{r, g, b};
     }
 
-    public float getStringHeightAlias(String string) {
-        return this.getStringHeight(string);
+    public float getStringHeightAlias(String text) {
+        return this.getStringHeight(text);
     }
 
-    public void drawStringRainbow(PoseStack poseStack, String string, float f, float f2, int n) {
-        this.drawStringRGBFull(poseStack, string, f, f2, 255.0f, 255.0f, 255.0f, 255.0f, true, n);
+    public void drawStringRainbow(PoseStack poseStack, String text, float x, float y, int offset) {
+        this.drawStringRGBFull(poseStack, text, x, y, 255.0f, 255.0f, 255.0f, 255.0f, true, offset);
     }
 
-    public void drawStringCenteredRainbow(PoseStack poseStack, String string, float f, float f2, int n) {
-        this.drawStringRainbow(poseStack, string, f - this.getStringWidth(string) / 2.0f, f2, n);
+    public void drawStringCenteredRainbow(PoseStack poseStack, String text, float x, float y, int offset) {
+        this.drawStringRainbow(poseStack, text, x - this.getStringWidth(text) / 2.0f, y, offset);
     }
 
     public void resetLetterSpacing() {

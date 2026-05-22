@@ -12,35 +12,35 @@ public final class BlurFbo {
     private int height = 0;
     private static final String INCOMPLETE_FBO_MSG = "[BlurFbo] incomplete framebuffer status=0x";
 
-    public void resize(int n, int n2) {
-        if (n <= 0 || n2 <= 0) {
+    public void resize(int width, int height) {
+        if (width <= 0 || height <= 0) {
             return;
         }
-        if (this.fboId != 0 && n == this.width && n2 == this.height) {
+        if (this.fboId != 0 && width == this.width && height == this.height) {
             return;
         }
         this.delete();
-        this.width = n;
-        this.height = n2;
+        this.width = width;
+        this.height = height;
         this.fboId = GL30.glGenFramebuffers();
         this.textureId = GL11.glGenTextures();
-        int n3 = GL11.glGetInteger(32873);
-        int n4 = GL11.glGetInteger(36006);
+        int prevTex2d = GL11.glGetInteger(32873);
+        int prevFbo = GL11.glGetInteger(36006);
         GL11.glBindTexture(3553, this.textureId);
-        GL11.glTexImage2D(3553, 0, 32856, n, n2, 0, 6408, 5121, (ByteBuffer)null);
+        GL11.glTexImage2D(3553, 0, 32856, width, height, 0, 6408, 5121, (ByteBuffer)null);
         GL11.glTexParameteri(3553, 10241, 9729);
         GL11.glTexParameteri(3553, 10240, 9729);
         GL11.glTexParameteri(3553, 10242, 33071);
         GL11.glTexParameteri(3553, 10243, 33071);
         GL30.glBindFramebuffer(36160, this.fboId);
         GL30.glFramebufferTexture2D(36160, 36064, 3553, this.textureId, 0);
-        int n5 = GL30.glCheckFramebufferStatus(36160);
-        if (n5 != 36053) {
-            System.err.println(INCOMPLETE_FBO_MSG + Integer.toHexString(n5));
+        int status = GL30.glCheckFramebufferStatus(36160);
+        if (status != 36053) {
+            System.err.println(INCOMPLETE_FBO_MSG + Integer.toHexString(status));
         }
-        GL30.glBindFramebuffer(36160, n4);
-        GL11.glBindTexture(3553, n3);
-        GlStateManager._bindTexture(n3);
+        GL30.glBindFramebuffer(36160, prevFbo);
+        GL11.glBindTexture(3553, prevTex2d);
+        GlStateManager._bindTexture(prevTex2d);
     }
 
     public void bind() {

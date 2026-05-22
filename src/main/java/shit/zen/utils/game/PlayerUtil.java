@@ -34,11 +34,11 @@ extends ClientBase {
             return;
         }
         mc.player.walkAnimation.setSpeed(mc.player.walkAnimation.speed());
-        double d = mc.player.getX() - mc.player.xo;
-        double d2 = mc.player.getZ() - mc.player.zo;
-        float f = Mth.sqrt((float)(d * d + d2 * d2)) * 4.0f;
-        f = Mth.clamp(f, 0.0f, 1.0f);
-        mc.player.walkAnimation.update(f, 0.4f);
+        double dx = mc.player.getX() - mc.player.xo;
+        double dz = mc.player.getZ() - mc.player.zo;
+        float speed = Mth.sqrt((float)(dx * dx + dz * dz)) * 4.0f;
+        speed = Mth.clamp(speed, 0.0f, 1.0f);
+        mc.player.walkAnimation.update(speed, 0.4f);
     }
 
     public static void sendCarriedItem() {
@@ -52,14 +52,14 @@ extends ClientBase {
         }
     }
 
-    public static boolean isSafe(double d) {
-        int n = 0;
-        while ((double)n < d) {
-            AABB aABB = mc.player.getBoundingBox().move(0.0, -n, 0.0);
+    public static boolean isSafe(double maxFall) {
+        int offset = 0;
+        while ((double)offset < maxFall) {
+            AABB aABB = mc.player.getBoundingBox().move(0.0, -offset, 0.0);
             if (!PlayerUtil.isNoClip(mc.player, aABB)) {
                 return true;
             }
-            n += 2;
+            offset += 2;
         }
         return false;
     }
@@ -72,26 +72,26 @@ extends ClientBase {
         return true;
     }
 
-    public static void click(int n, boolean bl) {
-        InputConstants.Key key = n == 0 ? mc.options.keyAttack.getKey() : mc.options.keyUse.getKey();
-        KeyMapping.set(key, bl);
-        if (bl) {
+    public static void click(int button, boolean pressed) {
+        InputConstants.Key key = button == 0 ? mc.options.keyAttack.getKey() : mc.options.keyUse.getKey();
+        KeyMapping.set(key, pressed);
+        if (pressed) {
             KeyMapping.click(key);
         }
     }
 
     public static int getArmorPoints(LivingEntity livingEntity) {
-        int n = 0;
+        int totalDefense = 0;
         for (ItemStack itemStack : livingEntity.getArmorSlots()) {
             Item item = itemStack.getItem();
             if (!(item instanceof ArmorItem armorItem)) continue;
-            n += armorItem.getDefense();
+            totalDefense += armorItem.getDefense();
         }
-        return n;
+        return totalDefense;
     }
 
-    public static Block getBlock(double d, double d2, double d3) {
-        return PlayerUtil.getBlock(BlockPos.containing(d, d2, d3));
+    public static Block getBlock(double x, double y, double z) {
+        return PlayerUtil.getBlock(BlockPos.containing(x, y, z));
     }
 
     public static Block getBlock(BlockPos blockPos) {
@@ -105,36 +105,36 @@ extends ClientBase {
         return PlayerUtil.getBlock(BlockPos.containing(player.getX(), player.getY() - 1.0, player.getZ()));
     }
 
-    public static HitResult rayTrace(double d, float f, float f2) {
+    public static HitResult rayTrace(double range, float yaw, float pitch) {
         if (mc.player == null || mc.level == null) {
             return null;
         }
-        Vec3 vec3 = mc.player.getEyePosition(1.0f);
-        Vec3 vec32 = RotationUtil.directionFromRotation(new Rotation(f, f2));
-        Vec3 vec33 = vec3.add(vec32.x * d, vec32.y * d, vec32.z * d);
-        return mc.level.clip(new ClipContext(vec3, vec33, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
+        Vec3 eyePos = mc.player.getEyePosition(1.0f);
+        Vec3 lookDir = RotationUtil.directionFromRotation(new Rotation(yaw, pitch));
+        Vec3 endPos = eyePos.add(lookDir.x * range, lookDir.y * range, lookDir.z * range);
+        return mc.level.clip(new ClipContext(eyePos, endPos, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
     }
 
     public static boolean isSafeToScaffold() {
         if (mc.player == null || mc.level == null) {
             return true;
         }
-        Vec3 vec3 = mc.player.position();
-        BlockPos blockPos = new BlockPos((int)Math.floor(vec3.x + Math.sin(Math.toRadians(mc.player.getYRot())) * 0.8), (int)Math.floor(vec3.y), (int)Math.floor(vec3.z + -Math.cos(Math.toRadians(mc.player.getYRot())) * 0.8));
-        if (mc.level.getBlockState(blockPos).is(Blocks.LAVA)) {
+        Vec3 playerPos = mc.player.position();
+        BlockPos frontPos = new BlockPos((int)Math.floor(playerPos.x + Math.sin(Math.toRadians(mc.player.getYRot())) * 0.8), (int)Math.floor(playerPos.y), (int)Math.floor(playerPos.z + -Math.cos(Math.toRadians(mc.player.getYRot())) * 0.8));
+        if (mc.level.getBlockState(frontPos).is(Blocks.LAVA)) {
             return false;
         }
-        BlockPos blockPos2 = blockPos.below();
-        BlockState blockState = mc.level.getBlockState(blockPos2);
-        if (blockState.is(Blocks.LAVA)) {
+        BlockPos belowPos = frontPos.below();
+        BlockState belowState = mc.level.getBlockState(belowPos);
+        if (belowState.is(Blocks.LAVA)) {
             return false;
         }
-        if (blockState.isAir()) {
-            if (blockPos2.getY() < mc.level.getMinBuildHeight()) {
+        if (belowState.isAir()) {
+            if (belowPos.getY() < mc.level.getMinBuildHeight()) {
                 return false;
             }
-            if (mc.level.getBlockState(blockPos2.below()).isAir()) {
-                return blockPos2.below().getY() >= mc.level.getMinBuildHeight() && !mc.level.getBlockState(blockPos2.below().below()).isAir();
+            if (mc.level.getBlockState(belowPos.below()).isAir()) {
+                return belowPos.below().getY() >= mc.level.getMinBuildHeight() && !mc.level.getBlockState(belowPos.below().below()).isAir();
             }
         }
         return true;

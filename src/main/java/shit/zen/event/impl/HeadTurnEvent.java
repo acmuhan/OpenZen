@@ -13,34 +13,34 @@ implements EventMarker {
     private float pitch;
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof HeadTurnEvent headTurnEvent)) {
+        if (!(other instanceof HeadTurnEvent otherEvent)) {
             return false;
         }
-        if (!headTurnEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        if (Float.compare(this.getYaw(), headTurnEvent.getYaw()) != 0) {
+        if (Float.compare(this.getYaw(), otherEvent.getYaw()) != 0) {
             return false;
         }
-        return Float.compare(this.getPitch(), headTurnEvent.getPitch()) == 0;
+        return Float.compare(this.getPitch(), otherEvent.getPitch()) == 0;
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof HeadTurnEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof HeadTurnEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.getYaw());
-        n2 = n2 * 59 + Float.floatToIntBits(this.getPitch());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.getYaw());
+        result = result * 59 + Float.floatToIntBits(this.getPitch());
+        return result;
     }
 
     @Generated
@@ -49,8 +49,8 @@ implements EventMarker {
     }
 
     @Generated
-    public HeadTurnEvent(float f, float f2) {
-        this.yaw = f;
-        this.pitch = f2;
+    public HeadTurnEvent(float yaw, float pitch) {
+        this.yaw = yaw;
+        this.pitch = pitch;
     }
 }

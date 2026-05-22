@@ -17,10 +17,10 @@ extends Screen {
 
     public OldClickGui() {
         super(Component.nullToEmpty(TITLE));
-        int n = 20;
+        int x = 20;
         for (Category category : Category.values()) {
-            this.categoryPanels.add(new CategoryPanel(n, 20, 140, 20, category));
-            n += 160;
+            this.categoryPanels.add(new CategoryPanel(x, 20, 140, 20, category));
+            x += 160;
         }
     }
 
@@ -33,31 +33,31 @@ extends Screen {
         }
     }
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, float f) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         for (CategoryPanel categoryPanel : this.categoryPanels) {
-            categoryPanel.render(guiGraphics, n, n2, f);
-            categoryPanel.mouseDragged(n, n2);
+            categoryPanel.render(guiGraphics, mouseX, mouseY, partialTicks);
+            categoryPanel.mouseDragged(mouseX, mouseY);
         }
-        super.render(guiGraphics, n, n2, f);
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 
-    public boolean mouseReleased(double d, double d2, int n) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         for (CategoryPanel categoryPanel : this.categoryPanels) {
-            categoryPanel.mouseReleased(d, d2, n);
+            categoryPanel.mouseReleased(mouseX, mouseY, button);
         }
-        return super.mouseReleased(d, d2, n);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    public boolean mouseClicked(double d, double d2, int n) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (CategoryPanel categoryPanel : this.categoryPanels) {
-            categoryPanel.mouseClicked(d, d2, n);
+            categoryPanel.mouseClicked(mouseX, mouseY, button);
         }
         return true;
     }
 
-    public boolean mouseScrolled(double d, double d2, double d3) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         for (CategoryPanel categoryPanel : this.categoryPanels) {
-            categoryPanel.mouseScrolled(d, d2, d3);
+            categoryPanel.mouseScrolled(mouseX, mouseY, scrollDelta);
         }
         return true;
     }

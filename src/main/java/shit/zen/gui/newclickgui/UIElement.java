@@ -19,20 +19,20 @@ public abstract class UIElement {
     @Getter
     protected final SmoothAnimationTimer animTimer = new SmoothAnimationTimer();
 
-    public abstract void render(NewClickGui var1, GuiGraphics var2, PoseStack var3, int var4, int var5, float var6, float var7);
+    public abstract void render(NewClickGui clickGui, GuiGraphics guiGraphics, PoseStack poseStack, int mouseX, int mouseY, float alpha, float partialTicks);
 
     public void reset() {
     }
 
-    public boolean mouseClicked(double d, double d2, int n) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         return false;
     }
 
-    public boolean mouseReleased(double d, double d2, int n) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         return false;
     }
 
-    public boolean mouseScrolled(double d, double d2, double d3) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         return false;
     }
 

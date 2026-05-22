@@ -12,30 +12,30 @@ implements EventMarker {
     private static final String TO_STRING_PREFIX = "JumpEvent(yaw=";
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof JumpMarkerEvent jumpMarkerEvent)) {
+        if (!(other instanceof JumpMarkerEvent otherEvent)) {
             return false;
         }
-        if (!jumpMarkerEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        return Float.compare(this.getJumpHeight(), jumpMarkerEvent.getJumpHeight()) == 0;
+        return Float.compare(this.getJumpHeight(), otherEvent.getJumpHeight()) == 0;
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof JumpMarkerEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof JumpMarkerEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.getJumpHeight());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.getJumpHeight());
+        return result;
     }
 
     @Generated
@@ -44,7 +44,7 @@ implements EventMarker {
     }
 
     @Generated
-    public JumpMarkerEvent(float f) {
-        this.jumpHeight = f;
+    public JumpMarkerEvent(float jumpHeight) {
+        this.jumpHeight = jumpHeight;
     }
 }

@@ -14,7 +14,7 @@ implements EventMarker {
     }
 
     @Generated
-    public SlowdownEvent(boolean bl) {
-        this.slowDown = bl;
+    public SlowdownEvent(boolean slowDown) {
+        this.slowDown = slowDown;
     }
 }

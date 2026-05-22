@@ -23,43 +23,43 @@ public class MotionSimulator {
     private final float forwardSpeed;
     private float jumpPower;
 
-    public MotionSimulator(double d, double d2, double d3, double d4, double d5, double d6, float f, float f2, float f3) {
-        this.x = d;
-        this.y = d2;
-        this.z = d3;
-        this.motionX = d4;
-        this.motionY = d5;
-        this.motionZ = d6;
-        this.yaw = f;
-        this.strafeSpeed = f2;
-        this.forwardSpeed = f3;
+    public MotionSimulator(double x, double y, double z, double motionX, double motionY, double motionZ, float yaw, float strafeSpeed, float forwardSpeed) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.motionX = motionX;
+        this.motionY = motionY;
+        this.motionZ = motionZ;
+        this.yaw = yaw;
+        this.strafeSpeed = strafeSpeed;
+        this.forwardSpeed = forwardSpeed;
     }
 
     public MotionSimulator(Player player) {
         this(player.getX(), player.getY(), player.getZ(), player.getDeltaMovement().x, player.getDeltaMovement().y, player.getDeltaMovement().z, player.getYRot(), player.xxa, player.zza);
-        float f;
-        float f2 = player.level().getBlockState(player.blockPosition()).getBlock().getJumpFactor();
-        float f3 = player.level().getBlockState(player.getOnPos()).getBlock().getJumpFactor();
-        this.jumpPower = f = 0.42f * ((double)f2 == 1.0 ? f3 : f2) + player.getJumpBoostPower();
+        float jumpPower;
+        float currentJumpFactor = player.level().getBlockState(player.blockPosition()).getBlock().getJumpFactor();
+        float belowJumpFactor = player.level().getBlockState(player.getOnPos()).getBlock().getJumpFactor();
+        this.jumpPower = jumpPower = 0.42f * ((double)currentJumpFactor == 1.0 ? belowJumpFactor : currentJumpFactor) + player.getJumpBoostPower();
     }
 
     private void tick() {
-        float f = this.strafeSpeed;
-        float f2 = this.forwardSpeed;
-        float f3 = f * f + f2 * f2;
-        if (f3 >= 1.0E-4f) {
-            if ((f3 = Mth.sqrt(f3)) < 1.0f) {
-                f3 = 1.0f;
+        float strafe = this.strafeSpeed;
+        float forward = this.forwardSpeed;
+        float magSqr = strafe * strafe + forward * forward;
+        if (magSqr >= 1.0E-4f) {
+            if ((magSqr = Mth.sqrt(magSqr)) < 1.0f) {
+                magSqr = 1.0f;
             }
-            float f4 = this.jumpPower;
+            float speed = this.jumpPower;
             if (ClientBase.mc.player.isSprinting()) {
-                f4 *= 1.3f;
+                speed *= 1.3f;
             }
-            f3 = f4 / f3;
-            float f5 = Mth.sin(this.yaw * (float)Math.PI / 180.0f);
-            float f6 = Mth.cos(this.yaw * (float)Math.PI / 180.0f);
-            this.motionX += (f *= f3) * f6 - (f2 *= f3) * f5;
-            this.motionZ += f2 * f6 + f * f5;
+            magSqr = speed / magSqr;
+            float sinYaw = Mth.sin(this.yaw * (float)Math.PI / 180.0f);
+            float cosYaw = Mth.cos(this.yaw * (float)Math.PI / 180.0f);
+            this.motionX += (strafe *= magSqr) * cosYaw - (forward *= magSqr) * sinYaw;
+            this.motionZ += forward * cosYaw + strafe * sinYaw;
         }
         this.motionY -= 0.08;
         this.motionY *= 0.98f;
@@ -69,22 +69,22 @@ public class MotionSimulator {
     }
 
     private void tickWithFriction() {
-        float f = this.strafeSpeed * 0.98f;
-        float f2 = this.forwardSpeed * 0.98f;
-        float f3 = f * f + f2 * f2;
-        if (f3 >= 1.0E-4f) {
-            if ((f3 = Mth.sqrt(f3)) < 1.0f) {
-                f3 = 1.0f;
+        float strafe = this.strafeSpeed * 0.98f;
+        float forward = this.forwardSpeed * 0.98f;
+        float magSqr = strafe * strafe + forward * forward;
+        if (magSqr >= 1.0E-4f) {
+            if ((magSqr = Mth.sqrt(magSqr)) < 1.0f) {
+                magSqr = 1.0f;
             }
-            float f4 = this.jumpPower;
+            float speed = this.jumpPower;
             if (ClientBase.mc.player.isSprinting()) {
-                f4 *= 1.3f;
+                speed *= 1.3f;
             }
-            f3 = f4 / f3;
-            float f5 = Mth.sin(this.yaw * (float)Math.PI / 180.0f);
-            float f6 = Mth.cos(this.yaw * (float)Math.PI / 180.0f);
-            this.motionX += (f *= f3) * f6 - (f2 *= f3) * f5;
-            this.motionZ += f2 * f6 + f * f5;
+            magSqr = speed / magSqr;
+            float sinYaw = Mth.sin(this.yaw * (float)Math.PI / 180.0f);
+            float cosYaw = Mth.cos(this.yaw * (float)Math.PI / 180.0f);
+            this.motionX += (strafe *= magSqr) * cosYaw - (forward *= magSqr) * sinYaw;
+            this.motionZ += forward * cosYaw + strafe * sinYaw;
         }
         this.motionY -= 0.08;
         this.motionY *= 0.98f;
@@ -95,68 +95,68 @@ public class MotionSimulator {
         this.motionZ *= 0.91;
     }
 
-    public BlockPos findLandingBlock(int n) {
-        for (int i = 0; i < n; ++i) {
-            Vec3 vec3 = new Vec3(this.x, this.y, this.z);
+    public BlockPos findLandingBlock(int maxTicks) {
+        for (int i = 0; i < maxTicks; ++i) {
+            Vec3 fromPos = new Vec3(this.x, this.y, this.z);
             this.tickWithFriction();
-            Vec3 vec32 = new Vec3(this.x, this.y, this.z);
-            float f = ClientBase.mc.player.getBbWidth() / 2.0f;
-            BlockPos blockPos = this.rayTraceBlock(vec3, vec32);
-            if (blockPos != null) {
-                return blockPos;
+            Vec3 toPos = new Vec3(this.x, this.y, this.z);
+            float halfWidth = ClientBase.mc.player.getBbWidth() / 2.0f;
+            BlockPos hit = this.rayTraceBlock(fromPos, toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(f, 0.0, f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(halfWidth, 0.0, halfWidth), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(-f, 0.0, f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(-halfWidth, 0.0, halfWidth), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(f, 0.0, -f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(halfWidth, 0.0, -halfWidth), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(-f, 0.0, -f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(-halfWidth, 0.0, -halfWidth), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(f, 0.0, f / 2.0f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(halfWidth, 0.0, halfWidth / 2.0f), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(-f, 0.0, f / 2.0f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(-halfWidth, 0.0, halfWidth / 2.0f), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(f / 2.0f, 0.0, f), vec32);
-            if (blockPos != null) {
-                return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(halfWidth / 2.0f, 0.0, halfWidth), toPos);
+            if (hit != null) {
+                return hit;
             }
-            blockPos = this.rayTraceBlock(vec3.add(f / 2.0f, 0.0, -f), vec32);
-            if (blockPos == null) continue;
-            return blockPos;
+            hit = this.rayTraceBlock(fromPos.add(halfWidth / 2.0f, 0.0, -halfWidth), toPos);
+            if (hit == null) continue;
+            return hit;
         }
         return null;
     }
 
-    private BlockPos rayTraceBlock(Vec3 vec3, Vec3 vec32) {
+    private BlockPos rayTraceBlock(Vec3 fromPos, Vec3 toPos) {
         BlockHitResult blockHitResult;
-        HitResult hitResult = RayTraceUtil.clipWithEntity(vec3, vec32, false, false, false, ClientBase.mc.player);
+        HitResult hitResult = RayTraceUtil.clipWithEntity(fromPos, toPos, false, false, false, ClientBase.mc.player);
         if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK && hitResult instanceof BlockHitResult && (blockHitResult = (BlockHitResult)hitResult).getDirection() == Direction.UP) {
             return blockHitResult.getBlockPos();
         }
         return null;
     }
 
-    public void simulate(int n) {
-        for (int i = 0; i < n; ++i) {
+    public void simulate(int ticks) {
+        for (int i = 0; i < ticks; ++i) {
             this.tick();
         }
     }
 
-    public void simulateWithFriction(int n) {
-        for (int i = 0; i < n; ++i) {
+    public void simulateWithFriction(int ticks) {
+        for (int i = 0; i < ticks; ++i) {
             this.tickWithFriction();
         }
     }

@@ -26,7 +26,7 @@ import shit.zen.event.EventTarget;
 public class AntiBots
 extends Module {
     public static AntiBots INSTANCE;
-    private final NumberSetting newPlayerTimeout = new NumberSetting("Respawn Time", Double.valueOf(2500.0), Double.valueOf(0.0), Double.valueOf(10000.0), Double.valueOf(100.0));
+    private final NumberSetting newPlayerTimeout = new NumberSetting("Respawn Time", 2500.0, 0.0, 10000.0, 100.0);
     private final BooleanSetting debug = new BooleanSetting("Debug", true);
     private static final Map<UUID, String> suspectNames;
     private static final Map<Integer, String> confirmedBotNames;

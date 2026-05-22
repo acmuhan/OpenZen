@@ -166,6 +166,8 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
+
+    maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
 }
 
 dependencies {
@@ -184,6 +186,9 @@ dependencies {
     implementation 'org.ow2.asm:asm-tree:9.6'
     implementation 'org.ow2.asm:asm-commons:9.6'
     implementation 'org.ow2.asm:asm-util:9.6'
+
+    // Dev Auth
+    runtimeOnly("me.djtheredstoner:DevAuth-forge-latest:1.2.2")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

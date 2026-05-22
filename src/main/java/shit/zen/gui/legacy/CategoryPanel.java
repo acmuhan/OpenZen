@@ -28,19 +28,19 @@ public class CategoryPanel {
     private long lastTime = System.currentTimeMillis();
     private boolean needsLayout = false;
 
-    public CategoryPanel(int n, int n2, int n3, int n4, Category category) {
-        this.x = n;
-        this.y = n2;
-        this.width = n3;
-        this.rowHeight = n4;
+    public CategoryPanel(int x, int y, int width, int rowHeight, Category category) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.rowHeight = rowHeight;
         this.category = category;
         this.dragging = false;
         this.expanded = false;
         this.moduleButtons = new ArrayList<>();
-        int n5 = n4;
+        int buttonY = rowHeight;
         for (Module module : ZenClient.getInstance().getModuleManager().getModulesByCategory(category)) {
-            this.moduleButtons.add(new ModuleButton(module, this, n5));
-            n5 += n4;
+            this.moduleButtons.add(new ModuleButton(module, this, buttonY));
+            buttonY += rowHeight;
         }
         this.initOffsets();
     }
@@ -58,97 +58,98 @@ public class CategoryPanel {
         if (!this.needsLayout) {
             return;
         }
-        boolean bl = false;
-        long l = System.currentTimeMillis();
-        float f = (float)(l - this.lastTime) / 1000.0f;
-        this.lastTime = l;
+        boolean stillAnimating = false;
+        long now = System.currentTimeMillis();
+        float deltaSeconds = (float)(now - this.lastTime) / 1000.0f;
+        this.lastTime = now;
         for (ModuleButton moduleButton : this.moduleButtons) {
             if (!moduleButton.isAnimating()) continue;
-            bl = true;
+            stillAnimating = true;
         }
         for (int i = 0; i < this.moduleButtons.size(); ++i) {
-            float f2 = this.targetOffsets[i] - this.currentOffsets[i];
-            if (Math.abs(f2) > 0.5f) {
-                int n = i;
-                this.currentOffsets[n] = this.currentOffsets[n] + f2 * 0.2f * (f * 60.0f);
-                bl = true;
+            float diff = this.targetOffsets[i] - this.currentOffsets[i];
+            if (Math.abs(diff) > 0.5f) {
+                int idx = i;
+                this.currentOffsets[idx] = this.currentOffsets[idx] + diff * 0.2f * (deltaSeconds * 60.0f);
+                stillAnimating = true;
                 this.moduleButtons.get(i).yOffset = (int)this.currentOffsets[i];
                 continue;
             }
             this.currentOffsets[i] = this.targetOffsets[i];
             this.moduleButtons.get(i).yOffset = (int)this.targetOffsets[i];
         }
-        this.needsLayout = bl;
+        this.needsLayout = stillAnimating;
     }
 
-    public void render(GuiGraphics guiGraphics, int n, int n2, float f) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         this.tick();
         RenderUtil.drawFilledRect(guiGraphics.pose(), this.x, this.y, this.width, this.rowHeight, new Color(16, 16, 20, 245).getRGB());
-        String string = String.valueOf(switch (this.category) {
+        String iconChar = String.valueOf(switch (this.category) {
             case COMBAT -> 'a';
             case MOVEMENT -> 'b';
             case PLAYER -> 'c';
             case RENDER -> 'd';
             case EXPLOIT -> 'e';
-            default -> '?';
+            case WORLD -> 'f';
+            case MISC -> 'g';
         });
-        float f2 = (float)this.y + ((float)this.rowHeight / 2.0f - FontStore.ICON_30.getFontHeight() / 2.0f) + 3.0f;
-        FontStore.ICON_30.drawStringWithShadow(guiGraphics.pose(), string, this.x + 4, f2, -1);
-        float f3 = (float)this.y + ((float)this.rowHeight / 2.0f - FontStore.OPENSANS_18.getFontHeight() / 2.0f) - 0.5f;
-        FontStore.OPENSANS_18.drawStringWithShadow(guiGraphics.pose(), this.category.displayName, this.x + this.rowHeight + 4, f3, -1);
+        float iconY = (float)this.y + ((float)this.rowHeight / 2.0f - FontStore.ICON_30.getFontHeight() / 2.0f) + 3.0f;
+        FontStore.ICON_30.drawStringWithShadow(guiGraphics.pose(), iconChar, this.x + 4, iconY, -1);
+        float labelY = (float)this.y + ((float)this.rowHeight / 2.0f - FontStore.OPENSANS_18.getFontHeight() / 2.0f) - 0.5f;
+        FontStore.OPENSANS_18.drawStringWithShadow(guiGraphics.pose(), this.category.displayName, this.x + this.rowHeight + 4, labelY, -1);
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.render(guiGraphics.pose(), n, n2, f);
+            moduleButton.render(guiGraphics.pose(), mouseX, mouseY, partialTicks);
         }
     }
 
-    public void mouseClicked(double d, double d2, int n) {
-        if (this.isHovered(d, d2)) {
-            if (n == 0) {
+    public void mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isHovered(mouseX, mouseY)) {
+            if (button == 0) {
                 this.dragging = true;
-                this.dragOffsetX = (int)(d - (double)this.x);
-                this.dragOffsetY = (int)(d2 - (double)this.y);
-            } else if (n == 1) {
+                this.dragOffsetX = (int)(mouseX - (double)this.x);
+                this.dragOffsetY = (int)(mouseY - (double)this.y);
+            } else if (button == 1) {
                 this.expanded = !this.expanded;
                 this.recalcLayout();
             }
         }
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.mouseClicked(d, d2, n);
+            moduleButton.mouseClicked(mouseX, mouseY, button);
         }
     }
 
-    public void mouseReleased(double d, double d2, int n) {
+    public void mouseReleased(double mouseX, double mouseY, int button) {
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.mouseReleased(d, d2, n);
+            moduleButton.mouseReleased(mouseX, mouseY, button);
         }
-        if (n == 0 && this.dragging) {
+        if (button == 0 && this.dragging) {
             this.dragging = false;
         }
     }
 
-    public void mouseScrolled(double d, double d2, double d3) {
+    public void mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.mouseScrolled(d, d2, d3);
+            moduleButton.mouseScrolled(mouseX, mouseY, scrollDelta);
         }
     }
 
-    public boolean isHovered(double d, double d2) {
-        return d > (double)this.x && d < (double)(this.x + this.width) && d2 > (double)this.y && d2 < (double)(this.y + this.rowHeight);
+    public boolean isHovered(double mouseX, double mouseY) {
+        return mouseX > (double)this.x && mouseX < (double)(this.x + this.width) && mouseY > (double)this.y && mouseY < (double)(this.y + this.rowHeight);
     }
 
-    public void mouseDragged(double d, double d2) {
+    public void mouseDragged(double mouseX, double mouseY) {
         if (this.dragging) {
-            this.x = (int)(d - (double)this.dragOffsetX);
-            this.y = (int)(d2 - (double)this.dragOffsetY);
+            this.x = (int)(mouseX - (double)this.dragOffsetX);
+            this.y = (int)(mouseY - (double)this.dragOffsetY);
         }
     }
 
     public void recalcLayout() {
-        int n = this.rowHeight;
+        int currentY = this.rowHeight;
         for (int i = 0; i < this.moduleButtons.size(); ++i) {
             ModuleButton moduleButton = this.moduleButtons.get(i);
-            this.targetOffsets[i] = n;
-            n += moduleButton.getTotalHeight();
+            this.targetOffsets[i] = currentY;
+            currentY += moduleButton.getTotalHeight();
         }
         this.needsLayout = true;
         this.lastTime = System.currentTimeMillis();

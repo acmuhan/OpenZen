@@ -8,24 +8,24 @@ public final class Texture {
     private final int height;
     private final ResourceLocation resourceLocation;
 
-    public Texture(int n, int n2, int n3) {
-        this.glId = n;
-        this.width = n2;
-        this.height = n3;
+    public Texture(int glId, int width, int height) {
+        this.glId = glId;
+        this.width = width;
+        this.height = height;
         this.resourceLocation = null;
     }
 
-    public Texture(ResourceLocation resourceLocation, int n, int n2) {
+    public Texture(ResourceLocation resourceLocation, int width, int height) {
         this.glId = 0;
-        this.width = n;
-        this.height = n2;
+        this.width = width;
+        this.height = height;
         this.resourceLocation = resourceLocation;
     }
 
-    public Texture(int n, ResourceLocation resourceLocation, int n2, int n3) {
-        this.glId = n;
-        this.width = n2;
-        this.height = n3;
+    public Texture(int glId, ResourceLocation resourceLocation, int width, int height) {
+        this.glId = glId;
+        this.width = width;
+        this.height = height;
         this.resourceLocation = resourceLocation;
     }
 

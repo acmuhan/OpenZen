@@ -17,12 +17,12 @@ public class TickTimer {
         instances.add(this);
     }
 
-    public boolean hasPassed(int n) {
-        return this.ticks >= n;
+    public boolean hasPassed(int requiredTicks) {
+        return this.ticks >= requiredTicks;
     }
 
-    public boolean hasPassed(float f) {
-        return (float)this.ticks >= f;
+    public boolean hasPassed(float requiredTicks) {
+        return (float)this.ticks >= requiredTicks;
     }
 
     public void reset() {

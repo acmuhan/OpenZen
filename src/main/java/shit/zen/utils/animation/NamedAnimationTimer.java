@@ -8,18 +8,18 @@ extends AnimationTimer {
     private final String name;
     private final AnimationBuilder builder;
 
-    public NamedAnimationTimer(String string, AnimationBuilder animationBuilder) {
-        this.name = string;
-        this.builder = animationBuilder;
+    public NamedAnimationTimer(String name, AnimationBuilder builder) {
+        this.name = name;
+        this.builder = builder;
     }
 
     @Override
-    public void setCurrentValue(double d) {
-        if (d == (double)this.getValueF()) {
+    public void setCurrentValue(double target) {
+        if (target == (double)this.getValueF()) {
             return;
         }
         this.setDebug(this.getBuilder().isDebug());
-        if (this.isAnimating() && (d == this.getFromValue() || d == this.getToValue() || d == (double)this.getValueF())) {
+        if (this.isAnimating() && (target == this.getFromValue() || target == this.getToValue() || target == (double)this.getValueF())) {
             if (this.isDebug()) {
                 System.out.println("Animating " + this.name + " cancelled due to valueTo equals fromValue");
             }
@@ -29,12 +29,12 @@ extends AnimationTimer {
         this.setDuration(this.getBuilder().getDuration() * 1000.0);
         this.setStartTime(System.currentTimeMillis());
         this.setFromValue(this.getValueF());
-        this.setToValue(d);
+        this.setToValue(target);
         if (this.isDebug()) {
-            double d2 = this.getDuration();
-            float f = this.getValueF();
-            double d3 = this.getToValue();
-            System.out.println(this.name + "#animate {\n    to value: " + d3 + "\n    from value: " + f + "\n    duration: " + d2 + "\n}");
+            double duration = this.getDuration();
+            float current = this.getValueF();
+            double to = this.getToValue();
+            System.out.println(this.name + "#animate {\n    to value: " + to + "\n    from value: " + current + "\n    duration: " + duration + "\n}");
         }
     }
 

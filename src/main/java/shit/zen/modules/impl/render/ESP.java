@@ -43,7 +43,7 @@ public class ESP extends Module {
 
     public record Pair<A, B>(A first, B second) {
 
-        public static <A, B> Pair<A, B> Đ(A a, B b) {
+        public static <A, B> Pair<A, B> of(A a, B b) {
                 return new Pair<>(a, b);
             }
         }
@@ -100,8 +100,8 @@ public class ESP extends Module {
     }
 
     private boolean isInRange(Entity entity) {
-        double d = mc.player.distanceToSqr(entity);
-        return d < 10000.0;
+        double distSq = mc.player.distanceToSqr(entity);
+        return distSq < 10000.0;
     }
 
     @EventTarget
@@ -148,7 +148,7 @@ public class ESP extends Module {
             }
             int pad = 3;
             Vector4d box = new Vector4d((int) (minX - pad), (int) (minY - pad), (int) (maxX - minX + pad * 2), (int) (maxY - minY + pad * 2));
-            this.entityBoxPositions.put(entity, Pair.Đ(box, true));
+            this.entityBoxPositions.put(entity, Pair.of(box, true));
         }
     }
 
@@ -226,7 +226,7 @@ public class ESP extends Module {
         // Skeleton rendering omitted (heavy obfuscated code); enable Glow mode instead.
     }
 
-    private Color getHealthColor(float f) {
-        return Color.getHSBColor(Math.max(0.0f, f) / 3.0f, 1.0f, 1.0f);
+    private Color getHealthColor(float fraction) {
+        return Color.getHSBColor(Math.max(0.0f, fraction) / 3.0f, 1.0f, 1.0f);
     }
 }

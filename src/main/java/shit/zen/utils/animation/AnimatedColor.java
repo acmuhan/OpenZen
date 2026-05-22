@@ -19,19 +19,19 @@ public class AnimatedColor {
     @Getter @Setter
     private SmoothAnimationTimer aTimer = new SmoothAnimationTimer();
 
-    public AnimatedColor(int n) {
-        this.color = n;
+    public AnimatedColor(int color) {
+        this.color = color;
     }
 
-    public void animateTo(int n, float f) {
-        this.animateTo(n, f, Easings.EASE_OUT_QUAD);
+    public void animateTo(int targetColor, float speed) {
+        this.animateTo(targetColor, speed, Easings.EASE_OUT_QUAD);
     }
 
-    public void animateTo(int n, float f, Easing easing) {
-        this.rTimer.animate(ColorUtil.getRed(n), 0.2 / (double)f, easing);
-        this.gTimer.animate(ColorUtil.getGreen(n), 0.2 / (double)f, easing);
-        this.bTimer.animate(ColorUtil.getBlue(n), 0.2 / (double)f, easing);
-        this.aTimer.animate(ColorUtil.getAlpha(n), 0.2 / (double)f, easing);
+    public void animateTo(int targetColor, float speed, Easing easing) {
+        this.rTimer.animate(ColorUtil.getRed(targetColor), 0.2 / (double)speed, easing);
+        this.gTimer.animate(ColorUtil.getGreen(targetColor), 0.2 / (double)speed, easing);
+        this.bTimer.animate(ColorUtil.getBlue(targetColor), 0.2 / (double)speed, easing);
+        this.aTimer.animate(ColorUtil.getAlpha(targetColor), 0.2 / (double)speed, easing);
         this.rTimer.tick();
         this.gTimer.tick();
         this.bTimer.tick();

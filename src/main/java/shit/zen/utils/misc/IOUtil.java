@@ -44,9 +44,9 @@ public class IOUtil {
             byte[] bytes = new byte[fis.available()];
             int read = 0;
             while (read < bytes.length) {
-                int n = fis.read(bytes, read, bytes.length - read);
-                if (n < 0) break;
-                read += n;
+                int count = fis.read(bytes, read, bytes.length - read);
+                if (count < 0) break;
+                read += count;
             }
             return bytes;
         }

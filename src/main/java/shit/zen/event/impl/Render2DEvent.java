@@ -28,52 +28,52 @@ public record Render2DEvent(PoseStack poseStack, GuiGraphics guiGraphics, float 
     }
 
     @Generated
-    public boolean equals(Object object) {
-        if (object == this) {
+    public boolean equals(Object other) {
+        if (other == this) {
             return true;
         }
-        if (!(object instanceof Render2DEvent render2DEvent)) {
+        if (!(other instanceof Render2DEvent otherEvent)) {
             return false;
         }
-        if (!render2DEvent.canEqual(this)) {
+        if (!otherEvent.canEqual(this)) {
             return false;
         }
-        if (Float.compare(this.partialTick(), render2DEvent.partialTick()) != 0) {
+        if (Float.compare(this.partialTick(), otherEvent.partialTick()) != 0) {
             return false;
         }
-        PoseStack poseStack = this.poseStack();
-        PoseStack poseStack2 = render2DEvent.poseStack();
-        if (!Objects.equals(poseStack, poseStack2)) {
+        PoseStack thisPose = this.poseStack();
+        PoseStack otherPose = otherEvent.poseStack();
+        if (!Objects.equals(thisPose, otherPose)) {
             return false;
         }
-        GuiGraphics guiGraphics = this.guiGraphics();
-        GuiGraphics guiGraphics2 = render2DEvent.guiGraphics();
-        return !(!Objects.equals(guiGraphics, guiGraphics2));
+        GuiGraphics thisGui = this.guiGraphics();
+        GuiGraphics otherGui = otherEvent.guiGraphics();
+        return !(!Objects.equals(thisGui, otherGui));
     }
 
     @Generated
-    protected boolean canEqual(Object object) {
-        return object instanceof Render2DEvent;
+    protected boolean canEqual(Object other) {
+        return other instanceof Render2DEvent;
     }
 
     @Generated
     public int hashCode() {
-        int n = 59;
-        int n2 = 1;
-        n2 = n2 * 59 + Float.floatToIntBits(this.partialTick());
-        PoseStack poseStack = this.poseStack();
-        n2 = n2 * 59 + (poseStack == null ? 43 : poseStack.hashCode());
-        GuiGraphics guiGraphics = this.guiGraphics();
-        n2 = n2 * 59 + (guiGraphics == null ? 43 : guiGraphics.hashCode());
-        return n2;
+        int prime = 59;
+        int result = 1;
+        result = result * 59 + Float.floatToIntBits(this.partialTick());
+        PoseStack pose = this.poseStack();
+        result = result * 59 + (pose == null ? 43 : pose.hashCode());
+        GuiGraphics gui = this.guiGraphics();
+        result = result * 59 + (gui == null ? 43 : gui.hashCode());
+        return result;
     }
 
     @Generated
     public String toString() {
-        float f = this.partialTick();
-        String string = String.valueOf(this.guiGraphics());
-        String string2 = String.valueOf(this.poseStack());
-        return "Render2DEvent(stack=" + string2 + ", guiGraphics=" + string + ", partialTicks=" + f + ")";
+        float partial = this.partialTick();
+        String guiStr = String.valueOf(this.guiGraphics());
+        String poseStr = String.valueOf(this.poseStack());
+        return "Render2DEvent(stack=" + poseStr + ", guiGraphics=" + guiStr + ", partialTicks=" + partial + ")";
     }
 
     @Generated

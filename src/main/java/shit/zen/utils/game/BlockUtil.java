@@ -86,12 +86,12 @@ extends ClientBase {
         return mc.level.getBlockState(blockPos).getBlock();
     }
 
-    public static BlockPos getPos(double d, double d2, double d3) {
-        return new BlockPos((int)Math.floor(d), (int)Math.floor(d2), (int)Math.floor(d3));
+    public static BlockPos getPos(double x, double y, double z) {
+        return new BlockPos((int)Math.floor(x), (int)Math.floor(y), (int)Math.floor(z));
     }
 
-    public static BlockPos getOffsetPos(BlockPos blockPos, double d, double d2, double d3) {
-        return new BlockPos((int)Math.floor((double)blockPos.getX() + d), (int)Math.floor((double)blockPos.getY() + d2), (int)Math.floor((double)blockPos.getZ() + d3));
+    public static BlockPos getOffsetPos(BlockPos blockPos, double dx, double dy, double dz) {
+        return new BlockPos((int)Math.floor((double)blockPos.getX() + dx), (int)Math.floor((double)blockPos.getY() + dy), (int)Math.floor((double)blockPos.getZ() + dz));
     }
 
     public static boolean isPlaceable(ItemStack itemStack) {
@@ -99,8 +99,8 @@ extends ClientBase {
             if (!ItemUtil.isUsable(itemStack)) {
                 return false;
             }
-            String string = itemStack.getDisplayName().getString();
-            if (string.contains("Click") || string.contains("点击")) {
+            String displayName = itemStack.getDisplayName().getString();
+            if (displayName.contains("Click") || displayName.contains("点击")) {
                 return false;
             }
             if (itemStack.getItem() instanceof ItemNameBlockItem) {

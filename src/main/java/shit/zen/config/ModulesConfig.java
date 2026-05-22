@@ -22,23 +22,23 @@ extends Config {
 
     @Override
     public void read(BufferedReader bufferedReader) throws IOException {
-        String string;
+        String line;
         ModuleManager moduleManager = ZenClient.getInstance().getModuleManager();
-        while ((string = bufferedReader.readLine()) != null) {
-            String[] stringArray = string.split(":", 3);
-            if (stringArray.length != 3) {
-                LOGGER.error("Failed to read line {}!", string);
+        while ((line = bufferedReader.readLine()) != null) {
+            String[] parts = line.split(":", 3);
+            if (parts.length != 3) {
+                LOGGER.error("Failed to read line {}!", line);
                 continue;
             }
-            String string2 = stringArray[0];
-            int n = Integer.parseInt(stringArray[1]);
-            boolean bl = Boolean.parseBoolean(stringArray[2]);
+            String moduleName = parts[0];
+            int keyCode = Integer.parseInt(parts[1]);
+            boolean enabled = Boolean.parseBoolean(parts[2]);
             try {
-                Module module = moduleManager.getModule(string2);
-                module.setKey(n);
-                module.setEnabled(bl);
-            } catch (ModuleNotFoundException moduleNotFoundException) {
-                LOGGER.error("Failed to find module {}!", string2);
+                Module module = moduleManager.getModule(moduleName);
+                module.setKey(keyCode);
+                module.setEnabled(enabled);
+            } catch (ModuleNotFoundException ex) {
+                LOGGER.error("Failed to find module {}!", moduleName);
             }
         }
     }
@@ -46,8 +46,8 @@ extends Config {
     @Override
     public void save(BufferedWriter bufferedWriter) throws IOException {
         ModuleManager moduleManager = ZenClient.getInstance().getModuleManager();
-        ArrayList<Module> arrayList = new ArrayList<>(moduleManager.getModules());
-        for (Module module : arrayList) {
+        ArrayList<Module> moduleList = new ArrayList<>(moduleManager.getModules());
+        for (Module module : moduleList) {
             bufferedWriter.write(String.format((String)"%s:%d:%s\n", (Object[])new Object[]{module.getName(), module.getKey(), module.isEnabled()}));
         }
     }
