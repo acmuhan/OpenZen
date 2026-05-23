@@ -35,10 +35,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Zulu Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: zulu
           java-version: '17'
@@ -75,23 +75,18 @@ jobs:
 
   build-native-windows:
     name: Build Windows DLL loader
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Zulu Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: zulu
           java-version: '17'
           cache: gradle
-
-      - name: Set up MSVC developer command prompt
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
 
       - name: Build DLL loader with Gradle/CMake
         shell: cmd
@@ -101,7 +96,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/native
-          cp build/dist/* dist/native/
+          shopt -s nullglob
+          artifacts=(build/dist/*)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            mapfile -t artifacts < <(find build native/build -type f \( -name '*.exe' -o -name '*.dll' \) -print 2>/dev/null)
+          fi
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "No native artifacts found" >&2
+            find build native/build -maxdepth 5 -type f -print 2>/dev/null || true
+            exit 1
+          fi
+          cp -v "${artifacts[@]}" dist/native/
           sha256sum dist/native/* > dist/native/OpenZen-acmuhan-native.sha256
           cat dist/native/OpenZen-acmuhan-native.sha256
           {
