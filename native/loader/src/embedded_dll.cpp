@@ -3,37 +3,19 @@
 
 namespace loader {
 
-std::wstring extract_embedded_dll() {
+bool get_embedded_dll(const void*& out_data, size_t& out_size) {
     HMODULE self = GetModuleHandleW(nullptr);
     HRSRC info = FindResourceW(self, MAKEINTRESOURCEW(IDR_OPENZEN_DLL), RT_RCDATA);
-    if (!info) return L"";
+    if (!info) return false;
     DWORD size = SizeofResource(self, info);
-    if (size == 0) return L"";
+    if (size == 0) return false;
     HGLOBAL loaded = LoadResource(self, info);
-    if (!loaded) return L"";
+    if (!loaded) return false;
     void* data = LockResource(loaded);
-    if (!data) return L"";
-
-    wchar_t tmp[MAX_PATH];
-    if (GetTempPathW(MAX_PATH, tmp) == 0) return L"";
-
-    wchar_t dir[MAX_PATH];
-    std::swprintf(dir, MAX_PATH, L"%sOpenZenLoader", tmp);
-    CreateDirectoryW(dir, nullptr);
-
-    wchar_t path[MAX_PATH];
-    std::swprintf(path, MAX_PATH, L"%s\\OpenZen.dll", dir);
-
-    HANDLE file = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
-                              FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE) return L"";
-
-    DWORD written = 0;
-    BOOL ok = WriteFile(file, data, size, &written, nullptr);
-    CloseHandle(file);
-    if (!ok || written != size) return L"";
-
-    return std::wstring(path);
+    if (!data) return false;
+    out_data = data;
+    out_size = size;
+    return true;
 }
 
 } // namespace loader

@@ -14,6 +14,7 @@ add_executable(OpenZenLoader WIN32
     src/main.cpp
     src/process_list.cpp
     src/injector.cpp
+    src/manual_map.cpp
     src/embedded_dll.cpp
     src/window_title.cpp
     src/ui.cpp

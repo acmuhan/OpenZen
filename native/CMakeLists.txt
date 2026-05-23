@@ -1,9 +1,22 @@
 cmake_minimum_required(VERSION 3.20)
+# CMP0091 NEW lets us drive the MSVC runtime via MSVC_RUNTIME_LIBRARY
+# instead of patching CMAKE_CXX_FLAGS_*. CMake 3.15+ default, set
+# explicitly so the build stays predictable across CMake versions.
+cmake_policy(SET CMP0091 NEW)
 project(OpenZenNative LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Statically link the MSVC C/C++ runtime into both the loader EXE and the
+# injected DLL. This matters most for the DLL: our manual mapper resolves
+# import addresses locally and assumes the imported DLL has the same base
+# in both processes - true for kernel32/user32/ntdll (KnownDLLs) but NOT
+# for vcruntime140/ucrtbase, so the mapped DLL would otherwise call CRT
+# functions through wild pointers and crash the target Java process. /MT
+# eliminates those imports entirely.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 if(NOT DEFINED ENV{JAVA_HOME})
     message(FATAL_ERROR "JAVA_HOME must be set so we can locate jni.h / jvmti.h")

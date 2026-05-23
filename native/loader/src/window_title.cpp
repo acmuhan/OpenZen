@@ -5,7 +5,7 @@ namespace loader {
 namespace {
     struct Search {
         DWORD pid;
-        std::wstring best;
+        WindowInfo best;
     };
 
     BOOL CALLBACK enum_proc(HWND hwnd, LPARAM lp) {
@@ -27,14 +27,17 @@ namespace {
 
         // Prefer the longest title - usually the main Minecraft window which
         // includes version/world name vs a tiny "Java" tooltip window.
-        if (title.size() > s->best.size()) {
-            s->best = std::move(title);
+        if (title.size() > s->best.title.size()) {
+            wchar_t cls[256] = {0};
+            GetClassNameW(hwnd, cls, 256);
+            s->best.title = std::move(title);
+            s->best.class_name = cls;
         }
         return TRUE;
     }
 }
 
-std::wstring window_title_for(DWORD pid) {
+WindowInfo window_info_for(DWORD pid) {
     Search s{pid, {}};
     EnumWindows(enum_proc, reinterpret_cast<LPARAM>(&s));
     return s.best;

@@ -58,7 +58,9 @@ std::vector<JavaProcess> list_java_processes() {
             jp.command_line = read_command_line(process);
             CloseHandle(process);
         }
-        jp.window_title = window_title_for(jp.pid);
+        WindowInfo wi = window_info_for(jp.pid);
+        jp.window_title = std::move(wi.title);
+        jp.window_class = std::move(wi.class_name);
         result.push_back(std::move(jp));
     } while (Process32NextW(snap, &pe));
 

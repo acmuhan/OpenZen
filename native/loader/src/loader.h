@@ -11,22 +11,31 @@ struct JavaProcess {
     std::wstring image_name;
     std::wstring command_line;
     std::wstring window_title;
+    std::wstring window_class;
+};
+
+struct WindowInfo {
+    std::wstring title;
+    std::wstring class_name;
 };
 
 // Enumerate processes whose image is javaw.exe / java.exe.
 std::vector<JavaProcess> list_java_processes();
 
-// Inject the given DLL into the target process via CreateRemoteThread +
-// LoadLibraryW. Returns an empty string on success or a human-readable error.
-std::wstring inject(DWORD pid, const std::wstring& dll_path);
+// Map the embedded OpenZen.dll directly into the target process and run its
+// DllMain via shellcode. The DLL bytes never touch disk. Returns an empty
+// string on success or a human-readable error message.
+std::wstring inject(DWORD pid);
 
-// Extract the IDR_OPENZEN_DLL resource baked into the loader EXE to a
-// temp file and return its absolute path. Empty string on failure.
-std::wstring extract_embedded_dll();
+// Return a pointer into the loader EXE's resource section that holds the
+// embedded OpenZen.dll along with its byte size. The pointer remains valid
+// for the lifetime of the loader process.
+bool get_embedded_dll(const void*& out_data, size_t& out_size);
 
-// Walk top-level windows and return the most informative title belonging to
-// the given pid ("" if none found).
-std::wstring window_title_for(DWORD pid);
+// Walk top-level windows and return the title + class name of the most
+// informative window belonging to the given pid (longest title wins).
+// Returns empty strings if none found.
+WindowInfo window_info_for(DWORD pid);
 
 int run_ui(HINSTANCE hInstance);
 

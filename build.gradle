@@ -401,3 +401,18 @@ tasks.register('dll') {
     description = 'Build the injectable DLL and GUI Loader (final dist artifacts).'
     dependsOn 'packageDist'
 }
+
+// Gradle's stock 'clean' only wipes the project build/ directory, so the
+// CMake out-of-source build dir and the staged jar would survive a clean
+// and silently feed stale bits into the next dll build. Wire a dedicated
+// Delete task into 'clean' so ./gradlew clean really wipes everything.
+tasks.register('cleanNative', Delete) {
+    group = 'openzen'
+    description = 'Remove native/build/ and the staged native/zen.jar.'
+    delete nativeBuildDir
+    delete file("$nativeDir/zen.jar")
+}
+
+tasks.named('clean').configure {
+    dependsOn 'cleanNative'
+}
