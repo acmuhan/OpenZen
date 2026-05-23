@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - main
-      - docs/security-audit-artifacts
     tags:
       - 'v*'
   pull_request:
@@ -15,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: 'Upload the built jar to a GitHub Release'
+        description: 'Upload the built artifacts to a GitHub Release'
         required: false
         default: 'false'
         type: choice
@@ -30,7 +29,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-jar:
     name: Build jar
     runs-on: ubuntu-latest
 
@@ -51,35 +50,106 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build --no-daemon --stacktrace
 
-      - name: Package Action artifacts
+      - name: Package jar artifacts
         shell: bash
         run: |
-          mkdir -p dist
-          cp build/libs/*.jar dist/
-          sha256sum dist/*.jar > dist/OpenZen-acmuhan.sha256
-          cat dist/OpenZen-acmuhan.sha256
+          mkdir -p dist/jar
+          cp build/libs/*.jar dist/jar/
+          sha256sum dist/jar/*.jar > dist/jar/OpenZen-acmuhan-jar.sha256
+          cat dist/jar/OpenZen-acmuhan-jar.sha256
           {
-            echo "## OpenZen build artifacts"
+            echo "## OpenZen jar artifacts"
             echo ""
             echo "Action 页面下方的 Artifacts 区域会显示并可下载："
             echo "- OpenZen-acmuhan-jar"
-            echo ""
-            echo "Release tag 构建时同一份 dist 产物也会上传到 Release。"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Action page artifact
-        if: always() && hashFiles('dist/*') != ''
+      - name: Upload Action page jar artifact
+        if: always() && hashFiles('dist/jar/*') != ''
         uses: actions/upload-artifact@v4
         with:
           name: OpenZen-acmuhan-jar
-          path: dist/*
+          path: dist/jar/*
           if-no-files-found: error
           retention-days: 30
 
+  build-native-windows:
+    name: Build Windows DLL loader
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Zulu Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up MSVC developer command prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build DLL loader with Gradle/CMake
+        shell: cmd
+        run: gradlew.bat dll --no-daemon --stacktrace
+
+      - name: Package native artifacts
+        shell: bash
+        run: |
+          mkdir -p dist/native
+          cp build/dist/* dist/native/
+          sha256sum dist/native/* > dist/native/OpenZen-acmuhan-native.sha256
+          cat dist/native/OpenZen-acmuhan-native.sha256
+          {
+            echo "## OpenZen native artifacts"
+            echo ""
+            echo "Action 页面下方的 Artifacts 区域会显示并可下载："
+            echo "- OpenZen-acmuhan-native-windows"
+            echo ""
+            echo "该产物包含新版上游的 Windows DLL 注入 Loader：OpenZenLoader.exe。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Action page native artifact
+        if: always() && hashFiles('dist/native/*') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenZen-acmuhan-native-windows
+          path: dist/native/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release:
+    name: Publish GitHub Release assets
+    runs-on: ubuntu-latest
+    needs:
+      - build-jar
+      - build-native-windows
+    if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release' || inputs.publish_release == 'true')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Show release assets
+        shell: bash
+        run: |
+          find release-assets -type f -maxdepth 2 -print
+          {
+            echo "## OpenZen release assets"
+            echo ""
+            echo "Release 将上传本次 workflow 生成的 jar 与 Windows Loader 产物。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish GitHub Release assets
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release' || inputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}
-          files: dist/*
+          files: release-assets/*
           fail_on_unmatched_files: true
