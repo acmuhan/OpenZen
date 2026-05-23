@@ -15,6 +15,7 @@ import net.minecraftforge.fml.common.Mod;
 import shit.zen.event.EventBus;
 import shit.zen.event.EventTarget;
 import shit.zen.event.impl.TickEvent;
+import shit.zen.gui.AgentWarningScreen;
 import shit.zen.gui.BuildSourceScreen;
 import shit.zen.gui.IntroAnimation;
 import shit.zen.manager.CommandManager;
@@ -23,27 +24,6 @@ import shit.zen.manager.HudManager;
 import shit.zen.manager.LagManager;
 import shit.zen.manager.ModuleManager;
 import shit.zen.manager.TargetManager;
-import shit.zen.patch.ChatScreenPatch;
-import shit.zen.patch.ClientLevelPatch;
-import shit.zen.patch.ConnectionPatch;
-import shit.zen.patch.EntityPatch;
-import shit.zen.patch.EntityRendererPatch;
-import shit.zen.patch.FriendlyByteBufPatch;
-import shit.zen.patch.GameRendererPatch;
-import shit.zen.patch.HumanoidModelPatch;
-import shit.zen.patch.ItemInHandLayerPatch;
-import shit.zen.patch.ItemInHandRendererPatch;
-import shit.zen.patch.ItemPatch;
-import shit.zen.patch.KeyboardHandlerPatch;
-import shit.zen.patch.KeyboardInputPatch;
-import shit.zen.patch.LevelRendererPatch;
-import shit.zen.patch.LivingEntityPatch;
-import shit.zen.patch.LivingEntityRendererPatch;
-import shit.zen.patch.LocalPlayerPatch;
-import shit.zen.patch.MinecraftPatch;
-import shit.zen.patch.PacketUtilsPatch;
-import shit.zen.patch.PlayerPatch;
-import shit.zen.patch.PlayerTabOverlayPatch;
 import shit.zen.asm.Bootstrap;
 import shit.zen.utils.rotation.RotationHandler;
 
@@ -106,13 +86,16 @@ public class ZenClient extends ClientBase {
             this.eventBus.register(new IntroAnimation());
             Bootstrap.init();
             registerPatches();
-            if (PatchAgent.getInstrumentation() == null) {
-                PatchAgent.trySelfAttach();
+            boolean agentAttached = PatchAgent.getInstrumentation() != null;
+            if (!agentAttached) {
+                agentAttached = PatchAgent.trySelfAttach();
             }
-            if (PatchAgent.getInstrumentation() != null) {
+            if (agentAttached) {
                 PatchAgent.installPatchesAndRetransform();
+            } else if (PatchAgent.isLaunchPluginActive()) {
+                logger.info("PatchAgent is not attached; OpenZen is using the ModLauncher patch plugin instead.");
             } else {
-                logger.warn("PatchAgent not attached. Launch with `-javaagent:<OpenZen jar>` or `./gradlew runClient0` so patches can be installed.");
+                logger.warn("OpenZen patches are NOT active. Launch with `-javaagent:<OpenZen jar>` or use OpenZenLoader.exe.");
             }
             isReady = true;
             logger.info("{} v{} initialized.", CLIENT_NAME, VERSION);
@@ -123,9 +106,15 @@ public class ZenClient extends ClientBase {
 
     private boolean moduleInit = false;
     private boolean buildNoticeShown = false;
+    private boolean agentWarningShown = false;
 
     @EventTarget
     public void onTick(TickEvent e) {
+        if (isReady() && !this.agentWarningShown && !PatchAgent.isPatchingAvailable()) {
+            this.agentWarningShown = true;
+            mc.setScreen(new AgentWarningScreen(mc.screen));
+            return;
+        }
         if (isReady() && !this.buildNoticeShown) {
             this.buildNoticeShown = true;
             mc.setScreen(new BuildSourceScreen(mc.screen));
@@ -195,27 +184,7 @@ public class ZenClient extends ClientBase {
     }
 
     public static void registerPatches() {
-        PatchRegistry.register(MinecraftPatch.class);
-        PatchRegistry.register(LocalPlayerPatch.class);
-        PatchRegistry.register(LivingEntityPatch.class);
-        PatchRegistry.register(EntityPatch.class);
-        PatchRegistry.register(PlayerPatch.class);
-        PatchRegistry.register(ClientLevelPatch.class);
-        PatchRegistry.register(ConnectionPatch.class);
-        PatchRegistry.register(PacketUtilsPatch.class);
-        PatchRegistry.register(KeyboardHandlerPatch.class);
-        PatchRegistry.register(KeyboardInputPatch.class);
-        PatchRegistry.register(ChatScreenPatch.class);
-        PatchRegistry.register(EntityRendererPatch.class);
-        PatchRegistry.register(LevelRendererPatch.class);
-        PatchRegistry.register(GameRendererPatch.class);
-        PatchRegistry.register(ItemInHandRendererPatch.class);
-        PatchRegistry.register(ItemInHandLayerPatch.class);
-        PatchRegistry.register(HumanoidModelPatch.class);
-        PatchRegistry.register(LivingEntityRendererPatch.class);
-        PatchRegistry.register(ItemPatch.class);
-        PatchRegistry.register(PlayerTabOverlayPatch.class);
-        PatchRegistry.register(FriendlyByteBufPatch.class);
+        PatchRegistry.registerBuiltins();
     }
 
     public static Minecraft getMcInstance() {

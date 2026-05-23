@@ -1,5 +1,6 @@
 package asm.patchify.loader;
 
+import java.lang.ProcessBuilder;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -105,12 +106,11 @@ public final class PatchAgent {
                 return true;
             }
             LOGGER.warn("PatchAgent self-attach completed but Instrumentation is still unavailable");
-            return false;
+            return tryExternalAttach(jarPath);
         } catch (Throwable t) {
             Throwable cause = unwrap(t);
-            LOGGER.warn("PatchAgent self-attach failed: {}. If plain mods/ loading does not work, launch with -javaagent:{} or use OpenZenLoader.exe.",
-                    cause.toString(), jarPath.toAbsolutePath());
-            return false;
+            LOGGER.warn("PatchAgent self-attach failed: {}. Trying helper JVM attach before giving up.", cause.toString());
+            return tryExternalAttach(jarPath);
         } finally {
             if (vm != null) {
                 try {
@@ -120,6 +120,61 @@ public final class PatchAgent {
                 }
             }
         }
+    }
+
+    public static boolean isLaunchPluginActive() {
+        return Boolean.getBoolean("openzen.patch.launchPluginActive");
+    }
+
+    public static boolean isPatchingAvailable() {
+        return getInstrumentation() != null || isLaunchPluginActive();
+    }
+
+    private static boolean tryExternalAttach(Path jarPath) {
+        try {
+            String javaHome = System.getProperty("java.home");
+            Path javaExe = Path.of(javaHome, "bin", isWindows() ? "java.exe" : "java");
+            if (!Files.isRegularFile(javaExe)) {
+                LOGGER.warn("PatchAgent external attach skipped: java executable not found at {}", javaExe);
+                return false;
+            }
+
+            String pid = Long.toString(ProcessHandle.current().pid());
+            Process process = new ProcessBuilder(
+                    javaExe.toAbsolutePath().toString(),
+                    "-cp",
+                    jarPath.toAbsolutePath().toString(),
+                    AttachHelper.class.getName(),
+                    pid,
+                    jarPath.toAbsolutePath().toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                LOGGER.warn("PatchAgent external attach timed out");
+                return false;
+            }
+            if (process.exitValue() != 0) {
+                String output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+                LOGGER.warn("PatchAgent external attach failed with exit {}: {}", process.exitValue(), output);
+                return false;
+            }
+            if (getInstrumentation() != null) {
+                LOGGER.info("PatchAgent external attach succeeded");
+                return true;
+            }
+            LOGGER.warn("PatchAgent external attach completed but Instrumentation is still unavailable");
+            return false;
+        } catch (Throwable t) {
+            LOGGER.warn("PatchAgent external attach failed: {}. Launch with -javaagent:{} or use OpenZenLoader.exe.",
+                    unwrap(t).toString(), jarPath.toAbsolutePath());
+            return false;
+        }
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
     }
 
     private static Path findOwnJar() {
