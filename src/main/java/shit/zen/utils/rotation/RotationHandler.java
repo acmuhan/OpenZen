@@ -7,7 +7,7 @@ import shit.zen.ZenClient;
 import shit.zen.event.impl.CameraPitchEvent;
 import shit.zen.event.impl.ChatEvent;
 import shit.zen.event.impl.FallFlyingEvent;
-import shit.zen.event.impl.HeadTurnEvent;
+import shit.zen.event.impl.RotationAnimationEvent;
 import shit.zen.event.impl.JumpMarkerEvent;
 import shit.zen.event.impl.MotionEvent;
 import shit.zen.event.impl.PacketEvent;
@@ -44,7 +44,7 @@ extends ClientBase {
 
     public static void setTargetRotation(Rotation rotation) {
         targetRotation = rotation;
-        ClientBase.partialTicks = rotation.getYaw();
+        ClientBase.yaw = rotation.getYaw();
     }
 
     @EventTarget
@@ -126,12 +126,13 @@ extends ClientBase {
     }
 
     @EventTarget
-    public void onHeadTurn(HeadTurnEvent headTurnEvent) {
-        if (sentRotation != null && prevSentRotation != null && mc.player != null) {
-            mc.player.setYHeadRot(sentRotation.getYaw());
-            mc.player.setYBodyRot(sentRotation.getYaw());
-            headTurnEvent.setYaw(sentRotation.getYaw());
-            headTurnEvent.setPitch(prevSentRotation.getYaw());
+    public void onHeadTurn(RotationAnimationEvent e) {
+        if (sentRotation != null && prevSentRotation != null && mc.player != null && isRotating) {
+            e.setYaw(sentRotation.getYaw());
+            e.setLastYaw(prevSentRotation.getYaw());
+
+            e.setPitch(sentRotation.getPitch());
+            e.setLastPitch(prevSentRotation.getPitch());
         }
     }
 
@@ -143,8 +144,8 @@ extends ClientBase {
     }
 
     @EventTarget(value=4)
-    public void onMotion(MotionEvent motionEvent) {
-        if (motionEvent.isPost()) {
+    public void onMotion(MotionEvent e) {
+        if (e.isPost()) {
             if (mc.player != null && mc.player.tickCount <= 1 && ZenClient.isReady()) {
                 ZenClient.getInstance().getEventBus().call(new WorldChangeEvent());
             }
@@ -155,39 +156,39 @@ extends ClientBase {
                 targetRotation = prevRotation = new Rotation(mc.player.getYRot(), mc.player.getXRot());
             }
             prevSentRotation = sentRotation;
-            float f = targetRotation.getYaw();
-            float f2 = targetRotation.getPitch();
-            if (!Float.isNaN(f) && !Float.isNaN(f2) && isRotating) {
-                motionEvent.setYaw(f);
-                motionEvent.setPitch(f2);
+            float yaw = targetRotation.getYaw();
+            float pitch = targetRotation.getPitch();
+            if (!Float.isNaN(yaw) && !Float.isNaN(pitch) && isRotating) {
+                e.setYaw(yaw);
+                e.setPitch(pitch);
             }
-            ClientBase.partialTicks = targetRotation.getYaw();
-            sentRotation = new Rotation(motionEvent.getYaw(), motionEvent.getPitch());
-            prevRotation = new Rotation(motionEvent.getYaw(), motionEvent.getPitch());
+            ClientBase.yaw = targetRotation.getYaw();
+            sentRotation = new Rotation(e.getYaw(), e.getPitch());
+            prevRotation = new Rotation(e.getYaw(), e.getPitch());
         }
     }
 
     @EventTarget
     public void onStrafe(StrafeEvent strafeEvent) {
         if (isRotating && targetRotation != null) {
-            float f = targetRotation.getYaw();
-            MovementUtil.handleStrafe(strafeEvent, f);
+            float yaw = targetRotation.getYaw();
+            MovementUtil.handleStrafe(strafeEvent, yaw);
         }
     }
 
     @EventTarget
     public void onRayTrace(RayTraceEvent rayTraceEvent) {
         if (targetRotation != null && rayTraceEvent.entity == mc.player && isRotating) {
-            rayTraceEvent.setRange(targetRotation.getYaw());
-            rayTraceEvent.setBlockRange(targetRotation.getPitch());
+            rayTraceEvent.setYaw(targetRotation.getYaw());
+            rayTraceEvent.setPitch(targetRotation.getPitch());
         }
     }
 
     @EventTarget
     public void onUseItemRayTrace(UseItemRayTraceEvent useItemRayTraceEvent) {
         if (targetRotation != null && isRotating) {
-            useItemRayTraceEvent.setRange(targetRotation.getYaw());
-            useItemRayTraceEvent.setBlockRange(targetRotation.getPitch());
+            useItemRayTraceEvent.setYaw(targetRotation.getYaw());
+            useItemRayTraceEvent.setPitch(targetRotation.getPitch());
         }
     }
 
@@ -201,14 +202,14 @@ extends ClientBase {
     @EventTarget
     public void onJump(JumpMarkerEvent jumpMarkerEvent) {
         if (isRotating && targetRotation != null) {
-            jumpMarkerEvent.setJumpHeight(targetRotation.getYaw());
+            jumpMarkerEvent.setYaw(targetRotation.getYaw());
         }
     }
 
     @EventTarget
     public void onFallFlying(FallFlyingEvent fallFlyingEvent) {
         if (targetRotation != null) {
-            fallFlyingEvent.setSpeed(targetRotation.getPitch());
+            fallFlyingEvent.setPitch(targetRotation.getPitch());
         }
     }
 

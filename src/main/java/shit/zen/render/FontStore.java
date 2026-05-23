@@ -3,6 +3,7 @@ package shit.zen.render;
 import java.awt.Font;
 import java.io.InputStream;
 import org.jetbrains.annotations.NotNull;
+import shit.zen.utils.misc.Assets;
 
 public class FontStore {
     public static CustomFont OPENSANS_16 = loadFont(16.0f, "opensans.ttf");
@@ -25,7 +26,7 @@ public class FontStore {
 
     @NotNull
     public static CustomFont loadFont(float size, String name) {
-        try (InputStream stream = FontStore.class.getResourceAsStream("/assets/zen/fonts/" + name)) {
+        try (InputStream stream = Assets.open("/assets/zen/fonts/" + name)) {
             if (stream == null) {
                 throw new java.io.IOException("Font not found: " + name);
             }

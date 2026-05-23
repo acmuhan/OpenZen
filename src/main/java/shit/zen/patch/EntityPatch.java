@@ -61,8 +61,8 @@ public class EntityPatch {
         if (ZenClient.isReady()) {
             ZenClient.getInstance().getEventBus().call(event);
         }
-        yaw = event.getRange();
-        pitch = event.getBlockRange();
+        yaw = event.getYaw();
+        pitch = event.getPitch();
         float pitchRad = pitch * (float) (Math.PI / 180.0);
         float yawRad = -yaw * (float) (Math.PI / 180.0);
         float cosYaw = Mth.cos(yawRad);

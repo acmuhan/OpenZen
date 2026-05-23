@@ -22,7 +22,7 @@ public class PlayerPatch {
             targetDesc = "()F"
     )
     public static float onDieGetYRot(Player player, DamageSource source, Invocation<Player, Float> original) throws Exception {
-        return ClientBase.partialTicks;
+        return ClientBase.yaw;
     }
 
     @WrapInvoke(
@@ -32,12 +32,12 @@ public class PlayerPatch {
             targetDesc = "()F"
     )
     public static float onDropGetYRot(Player player, ItemStack stack, boolean dropAll, boolean traceItem, Invocation<Player, Float> original) throws Exception {
-        return ClientBase.partialTicks;
+        return ClientBase.yaw;
     }
 
     @WrapInvoke(method = "attack", desc = "(Lnet/minecraft/world/entity/Entity;)V", target = "net/minecraft/world/entity/Entity/getYRot", targetDesc = "()F")
     public static float onAttackGetYRot(Player player, Entity target, Invocation<Player, Float> original) throws Exception {
-        return ClientBase.partialTicks;
+        return ClientBase.yaw;
     }
 
     @Inject(method = "attack", desc = "(Lnet/minecraft/world/entity/Entity;)V", at = @At(At.Type.HEAD))

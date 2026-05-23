@@ -14,13 +14,6 @@
 ## 截图
 ![Open Zen ClickGUI](img/screenshot.png)
 
-## TODO
- - 客户端的Shader渲染明显还有很多问题。
- - Web Click GUI尚未实现。
- - 部分UI错位。
- - 直接构建为热注入DLL。
- - 你来提出Issue，我来解决。
-
 ## 原始 Jar + Mapping
 [原始Jar](./mapping/zen-orignial.jar)
 [Mapping](./mapping/zen.mapping)
@@ -52,6 +45,70 @@
 
 ## 状态与注意事项
 - 这是**尽力而为的反混淆结果**，部分符号是根据上下文重建的，可能与原作者的命名意图不一致。
+
+## 构建
+
+OpenZen 支持两种交付形式：**Forge Mod (jar)** 和 **热注入器 (单文件 EXE，内嵌 DLL)**。Mod 路径只要 JDK，注入器路径还需要 MSVC 工具链。
+
+### 共同前置
+
+- **JDK 17**（推荐 Microsoft Build of OpenJDK / Temurin / Azul Zulu 任一）。
+- 必须设置 `JAVA_HOME` 环境变量指向该 JDK 安装目录（PowerShell 验证：`echo $env:JAVA_HOME`）。
+- 仓库根目录用 `gradlew.bat` 即可，**不需要**单独安装 Gradle。
+
+首次执行会从 ForgeMaven 下载 1.20.1 + Forge 47.4.20 的 mappings 和依赖，耗时几分钟到十几分钟，取决于网络。
+
+### 1. 构建为 Forge Mod (jar)
+
+零额外依赖。
+
+```powershell
+.\gradlew.bat jar
+```
+
+产物：`build/libs/hey-1.0-SNAPSHOT.jar`。把它丢进 `.minecraft/mods/`，按正常 Forge mod 启动即可。Mod ID 是 `hey`，Mod 列表里不会显示（`MinecraftPatch.onTick` 启动时会把自己从 `ModList` 摘掉）。
+
+### 2. 构建为热注入器 (单文件 EXE)
+
+产出一个独立的 `OpenZenLoader.exe`，DLL 已经作为资源段嵌入 EXE 内部。用户分发只需要这一个文件，运行后 GUI 列出当前所有 `javaw.exe` 进程（含 Minecraft 窗口标题），选中后点 Inject 即可。
+
+#### 额外前置 — 必须项
+
+1. **Visual Studio 2022**（Community 版即可，免费）。安装时勾选：
+    - **"使用 C++ 的桌面开发"** 工作负载
+    - 该工作负载的可选组件里勾上 **"适用于 Windows 的 C++ CMake 工具"**（"C++ CMake tools for Windows"）
+2. **`JAVA_HOME` 必须指向 JDK 17**（不只是 JRE）。CMake 需要它定位 `<JAVA_HOME>/include/jni.h` 和 `<JAVA_HOME>/include/win32/jvmti.h`。
+3. **CMake**：VS 2022 自带，Gradle 会自动检测——也可以独立安装 [CMake](https://cmake.org/download/) 并加入 PATH。Gradle 的检测顺序：
+    1. `PATH` 上的 `cmake.exe`
+    2. 通过 `vswhere.exe` 找 VS 2022 自带的 CMake
+    3. 常见独立安装位置 (`%ProgramFiles%\CMake\bin\cmake.exe` 等)
+
+#### 构建命令
+
+```powershell
+.\gradlew.bat dll
+```
+
+产物：`build/dist/OpenZenLoader.exe`（OpenZen.dll 已内嵌为 RCDATA 资源段）。
+
+构建流程：
+1. `jar` → 编译 Java 源码，执行 `reobfJar` 把字节码 mojmap→SRG
+2. `stageNativeJar` → 拷 jar 到 `native/zen.jar`，等待 DLL 把它作为资源段嵌入
+3. `configureNative` → CMake configure (`-A x64`)
+4. `buildNative` → 先 build `OpenZen.dll`，CMake 自定义命令把 DLL 拷到 loader 的 binary dir，rc.exe 再嵌入到 `OpenZenLoader.exe`
+5. `packageDist` → 把 EXE 拷到 `build/dist/`
+
+#### 使用注入器
+
+1. 用 HMCL / Forge 启动器正常启动 Minecraft 1.20.1 Forge（**不需要**任何特殊 JVM 参数）。
+2. 双击 `OpenZenLoader.exe`。
+3. 列表里找到对应的 `javaw.exe`（看 Window Title 列，应是 `Minecraft 1.20.1` 一类）。
+4. 点 Inject。
+5. 看到 `Injection ok. Watch %TEMP%\openzen.log for Java side.` 即成功。Minecraft 内右 Shift 触发 ClickGUI 验证。
+
+诊断日志：
+- Native 端：`%TEMP%\openzen.log`
+- Java 端：Minecraft 自己的 `logs/latest.log`（搜索 `OpenZen-Bootstrap`、`GameLoaderBridge`、`PatchAgent`、`ZenBootstrap`）
 
 ## 致谢
 

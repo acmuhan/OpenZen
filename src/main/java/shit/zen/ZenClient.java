@@ -44,6 +44,7 @@ import shit.zen.patch.MinecraftPatch;
 import shit.zen.patch.PacketUtilsPatch;
 import shit.zen.patch.PlayerPatch;
 import shit.zen.patch.PlayerTabOverlayPatch;
+import shit.zen.asm.Bootstrap;
 import shit.zen.utils.rotation.RotationHandler;
 
 @Mod(value = "hey")
@@ -79,6 +80,18 @@ public class ZenClient extends ClientBase {
         }
     }
 
+    /**
+     * Explicit entry point used by the DLL injection path
+     * ({@code shit.zen.dll.DllBootstrap}). Constructs the singleton if not
+     * already present and returns it.
+     */
+    public static synchronized ZenClient bootstrapForDll() {
+        if (instance == null) {
+            new ZenClient();
+        }
+        return instance;
+    }
+
     private void init() {
         try {
             username = System.getProperty("user.name", "Player");
@@ -103,6 +116,7 @@ public class ZenClient extends ClientBase {
             this.eventBus.register(this);
             this.commandManager.initCommands();
             this.eventBus.register(new IntroAnimation());
+            Bootstrap.init();
             registerPatches();
             if (PatchAgent.getInstrumentation() != null) {
                 PatchAgent.installPatchesAndRetransform();
@@ -158,7 +172,7 @@ public class ZenClient extends ClientBase {
         for (String name : CLOUD_ASSET_NAMES) {
             File outFile = new File(targetDir, name);
             if (outFile.exists()) continue;
-            try (InputStream in = ZenClient.class.getResourceAsStream("/assets/zen/cloud_assets/" + name)) {
+            try (InputStream in = openCloudAsset(name)) {
                 if (in == null) {
                     logger.warn("Cloud asset missing on classpath: {}", name);
                     continue;
@@ -172,7 +186,24 @@ public class ZenClient extends ClientBase {
         }
     }
 
-    private static void registerPatches() {
+    private static InputStream openCloudAsset(String name) {
+        String classpath = "/assets/zen/cloud_assets/" + name;
+        InputStream is = ZenClient.class.getResourceAsStream(classpath);
+        if (is != null) return is;
+        String dir = System.getProperty("openzen.resources");
+        if (dir != null) {
+            File f = new File(dir, "assets/zen/cloud_assets/" + name);
+            if (f.isFile()) {
+                try {
+                    return new java.io.FileInputStream(f);
+                } catch (IOException ignored) {
+                }
+            }
+        }
+        return null;
+    }
+
+    public static void registerPatches() {
         PatchRegistry.register(MinecraftPatch.class);
         PatchRegistry.register(LocalPlayerPatch.class);
         PatchRegistry.register(LivingEntityPatch.class);

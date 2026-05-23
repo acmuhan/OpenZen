@@ -279,3 +279,125 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+// ===== Native build (DLL injection path) =====
+//
+// Produces:
+//   build/dist/OpenZen.dll        - injectable DLL with embedded zen.jar
+//   build/dist/OpenZenLoader.exe  - GUI injector
+//
+// Requires:
+//   - JAVA_HOME pointing at a JDK 17 install (for jni.h / jvmti.h)
+//   - CMake either on PATH, bundled with Visual Studio 2019/2022
+//     ("C++ CMake tools for Windows" workload), or installed standalone.
+//   - MSVC build tools (Visual Studio 2019+).
+//
+// Usage:
+//   ./gradlew dll
+//
+def nativeDir = file('native')
+def nativeBuildDir = file("$nativeDir/build")
+
+ext.findCmake = {
+    // 1. cmake already on PATH?
+    try {
+        def p = ['cmd', '/c', 'where', 'cmake'].execute()
+        def out = new StringBuilder()
+        p.consumeProcessOutput(out, new StringBuilder())
+        p.waitForOrKill(2000)
+        if (p.exitValue() == 0) {
+            def first = out.toString().readLines().find { it?.trim() }
+            if (first) return first.trim()
+        }
+    } catch (Exception ignored) {}
+
+    // 2. Visual Studio bundled cmake via vswhere.
+    def pf86 = System.getenv('ProgramFiles(x86)') ?: 'C:/Program Files (x86)'
+    def vswhere = "${pf86}/Microsoft Visual Studio/Installer/vswhere.exe"
+    if (file(vswhere).exists()) {
+        try {
+            def out = new StringBuilder()
+            def p = [vswhere, '-latest', '-products', '*',
+                     '-requires', 'Microsoft.VisualStudio.Component.VC.CMake.Project',
+                     '-property', 'installationPath'].execute()
+            p.consumeProcessOutput(out, new StringBuilder())
+            p.waitForOrKill(5000)
+            def vsPath = out.toString().trim()
+            if (vsPath) {
+                def cmakeExe = "${vsPath}/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+                if (file(cmakeExe).exists()) return cmakeExe
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // 3. Standalone CMake installations.
+    def pf = System.getenv('ProgramFiles') ?: 'C:/Program Files'
+    def lad = System.getenv('LOCALAPPDATA') ?: ''
+    def candidates = [
+            "${pf}/CMake/bin/cmake.exe",
+            "${pf86}/CMake/bin/cmake.exe",
+            "${lad}/Programs/CMake/bin/cmake.exe",
+    ]
+    for (path in candidates) {
+        if (path && file(path).exists()) return path
+    }
+    return null
+}
+
+def cmakeMissingMessage =
+        'CMake not found. Install one of:\n' +
+        '  - Standalone CMake: https://cmake.org/download/ (add to PATH)\n' +
+        '  - Visual Studio 2022 with "C++ CMake tools for Windows" workload\n' +
+        'After installing, re-run ./gradlew dll'
+
+tasks.register('stageNativeJar', Copy) {
+    group = 'openzen'
+    description = 'Stage the freshly built mod jar at native/zen.jar so the DLL ' +
+                  'resource compiler can embed it.'
+    dependsOn 'jar'
+    from { tasks.jar.archiveFile }
+    into nativeDir
+    rename { 'zen.jar' }
+}
+
+tasks.register('configureNative', Exec) {
+    group = 'openzen'
+    description = 'Run CMake configure on the native sub-projects (DLL + Loader).'
+    dependsOn 'stageNativeJar'
+    workingDir nativeDir
+    commandLine 'cmake', '-S', '.', '-B', 'build', '-A', 'x64'
+    doFirst {
+        def cmake = findCmake()
+        if (!cmake) throw new GradleException(cmakeMissingMessage)
+        logger.lifecycle("Using CMake: ${cmake}")
+        commandLine cmake, '-S', '.', '-B', 'build', '-A', 'x64'
+    }
+}
+
+tasks.register('buildNative', Exec) {
+    group = 'openzen'
+    description = 'Compile OpenZen.dll and OpenZenLoader.exe with CMake.'
+    dependsOn 'configureNative'
+    workingDir nativeDir
+    commandLine 'cmake', '--build', 'build', '--config', 'Release'
+    doFirst {
+        def cmake = findCmake()
+        if (!cmake) throw new GradleException(cmakeMissingMessage)
+        commandLine cmake, '--build', 'build', '--config', 'Release'
+    }
+}
+
+tasks.register('packageDist', Copy) {
+    group = 'openzen'
+    description = 'Collect the Loader EXE into build/dist for distribution. ' +
+                  'OpenZen.dll is embedded inside the EXE, so we only ship one file.'
+    dependsOn 'buildNative'
+    from "$nativeBuildDir/loader/Release/OpenZenLoader.exe"
+    into "$buildDir/dist"
+}
+
+tasks.register('dll') {
+    group = 'openzen'
+    description = 'Build the injectable DLL and GUI Loader (final dist artifacts).'
+    dependsOn 'packageDist'
+}

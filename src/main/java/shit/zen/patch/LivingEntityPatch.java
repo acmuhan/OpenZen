@@ -15,16 +15,13 @@ import net.minecraft.world.phys.Vec3;
 import shit.zen.ClientBase;
 import shit.zen.ZenClient;
 import shit.zen.asm.Invocation;
-import shit.zen.event.impl.EntityHurtEvent;
-import shit.zen.event.impl.FallFlyingEvent;
-import shit.zen.event.impl.HeadTurnEvent;
-import shit.zen.event.impl.JumpEvent;
-import shit.zen.event.impl.JumpMarkerEvent;
+import shit.zen.event.impl.*;
 import shit.zen.modules.impl.movement.NoDelay;
 import shit.zen.modules.impl.movement.Scaffold;
 import shit.zen.modules.impl.render.FullBright;
 import shit.zen.utils.game.PlayerUtil;
 import shit.zen.utils.misc.ReflectionUtil;
+import shit.zen.utils.rotation.RotationHandler;
 
 @Patch(LivingEntity.class)
 public class LivingEntityPatch {
@@ -60,7 +57,7 @@ public class LivingEntityPatch {
     @WrapInvoke(method = "tickHeadTurn", desc = "(FF)F", target = "net/minecraft/world/entity/Entity/getYRot", targetDesc = "()F")
     public static float onTickHeadTurn(LivingEntity entity, float yaw, float partial, Invocation<LivingEntity, Float> original) throws Exception {
         float currentYaw = original.call();
-        HeadTurnEvent event = new HeadTurnEvent(currentYaw, 0.0f);
+        RotationAnimationEvent event = new RotationAnimationEvent(currentYaw, 0, 0, 0);
         if (ZenClient.isReady() && entity == ClientBase.mc.player) {
             ZenClient.getInstance().getEventBus().call(event);
         }
@@ -69,7 +66,7 @@ public class LivingEntityPatch {
 
     @WrapInvoke(method = "tick", desc = "()V", target = "net/minecraft/world/entity/Entity/getYRot", targetDesc = "()F")
     public static float onTickGetYRot(LivingEntity entity, Invocation<LivingEntity, Float> original) throws Exception {
-        return ClientBase.partialTicks;
+        return ClientBase.yaw;
     }
 
     @WrapInvoke(method = "jumpFromGround", desc = "()V", target = "net/minecraft/world/entity/Entity/getYRot", targetDesc = "()F")
@@ -79,8 +76,8 @@ public class LivingEntityPatch {
         if (ZenClient.isReady()) {
             ZenClient.getInstance().getEventBus().call(event);
         }
-        ClientBase.partialTicks = event.getJumpHeight();
-        return event.getJumpHeight();
+        ClientBase.yaw = event.getYaw();
+        return event.getYaw();
     }
 
     @Inject(method = "travel", desc = "(Lnet/minecraft/world/phys/Vec3;)V", at = @At(At.Type.HEAD))
@@ -101,7 +98,7 @@ public class LivingEntityPatch {
         if (ZenClient.isReady()) {
             ZenClient.getInstance().getEventBus().call(event);
         }
-        return event.getSpeed();
+        return event.getPitch();
     }
 
     @Inject(method = "hurt", desc = "(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At(At.Type.HEAD))

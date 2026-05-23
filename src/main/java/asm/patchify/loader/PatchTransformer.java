@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -33,6 +35,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import shit.zen.asm.Bootstrap;
 import shit.zen.asm.ILocals;
 import shit.zen.asm.Invocation;
 import shit.zen.asm.InvocationImpl;
@@ -57,6 +60,7 @@ import shit.zen.patch.CallbackInfo;
  * </ul>
  */
 public final class PatchTransformer {
+    private static final Logger LOGGER = LogManager.getLogger(PatchTransformer.class);
     private static final String CALLBACK_INFO = Type.getInternalName(CallbackInfo.class);
     private static final String CALLBACK_INFO_DESC = Type.getDescriptor(CallbackInfo.class);
 
@@ -68,20 +72,30 @@ public final class PatchTransformer {
         if (patchAnnotation == null) {
             throw new IllegalArgumentException(patchClass.getName() + " is not @Patch");
         }
+        String patchTargetOwner = Type.getInternalName(patchAnnotation.value());
 
         Map<MethodKey, List<Method>> handlersByTarget = new HashMap<>();
         for (Method handler : patchClass.getDeclaredMethods()) {
-            collectHandler(patchClass, handler, handlersByTarget);
+            collectHandler(patchClass, patchTargetOwner, handler, handlersByTarget);
         }
+        LOGGER.info("Loading patch {} -> {} ({} handler(s))",
+                patchClass.getName(), target.name,
+                handlersByTarget.values().stream().mapToInt(List::size).sum());
 
+        Set<MethodKey> matched = new HashSet<>();
         for (MethodNode method : target.methods) {
-            List<Method> handlers = handlersByTarget.get(new MethodKey(method.name, method.desc));
+            MethodKey key = new MethodKey(method.name, method.desc);
+            List<Method> handlers = handlersByTarget.get(key);
             if (handlers == null) continue;
+            matched.add(key);
             for (Method handler : handlers) {
                 if (handler.isAnnotationPresent(Inject.class)) {
                     applyInject(method, handler);
                 } else if (handler.isAnnotationPresent(Overwrite.class)) {
                     overwriteMethod(method, handler);
+                    LOGGER.info("@Overwrite     {}/{}{} <- {}#{}",
+                            target.name, method.name, method.desc,
+                            patchClass.getName(), handler.getName());
                 } else if (handler.isAnnotationPresent(Transform.class)) {
                     try {
                         handler.setAccessible(true);
@@ -89,6 +103,9 @@ public final class PatchTransformer {
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to apply @Transform " + handler, e);
                     }
+                    LOGGER.info("@Transform     {}/{}{} <- {}#{}",
+                            target.name, method.name, method.desc,
+                            patchClass.getName(), handler.getName());
                 } else if (handler.isAnnotationPresent(WrapInvoke.class)) {
                     wrapInvoke(method, handler);
                 } else if (handler.isAnnotationPresent(ModifyLocals.class)) {
@@ -96,9 +113,18 @@ public final class PatchTransformer {
                 }
             }
         }
+        for (Map.Entry<MethodKey, List<Method>> entry : handlersByTarget.entrySet()) {
+            if (matched.contains(entry.getKey())) continue;
+            for (Method handler : entry.getValue()) {
+                LOGGER.warn("Patch handler {}#{}{} targets {}#{}{} but no such method exists on {} — handler will not run.",
+                        handler.getDeclaringClass().getName(), handler.getName(), Type.getMethodDescriptor(handler),
+                        target.name, entry.getKey().name(), entry.getKey().desc(), target.name);
+            }
+        }
     }
 
-    private static void collectHandler(Class<?> patchClass, Method handler,
+    private static void collectHandler(Class<?> patchClass, String patchTargetOwner,
+                                       Method handler,
                                        Map<MethodKey, List<Method>> handlersByTarget) {
         if (!(handler.isAnnotationPresent(Inject.class)
                 || handler.isAnnotationPresent(Overwrite.class)
@@ -145,6 +171,11 @@ public final class PatchTransformer {
                 throw new IllegalArgumentException("@ModifyLocals " + handler + " must take a single ILocals");
             }
         }
+        // Patch annotations carry the mojmap method name (the jar was compiled
+        // against mojmap, and reobfJar does not rewrite string literals). In a
+        // production Forge environment the live class only has SRG names, so
+        // remap before matching against ClassNode.methods.
+        name = Bootstrap.remapMethod(patchTargetOwner, name, desc);
         handlersByTarget.computeIfAbsent(new MethodKey(name, desc), k -> new ArrayList<>()).add(handler);
     }
 
@@ -230,6 +261,9 @@ public final class PatchTransformer {
         insns.add(notCancelled);
         insns.add(new InsnNode(Opcodes.POP));
         method.instructions.insert(insns);
+        LOGGER.info("@Inject(HEAD)  {}/{}{} <- {}#{}",
+                targetClassName(handler), method.name, method.desc,
+                handler.getDeclaringClass().getName(), handler.getName());
     }
 
     private static void injectTail(MethodNode method, Method handler) {
@@ -238,6 +272,12 @@ public final class PatchTransformer {
         Slice slice = handler.getAnnotation(Inject.class).slice();
         List<AbstractInsnNode> returnInsns = collectInjectionPoints(method.instructions, slice,
                 insn -> insn.getOpcode() == returnOp);
+        if (returnInsns.isEmpty()) {
+            LOGGER.warn("@Inject(TAIL) {}#{}{} found no return instruction in target {}{} — patch handler will not run.",
+                    handler.getDeclaringClass().getName(), handler.getName(), Type.getMethodDescriptor(handler),
+                    method.name, method.desc);
+            return;
+        }
 
         String handlerOwner = Type.getInternalName(handler.getDeclaringClass());
         String handlerName = handler.getName();
@@ -289,6 +329,9 @@ public final class PatchTransformer {
             }
             method.instructions.insertBefore(returnInsn, insns);
         }
+        LOGGER.info("@Inject(TAIL)  {}/{}{} <- {}#{} ({} return site(s))",
+                targetClassName(handler), method.name, method.desc,
+                handler.getDeclaringClass().getName(), handler.getName(), returnInsns.size());
     }
 
     private static void injectAroundInvoke(MethodNode method, Method handler,
@@ -296,15 +339,20 @@ public final class PatchTransformer {
         Type returnType = Type.getReturnType(method.desc);
         String[] split = ASMHelpers.splitOwnerName(invokeName);
         String invokeOwner = split[0];
-        String invokeMethod = split[1];
+        String invokeMethod = Bootstrap.remapMethod(split[0], split[1], invokeDesc);
 
         Slice slice = handler.getAnnotation(Inject.class).slice();
+        // PatchApplier.applyInvokeInject uses strict owner+name+desc matching.
         List<AbstractInsnNode> sites = collectInjectionPoints(method.instructions, slice,
                 insn -> insn instanceof MethodInsnNode m
                         && m.owner.equals(invokeOwner)
                         && m.name.equals(invokeMethod)
                         && m.desc.equals(invokeDesc));
         if (sites.isEmpty()) {
+            LOGGER.warn("@Inject({}_INVOKE) {}#{}{} found no call site of {}#{}{} — patch handler will not run.",
+                    before ? "BEFORE" : "AFTER",
+                    handler.getDeclaringClass().getName(), handler.getName(), Type.getMethodDescriptor(handler),
+                    invokeOwner, invokeMethod, invokeDesc);
             return;
         }
 
@@ -366,6 +414,11 @@ public final class PatchTransformer {
                 method.instructions.insert(site, insns);
             }
         }
+        LOGGER.info("@Inject({}) {}/{}{} <- {}#{} around {}#{}{} ({} site(s))",
+                before ? "BEFORE_INVOKE" : "AFTER_INVOKE ",
+                targetClassName(handler), method.name, method.desc,
+                handler.getDeclaringClass().getName(), handler.getName(),
+                invokeOwner, invokeMethod, invokeDesc, sites.size());
     }
 
     // ============================================================================
@@ -381,17 +434,17 @@ public final class PatchTransformer {
                             + " params but target requires " + expectedParams
                             + " ((this if non-static), then method args). Remove any CallbackInfo param.");
         }
-        method.instructions.clear();
-        if (method.tryCatchBlocks != null) method.tryCatchBlocks.clear();
-        if (method.localVariables != null) method.localVariables.clear();
+        // PatchApplier.applyOverwrite: prepend a static call to the handler followed by
+        // RETURN. The original instructions stay as dead code (never reached). Slot
+        // increment is plain ++ — wide types after a wide type are not handled because
+        // PatchApplier never handled them.
         InsnList insns = new InsnList();
         int slot = 0;
         if (!Modifier.isStatic(method.access)) {
             insns.add(new VarInsnNode(Opcodes.ALOAD, slot++));
         }
         for (Type argType : Type.getArgumentTypes(method.desc)) {
-            insns.add(new VarInsnNode(argType.getOpcode(Opcodes.ILOAD), slot));
-            slot += argType.getSize();
+            insns.add(new VarInsnNode(argType.getOpcode(Opcodes.ILOAD), slot++));
         }
         insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
                 Type.getInternalName(handler.getDeclaringClass()),
@@ -399,7 +452,11 @@ public final class PatchTransformer {
                 Type.getMethodDescriptor(handler),
                 false));
         Type returnType = Type.getReturnType(method.desc);
-        insns.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
+        if (returnType == Type.VOID_TYPE) {
+            insns.add(new InsnNode(Opcodes.RETURN));
+        } else {
+            insns.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
+        }
         method.instructions.insert(insns);
     }
 
@@ -413,14 +470,19 @@ public final class PatchTransformer {
         String targetDesc = wrap.targetDesc();
         String[] split = ASMHelpers.splitOwnerName(target);
         String targetOwner = split[0];
-        String targetMethod = split[1];
+        String targetMethod = Bootstrap.remapMethod(split[0], split[1], targetDesc);
 
+        // Match what shit.zen.asm.PatchApplier did: accept either owner or name match,
+        // so targets pointing at the declaring class (e.g. Entity/getYRot) still hit
+        // bytecode that encodes the receiver as a subclass (LivingEntity/getYRot).
         List<AbstractInsnNode> sites = collectInjectionPoints(method.instructions, wrap.slice(),
                 insn -> insn instanceof MethodInsnNode m
-                        && m.owner.equals(targetOwner)
-                        && m.name.equals(targetMethod)
+                        && (m.owner.equals(targetOwner) || m.name.equals(targetMethod))
                         && m.desc.equals(targetDesc));
         if (sites.isEmpty()) {
+            LOGGER.warn("@WrapInvoke {}#{}{} found no call site of {}#{}{} — patch handler will not run.",
+                    handler.getDeclaringClass().getName(), handler.getName(), Type.getMethodDescriptor(handler),
+                    targetOwner, targetMethod, targetDesc);
             return;
         }
         Set<Integer> initializedLocals = collectInitializedLocalsBefore(method, sites.get(0));
@@ -429,12 +491,19 @@ public final class PatchTransformer {
         String handlerName = handler.getName();
         String handlerDesc = Type.getMethodDescriptor(handler);
 
+        // PatchApplier looks at sites.get(0) once and reuses staticCall for the loop;
+        // only INVOKESTATIC / INVOKEVIRTUAL are accepted.
+        int firstOp = sites.get(0).getOpcode();
+        boolean staticCall;
+        if (firstOp == Opcodes.INVOKESTATIC) {
+            staticCall = true;
+        } else if (firstOp == Opcodes.INVOKEVIRTUAL) {
+            staticCall = false;
+        } else {
+            throw new IllegalArgumentException("@WrapInvoke unsupported opcode " + firstOp + " in " + handler);
+        }
+
         for (AbstractInsnNode site : sites) {
-            int op = site.getOpcode();
-            boolean staticCall = op == Opcodes.INVOKESTATIC;
-            if (!staticCall && op != Opcodes.INVOKEVIRTUAL && op != Opcodes.INVOKEINTERFACE) {
-                throw new IllegalArgumentException("@WrapInvoke unsupported opcode " + op + " in " + handler);
-            }
 
             InsnList insns = new InsnList();
             int wrapperLocal = method.maxLocals;
@@ -505,6 +574,10 @@ public final class PatchTransformer {
             method.instructions.insertBefore(site, insns);
             method.instructions.remove(site);
         }
+        LOGGER.info("@WrapInvoke    {}/{}{} <- {}#{} wraps {}#{}{} ({} site(s))",
+                targetClassName(handler), method.name, method.desc,
+                handler.getDeclaringClass().getName(), handler.getName(),
+                targetOwner, targetMethod, targetDesc, sites.size());
     }
 
     // ============================================================================
@@ -527,11 +600,13 @@ public final class PatchTransformer {
         AbstractInsnNode insertBefore = method.instructions.getFirst();
         Set<Integer> initializedLocals = new HashSet<>();
         if (at.value() != At.Type.HEAD) {
+            boolean foundAnchor = false;
             if (at.value() == At.Type.TAIL) {
                 int retOp = Type.getReturnType(method.desc).getOpcode(Opcodes.IRETURN);
                 for (AbstractInsnNode insn : method.instructions) {
                     if (insn.getOpcode() == retOp) {
                         insertBefore = insn;
+                        foundAnchor = true;
                         break;
                     }
                     if (insn instanceof VarInsnNode v && v.getOpcode() >= Opcodes.ISTORE && v.getOpcode() <= Opcodes.ASTORE) {
@@ -540,16 +615,27 @@ public final class PatchTransformer {
                 }
             } else {
                 String[] split = ASMHelpers.splitOwnerName(at.method());
+                String invokeMethod = Bootstrap.remapMethod(split[0], split[1], at.desc());
                 for (AbstractInsnNode insn : method.instructions) {
-                    if (insn instanceof MethodInsnNode m && m.owner.equals(split[0])
-                            && m.name.equals(split[1]) && m.desc.equals(at.desc())) {
+                    if (insn instanceof MethodInsnNode m
+                            && m.owner.equals(split[0])
+                            && m.name.equals(invokeMethod)
+                            && m.desc.equals(at.desc())) {
                         insertBefore = insn;
+                        foundAnchor = true;
                         break;
                     }
                     if (insn instanceof VarInsnNode v && v.getOpcode() >= Opcodes.ISTORE && v.getOpcode() <= Opcodes.ASTORE) {
                         initializedLocals.add(v.var);
                     }
                 }
+            }
+            if (!foundAnchor) {
+                LOGGER.warn("@ModifyLocals {}#{}{} found no anchor {} {}{} in target {}{} — patch handler will not run.",
+                        handler.getDeclaringClass().getName(), handler.getName(), Type.getMethodDescriptor(handler),
+                        at.value(), at.method(), at.desc(),
+                        method.name, method.desc);
+                return;
             }
             for (int idx : indexes) {
                 if (!initializedLocals.contains(idx) && at.value() != At.Type.HEAD) {
@@ -590,11 +676,20 @@ public final class PatchTransformer {
         }
         insns.add(new InsnNode(Opcodes.POP));
         method.instructions.insertBefore(insertBefore, insns);
+        LOGGER.info("@ModifyLocals  {}/{}{} <- {}#{} (locals: {})",
+                targetClassName(handler), method.name, method.desc,
+                handler.getDeclaringClass().getName(), handler.getName(),
+                Arrays.toString(indexes));
     }
 
     // ============================================================================
     // Helpers
     // ============================================================================
+
+    private static String targetClassName(Method handler) {
+        Patch patch = handler.getDeclaringClass().getAnnotation(Patch.class);
+        return patch == null ? "?" : Type.getInternalName(patch.value());
+    }
 
     private static List<AbstractInsnNode> collectInjectionPoints(InsnList insns, Slice slice,
                                                                   Predicate<AbstractInsnNode> filter) {
@@ -628,19 +723,27 @@ public final class PatchTransformer {
         String[] startSplit = slice.start().method().isEmpty()
                 ? null : ASMHelpers.splitOwnerName(slice.start().method());
         String startDesc = slice.start().desc();
+        String startName = startSplit == null ? null
+                : Bootstrap.remapMethod(startSplit[0], startSplit[1], startDesc);
         String[] endSplit = slice.end().method().isEmpty()
                 ? null : ASMHelpers.splitOwnerName(slice.end().method());
         String endDesc = slice.end().desc();
+        String endName = endSplit == null ? null
+                : Bootstrap.remapMethod(endSplit[0], endSplit[1], endDesc);
         boolean foundStart = defaultStart;
         for (AbstractInsnNode insn : insns) {
             if (!foundStart && startSplit != null && insn instanceof MethodInsnNode m
-                    && m.owner.equals(startSplit[0]) && m.name.equals(startSplit[1]) && m.desc.equals(startDesc)) {
+                    && m.owner.equals(startSplit[0]) && m.name.equals(startName) && m.desc.equals(startDesc)) {
                 foundStart = true;
             } else if (!defaultEnd && endSplit != null && insn instanceof MethodInsnNode m
-                    && m.owner.equals(endSplit[0]) && m.name.equals(endSplit[1]) && m.desc.equals(endDesc)) {
+                    && m.owner.equals(endSplit[0]) && m.name.equals(endName) && m.desc.equals(endDesc)) {
                 break;
             }
-            if (foundStart && filter.test(insn)) {
+            // PatchApplier appends every insn in the slice, not only filter matches.
+            // No production patch uses method-bounded slices today, so this faithfully
+            // mirrors the original — but downstream code expecting filtered hits would
+            // crash if a method-bounded slice were ever introduced.
+            if (foundStart) {
                 matches.add(insn);
             }
         }

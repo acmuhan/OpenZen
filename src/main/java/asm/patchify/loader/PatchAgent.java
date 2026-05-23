@@ -21,6 +21,8 @@ public final class PatchAgent {
     public static final String INSTRUMENTATION_KEY = "asm.patchify.instrumentation";
     private static final Logger LOGGER = LogManager.getLogger("PatchAgent");
 
+    private static volatile boolean transformerInstalled = false;
+
     private PatchAgent() {
     }
 
@@ -53,7 +55,11 @@ public final class PatchAgent {
      * Install a transformer for the currently registered patches and retransform any patch target
      * that is already loaded. Called from mod code once {@link PatchRegistry} is populated.
      */
-    public static void installPatchesAndRetransform() {
+    public static synchronized void installPatchesAndRetransform() {
+        if (transformerInstalled) {
+            LOGGER.info("Patches already installed; skipping duplicate retransform request");
+            return;
+        }
         Instrumentation inst = getInstrumentation();
         if (inst == null) {
             LOGGER.warn("PatchAgent not attached; cannot install patches");
@@ -61,6 +67,7 @@ public final class PatchAgent {
         }
         PatchClassFileTransformer transformer = new PatchClassFileTransformer();
         inst.addTransformer(transformer, true);
+        transformerInstalled = true;
         List<Class<?>> retransform = new ArrayList<>();
         for (Class<?> patch : PatchRegistry.getPatches()) {
             asm.patchify.annotation.Patch ann = patch.getAnnotation(asm.patchify.annotation.Patch.class);

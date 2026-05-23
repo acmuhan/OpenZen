@@ -34,6 +34,10 @@ public class MinecraftPatch {
     public static volatile boolean initialized = false;
     private static HitResult savedHitResult;
 
+    public static void markInitialized() {
+        initialized = true;
+    }
+
     @Inject(method = "tick", desc = "()V")
     public static void onTick(Minecraft minecraft, CallbackInfo callbackInfo) throws Throwable {
         if (!initialized) {
@@ -58,7 +62,7 @@ public class MinecraftPatch {
         }
         if (ZenClient.isReady()) {
             ZenClient.serverTickRate = 1.0f;
-            ClientBase.partialTicks = minecraft.player.getYRot();
+            ClientBase.yaw = minecraft.player.getYRot();
             ZenClient.instance.getEventBus().call(new TickEvent());
         }
     }

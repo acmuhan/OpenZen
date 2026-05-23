@@ -4,6 +4,7 @@ import java.awt.Font;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import shit.zen.utils.misc.Assets;
 
 public final class Fonts {
     private static final Map<String, FontRenderer> fontRendererCache = new HashMap<>();
@@ -39,7 +40,7 @@ public final class Fonts {
     }
 
     private static Font loadAwtFont(String name) {
-        try (InputStream stream = Fonts.class.getResourceAsStream("/assets/zen/fonts/" + name)) {
+        try (InputStream stream = Assets.open("/assets/zen/fonts/" + name)) {
             if (stream == null) {
                 return null;
             }

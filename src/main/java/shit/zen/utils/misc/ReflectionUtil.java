@@ -195,11 +195,38 @@ public final class ReflectionUtil {
     }
 
     public static String getMappedFieldName(Class<?> clazz, String fieldName) {
-        return fieldName;
+        return shit.zen.asm.Bootstrap.remapField(clazz.getName().replace('.', '/'), fieldName);
     }
 
     public static String getMappedMethodName(Class<?> clazz, String methodName, String descriptor) {
-        return methodName;
+        return shit.zen.asm.Bootstrap.remapMethod(clazz.getName().replace('.', '/'), methodName, descriptor);
+    }
+
+    /**
+     * Looks the field up by trying the supplied (mojmap) name first, then the
+     * SRG-remapped name. Walks the superclass chain because the field may be
+     * declared on an ancestor (e.g. {@code activeEffects} lives on
+     * {@code LivingEntity}, not on {@code LocalPlayer}).
+     */
+    private static Field resolveField(Class<?> clazz, String name) throws NoSuchFieldException {
+        NoSuchFieldException last = null;
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            String srg = shit.zen.asm.Bootstrap.remapField(
+                    c.getName().replace('.', '/'), name);
+            try {
+                return c.getDeclaredField(srg);
+            } catch (NoSuchFieldException e) {
+                last = e;
+            }
+            if (!srg.equals(name)) {
+                try {
+                    return c.getDeclaredField(name);
+                } catch (NoSuchFieldException e) {
+                    last = e;
+                }
+            }
+        }
+        throw last != null ? last : new NoSuchFieldException(name);
     }
 
     private static long getFieldOffset(Class<?> clazz, String name) {
@@ -207,7 +234,7 @@ public final class ReflectionUtil {
         long offset = offsetCache.getLong(key);
         if (offset != 0L) return offset;
         try {
-            offset = unsafe.objectFieldOffset(clazz.getDeclaredField(name));
+            offset = unsafe.objectFieldOffset(resolveField(clazz, name));
             offsetCache.put(key, offset);
             return offset;
         } catch (NoSuchFieldException e) {
@@ -220,7 +247,7 @@ public final class ReflectionUtil {
         ObjectLongPair<Object> pair = staticFieldCache.get(key);
         if (pair != null) return pair;
         try {
-            Field field = clazz.getDeclaredField(name);
+            Field field = resolveField(clazz, name);
             ObjectLongPair<Object> p = new ObjectLongImmutablePair<>(unsafe.staticFieldBase(field), unsafe.staticFieldOffset(field));
             staticFieldCache.put(key, p);
             return p;
@@ -235,9 +262,9 @@ public final class ReflectionUtil {
             ObjectLongPair<Object> pair = getStaticFieldPair(clazz, name);
             return unsafe.getObject(pair.first(), pair.secondLong());
         }
-        // Fall back to a VarHandle
+        // Instance-field path: also walk up the superclass chain.
         try {
-            Field field = clazz.getDeclaredField(name);
+            Field field = resolveField(object.getClass(), name);
             field.setAccessible(true);
             return field.get(object);
         } catch (Exception e) {

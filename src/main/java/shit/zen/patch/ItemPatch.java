@@ -25,7 +25,7 @@ public class ItemPatch {
         if (ZenClient.isReady()) {
             ZenClient.getInstance().getEventBus().call(event);
         }
-        return event.getBlockRange();
+        return event.getPitch();
     }
 
     @WrapInvoke(
@@ -37,9 +37,10 @@ public class ItemPatch {
     public static float onGetPOVHitYRot(Level level, Player player, ClipContext.Fluid fluidContext, Invocation<Player, Float> original) throws Exception {
         UseItemRayTraceEvent event = new UseItemRayTraceEvent(player.getYRot(), player.getXRot());
         if (ZenClient.isReady()) {
-            System.out.println(DEBUG_PREFIX + player.getYRot());
+            // Don't use system out to print your shit retard.
+            // System.out.println(DEBUG_PREFIX + player.getYRot());
             ZenClient.getInstance().getEventBus().call(event);
         }
-        return event.getRange();
+        return event.getYaw();
     }
 }
