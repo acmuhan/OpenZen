@@ -106,10 +106,13 @@ public class ZenClient extends ClientBase {
             this.eventBus.register(new IntroAnimation());
             Bootstrap.init();
             registerPatches();
+            if (PatchAgent.getInstrumentation() == null) {
+                PatchAgent.trySelfAttach();
+            }
             if (PatchAgent.getInstrumentation() != null) {
                 PatchAgent.installPatchesAndRetransform();
             } else {
-                logger.warn("PatchAgent not attached. Launch with `./gradlew runClient0` so the agent jvmArg is set.");
+                logger.warn("PatchAgent not attached. Launch with `-javaagent:<OpenZen jar>` or `./gradlew runClient0` so patches can be installed.");
             }
             isReady = true;
             logger.info("{} v{} initialized.", CLIENT_NAME, VERSION);

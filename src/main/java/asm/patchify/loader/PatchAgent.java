@@ -1,6 +1,10 @@
 package asm.patchify.loader;
 
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -22,6 +26,7 @@ public final class PatchAgent {
     private static final Logger LOGGER = LogManager.getLogger("PatchAgent");
 
     private static volatile boolean transformerInstalled = false;
+    private static volatile boolean selfAttachAttempted = false;
 
     private PatchAgent() {
     }
@@ -49,6 +54,98 @@ public final class PatchAgent {
     public static Instrumentation getInstrumentation() {
         Object instObj = System.getProperties().get(INSTRUMENTATION_KEY);
         return instObj instanceof Instrumentation ? (Instrumentation) instObj : null;
+    }
+
+    /**
+     * Best-effort fallback for normal Forge mod loading.
+     *
+     * <p>When OpenZen is only placed in {@code mods/}, Forge loads {@link shit.zen.ZenClient}
+     * but the JVM never invokes this jar's {@code Premain-Class}. The preferred launch paths are
+     * still {@code -javaagent:<jar>}, {@code runClient0}, or the native injector, but on runtimes
+     * that include the JDK Attach API this method can attach the same jar to the current JVM and
+     * make the plain {@code mods/} path work without manual JVM arguments.</p>
+     */
+    public static synchronized boolean trySelfAttach() {
+        if (getInstrumentation() != null) {
+            return true;
+        }
+        if (selfAttachAttempted) {
+            return false;
+        }
+        selfAttachAttempted = true;
+
+        Path jarPath = findOwnJar();
+        if (jarPath == null) {
+            LOGGER.warn("PatchAgent self-attach skipped: could not locate OpenZen jar");
+            return false;
+        }
+        if (!Files.isRegularFile(jarPath)) {
+            LOGGER.warn("PatchAgent self-attach skipped: {} is not a jar file", jarPath);
+            return false;
+        }
+
+        // Some HotSpot builds allow enabling self-attach before VirtualMachine.attach is called.
+        // If the runtime rejects this, the catch block below keeps the mod from crashing.
+        System.setProperty("jdk.attach.allowAttachSelf", "true");
+
+        Object vm = null;
+        try {
+            String pid = Long.toString(ProcessHandle.current().pid());
+            Class<?> virtualMachineClass = Class.forName("com.sun.tools.attach.VirtualMachine");
+            Method attach = virtualMachineClass.getMethod("attach", String.class);
+            Method loadAgent = virtualMachineClass.getMethod("loadAgent", String.class);
+            Method detach = virtualMachineClass.getMethod("detach");
+
+            LOGGER.info("PatchAgent self-attaching {} to current JVM pid {}", jarPath, pid);
+            vm = attach.invoke(null, pid);
+            loadAgent.invoke(vm, jarPath.toAbsolutePath().toString());
+            Instrumentation inst = getInstrumentation();
+            if (inst != null) {
+                LOGGER.info("PatchAgent self-attach succeeded");
+                return true;
+            }
+            LOGGER.warn("PatchAgent self-attach completed but Instrumentation is still unavailable");
+            return false;
+        } catch (Throwable t) {
+            Throwable cause = unwrap(t);
+            LOGGER.warn("PatchAgent self-attach failed: {}. If plain mods/ loading does not work, launch with -javaagent:{} or use OpenZenLoader.exe.",
+                    cause.toString(), jarPath.toAbsolutePath());
+            return false;
+        } finally {
+            if (vm != null) {
+                try {
+                    Method detach = vm.getClass().getMethod("detach");
+                    detach.invoke(vm);
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+    }
+
+    private static Path findOwnJar() {
+        try {
+            if (PatchAgent.class.getProtectionDomain() == null
+                    || PatchAgent.class.getProtectionDomain().getCodeSource() == null
+                    || PatchAgent.class.getProtectionDomain().getCodeSource().getLocation() == null) {
+                return null;
+            }
+            URI uri = PatchAgent.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+            Path path = Path.of(uri).toAbsolutePath().normalize();
+            return path.toString().endsWith(".jar") ? path : null;
+        } catch (Throwable t) {
+            LOGGER.warn("PatchAgent failed to resolve own jar path: {}", t.toString());
+            return null;
+        }
+    }
+
+    private static Throwable unwrap(Throwable t) {
+        Throwable current = t;
+        while (current.getCause() != null
+                && (current instanceof java.lang.reflect.InvocationTargetException
+                || current instanceof java.lang.ExceptionInInitializerError)) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     /**
