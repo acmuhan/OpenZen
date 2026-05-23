@@ -93,30 +93,42 @@ jobs:
         run: gradlew.bat dll --no-daemon --stacktrace
 
       - name: Package native artifacts
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p dist/native
-          shopt -s nullglob
-          artifacts=(build/dist/*)
-          if [ ${#artifacts[@]} -eq 0 ]; then
-            mapfile -t artifacts < <(find build native/build -type f \( -name '*.exe' -o -name '*.dll' \) -print 2>/dev/null)
-          fi
-          if [ ${#artifacts[@]} -eq 0 ]; then
-            echo "No native artifacts found" >&2
-            find build native/build -maxdepth 5 -type f -print 2>/dev/null || true
+          New-Item -ItemType Directory -Force -Path dist/native | Out-Null
+
+          $artifacts = @()
+          if (Test-Path build/dist) {
+            $artifacts += Get-ChildItem -Path build/dist -File -ErrorAction SilentlyContinue
+          }
+          if ($artifacts.Count -eq 0) {
+            $artifacts += Get-ChildItem -Path build,native/build -Recurse -File -Include *.exe,*.dll -ErrorAction SilentlyContinue
+          }
+          if ($artifacts.Count -eq 0) {
+            Write-Error "No native artifacts found. Diagnostic file listing follows."
+            Get-ChildItem -Path build,native/build -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 200 FullName,Length | Format-Table -AutoSize
             exit 1
-          fi
-          cp -v "${artifacts[@]}" dist/native/
-          sha256sum dist/native/* > dist/native/OpenZen-acmuhan-native.sha256
-          cat dist/native/OpenZen-acmuhan-native.sha256
-          {
-            echo "## OpenZen native artifacts"
-            echo ""
-            echo "Action 页面下方的 Artifacts 区域会显示并可下载："
-            echo "- OpenZen-acmuhan-native-windows"
-            echo ""
-            echo "该产物包含新版上游的 Windows DLL 注入 Loader：OpenZenLoader.exe。"
-          } >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          $artifacts | ForEach-Object {
+            Write-Host "Copying $($_.FullName)"
+            Copy-Item -LiteralPath $_.FullName -Destination dist/native -Force
+          }
+
+          Get-ChildItem -Path dist/native -File | ForEach-Object {
+            $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName
+            "$($hash.Hash.ToLower())  $($_.Name)"
+          } | Set-Content -Path dist/native/OpenZen-acmuhan-native.sha256 -Encoding ascii
+
+          Get-Content dist/native/OpenZen-acmuhan-native.sha256
+          @"
+          ## OpenZen native artifacts
+
+          Action 页面下方的 Artifacts 区域会显示并可下载：
+          - OpenZen-acmuhan-native-windows
+
+          该产物包含新版上游的 Windows DLL 注入 Loader：OpenZenLoader.exe。
+          "@ >> $env:GITHUB_STEP_SUMMARY
 
       - name: Upload Action page native artifact
         if: always() && hashFiles('dist/native/*') != ''
