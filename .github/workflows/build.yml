@@ -108,6 +108,12 @@ jobs:
             & "$env:VCPKG_ROOT/vcpkg.exe" list | Select-String -Pattern '^qtbase:' | Select-Object -First 20 || Write-Host "qtbase is not installed yet; configureNative will install/build it if needed"
           }
 
+      - name: Prepare vcpkg binary cache directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          Write-Host "Prepared VCPKG_DEFAULT_BINARY_CACHE=$env:VCPKG_DEFAULT_BINARY_CACHE"
+
       - name: Cache vcpkg binary artifacts
         uses: actions/cache@v4
         with:
