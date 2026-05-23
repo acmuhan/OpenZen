@@ -80,18 +80,6 @@ public class ZenClient extends ClientBase {
         }
     }
 
-    /**
-     * Explicit entry point used by the DLL injection path
-     * ({@code shit.zen.dll.DllBootstrap}). Constructs the singleton if not
-     * already present and returns it.
-     */
-    public static synchronized ZenClient bootstrapForDll() {
-        if (instance == null) {
-            new ZenClient();
-        }
-        return instance;
-    }
-
     private void init() {
         try {
             username = System.getProperty("user.name", "Player");

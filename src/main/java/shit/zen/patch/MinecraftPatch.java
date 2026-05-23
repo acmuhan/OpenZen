@@ -25,7 +25,7 @@ import shit.zen.event.impl.DisconnectEvent;
 import shit.zen.event.impl.PostMotionEvent;
 import shit.zen.event.impl.PreMotionEvent;
 import shit.zen.event.impl.TickEvent;
-import shit.zen.modules.impl.movement.FastUse;
+import shit.zen.modules.impl.movement.NoSlow;
 import shit.zen.modules.impl.render.ESP;
 import shit.zen.render.Renderer;
 
@@ -104,7 +104,7 @@ public class MinecraftPatch {
 
     @Inject(method = "startUseItem", desc = "()V", at = @At(At.Type.HEAD))
     public static void onStartUseItemPre(Minecraft minecraft, CallbackInfo callbackInfo) {
-        if (FastUse.isBlocking(minecraft)) {
+        if (NoSlow.isBlocking(minecraft)) {
             savedHitResult = minecraft.hitResult;
             Vec3 location = savedHitResult.getLocation();
             minecraft.hitResult = BlockHitResult.miss(location, Direction.DOWN, BlockPos.containing(location));

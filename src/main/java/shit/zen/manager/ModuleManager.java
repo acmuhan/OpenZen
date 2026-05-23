@@ -28,7 +28,7 @@ import shit.zen.modules.impl.misc.AutoClicker;
 import shit.zen.modules.impl.misc.AutoRod;
 import shit.zen.modules.impl.misc.SafeWalk;
 import shit.zen.modules.impl.movement.CollisionSpeed;
-import shit.zen.modules.impl.movement.FastUse;
+import shit.zen.modules.impl.movement.NoSlow;
 import shit.zen.modules.impl.movement.FastWeb;
 import shit.zen.modules.impl.movement.FireballBlink;
 import shit.zen.modules.impl.movement.Fly;
@@ -103,7 +103,7 @@ public class ModuleManager extends ClientBase {
         this.register(new SafeWalk());
 
         this.register(new CollisionSpeed());
-        this.register(new FastUse());
+        this.register(new NoSlow());
         this.register(new FastWeb());
         this.register(new FireballBlink());
         this.register(new Fly());
@@ -191,9 +191,11 @@ public class ModuleManager extends ClientBase {
 
     @EventTarget
     public void onKey(KeyEvent event) {
-        for (Module module : this.moduleMap.values()) {
-            if (module.getKey() != 0 && module.getKey() == event.getKeyCode() && event.isPressed()) {
-                module.toggle();
+        if (mc.screen == null) {
+            for (Module module : this.moduleMap.values()) {
+                if (module.getKey() != 0 && module.getKey() == event.getKeyCode() && event.isPressed()) {
+                    module.toggle();
+                }
             }
         }
     }

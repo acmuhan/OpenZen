@@ -49,28 +49,29 @@ import shit.zen.utils.misc.Triple;
 import shit.zen.utils.misc.TripleProvider;
 import shit.zen.event.EventTarget;
 
-public class FastUse extends Module {
-    public static FastUse INSTANCE;
+public class NoSlow extends Module {
+    public static NoSlow INSTANCE;
     public static boolean releaseItemSent;
 
     public enum UseState {
         IDLE, WAITING, SWAPPING, USING
     }
 
-    public final ModeSetting mode;
-    public final BooleanSetting bowNoSlow;
-    public final BooleanSetting keepSprinting;
-    public final BooleanSetting crossbowNoSlow;
-    public final BooleanSetting foodNoSlow;
-    public final BooleanSetting potionNoSlow;
-    public final BooleanSetting shieldNoSlow;
-    public final NumberSetting useItemTicks;
+    public final ModeSetting mode             = createModeSetting();
+    public final BooleanSetting bowNoSlow      = new BooleanSetting("Bow", false, this::isGrimSlowMode);
+    public final BooleanSetting keepSprinting  = new BooleanSetting("Keep Sprinting", true);
+    public final BooleanSetting crossbowNoSlow = new BooleanSetting("Crossbow", false);
+    public final BooleanSetting foodNoSlow     = new BooleanSetting("Food", true);
+    public final BooleanSetting potionNoSlow   = new BooleanSetting("Potion", true);
+    public final BooleanSetting shieldNoSlow   = new BooleanSetting("Shield NoSlow", true);
+    public final NumberSetting useItemTicks    = new NumberSetting("Use Item Ticks", 1, 1, 20, 1,
+            () -> this.isGrimSlowMode() && this.bowNoSlow.getValue());
 
-    private final Timer timer;
-    private final Queue<Packet<ClientGamePacketListener>> inboundQueue;
-    private final Queue<ServerboundPongPacket> pongQueue;
-    private InteractionHand useHand;
-    private InteractionHand lastUseHand;
+    private final Timer timer = new Timer();
+    private final Queue<Packet<ClientGamePacketListener>> inboundQueue = new ArrayDeque<>();
+    private final Queue<ServerboundPongPacket> pongQueue = new ArrayDeque<>();
+    private InteractionHand useHand     = InteractionHand.MAIN_HAND;
+    private InteractionHand lastUseHand = InteractionHand.MAIN_HAND;
     private InteractionHand pendingUseHand;
     private boolean didSwapHand;
     private boolean shouldReleaseItem;
@@ -80,29 +81,13 @@ public class FastUse extends Module {
     private boolean isBlinking;
     private int blinkTicks;
     private int blinkDuration;
-    private UseState useState;
+    private UseState useState = UseState.IDLE;
     private boolean didSwapOffhand;
     private int idleTickCount;
-    private int savedHotbarSlot;
+    private int savedHotbarSlot = -1;
 
-    public FastUse() {
-        super("FastUse", Category.MOVEMENT);
-        this.mode = createModeSetting();
-        this.bowNoSlow = new BooleanSetting("Bow NoSlow", true, this::isGrimSlowMode);
-        this.keepSprinting = new BooleanSetting("Keep Sprinting", true);
-        this.crossbowNoSlow = new BooleanSetting("Crossbow NoSlow", true);
-        this.foodNoSlow = new BooleanSetting("Food NoSlow", true);
-        this.potionNoSlow = new BooleanSetting("Potion NoSlow", true);
-        this.shieldNoSlow = new BooleanSetting("Shield NoSlow", true);
-        this.useItemTicks = new NumberSetting("Use Item Ticks", 1, 1, 20, 1,
-                () -> this.isGrimSlowMode() && this.bowNoSlow.getValue());
-        this.timer = new Timer();
-        this.inboundQueue = new ArrayDeque<>();
-        this.pongQueue = new ArrayDeque<>();
-        this.useHand = InteractionHand.MAIN_HAND;
-        this.lastUseHand = InteractionHand.MAIN_HAND;
-        this.useState = UseState.IDLE;
-        this.savedHotbarSlot = -1;
+    public NoSlow() {
+        super("NoSlow", Category.MOVEMENT);
         INSTANCE = this;
         this.checkAndFallbackMode();
     }
@@ -561,7 +546,7 @@ public class FastUse extends Module {
 
     private static ModeSetting createModeSetting() {
         // Original branched on Grim role; using a single mode setting now.
-        return new ModeSetting("Mode", "Grim", "NoSlow").withDefault("Grim");
+        return new ModeSetting("Mode", "Grim V3", "NoSlow").withDefault("Grim V3");
     }
 
     static boolean hasGrimRole() {
@@ -569,7 +554,7 @@ public class FastUse extends Module {
     }
 
     static boolean isGrimMode(String string) {
-        return "Grim".equals(string);
+        return "Grim V3".equals(string);
     }
 
     private void checkAndFallbackMode() {

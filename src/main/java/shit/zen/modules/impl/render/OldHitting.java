@@ -24,7 +24,10 @@ extends Module {
     }
 
     public boolean isKillAuraAttacking() {
-        return KillAura.INSTANCE != null && KillAura.INSTANCE.isEnabled() && KillAura.INSTANCE.noUseItem.getValue() != false && KillAura.aimingTarget != null;
+        return KillAura.INSTANCE != null
+                && KillAura.INSTANCE.isEnabled()
+                && KillAura.INSTANCE.fakeAutoBlock.getValue()
+                && KillAura.aimingTarget != null;
     }
 
     public static void applyTranslate(double tx, double ty, double tz, PoseStack poseStack) {

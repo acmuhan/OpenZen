@@ -163,7 +163,7 @@ extends AntiKBMode {
             this.shouldAttack = false;
             for (int i = 0; i < 2; ++i) {
                 mc.player.setSprinting(false);
-                if (KillAura.INSTANCE.sprintSync.getValue() && this.wasSprinting) {
+                if (KillAura.INSTANCE.keepSprint.getValue() && this.wasSprinting) {
                     mc.player.setDeltaMovement(mc.player.getDeltaMovement().multiply(0.6f, 1.0, 0.6f));
                 }
                 KillAura.INSTANCE.doAttack();
