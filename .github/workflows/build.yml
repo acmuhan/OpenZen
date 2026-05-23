@@ -76,6 +76,11 @@ jobs:
   build-native-windows:
     name: Build Windows DLL loader
     runs-on: windows-2022
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
+      VCPKG_ROOT: C:\\vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}\\vcpkg-bincache
+      VCPKG_FEATURE_FLAGS: binarycaching
 
     steps:
       - name: Checkout repository
@@ -88,9 +93,58 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Build DLL loader with Gradle/CMake
+      - name: Show native build environment
+        shell: pwsh
+        run: |
+          Write-Host "JAVA_HOME=$env:JAVA_HOME"
+          Write-Host "VCPKG_ROOT=$env:VCPKG_ROOT"
+          Write-Host "VCPKG_DEFAULT_BINARY_CACHE=$env:VCPKG_DEFAULT_BINARY_CACHE"
+          Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
+          cmake --version
+          where.exe cmake
+          where.exe ninja || Write-Host "ninja not found on PATH; Visual Studio generator will be used by Gradle"
+          if ($env:VCPKG_ROOT -and (Test-Path $env:VCPKG_ROOT)) {
+            & "$env:VCPKG_ROOT\\vcpkg.exe" version
+            & "$env:VCPKG_ROOT\\vcpkg.exe" x-package-info qtbase:x64-windows-static --x-json | Select-Object -First 80
+          }
+
+      - name: Cache vcpkg binary artifacts
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: openzen-vcpkg-bin-${{ runner.os }}-${{ hashFiles('native/vcpkg.json') }}
+          restore-keys: |
+            openzen-vcpkg-bin-${{ runner.os }}-
+
+      - name: Cache vcpkg installed tree
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}\\installed
+            ${{ env.VCPKG_ROOT }}\\packages
+          key: openzen-vcpkg-installed-${{ runner.os }}-${{ hashFiles('native/vcpkg.json') }}
+          restore-keys: |
+            openzen-vcpkg-installed-${{ runner.os }}-
+
+      - name: Cache CMake build tree
+        uses: actions/cache@v4
+        with:
+          path: native/build
+          key: openzen-cmake-${{ runner.os }}-${{ hashFiles('native/**/*.txt', 'native/**/*.cmake', 'native/vcpkg.json', 'native/**/*.cpp', 'native/**/*.h', 'native/**/*.rc') }}
+          restore-keys: |
+            openzen-cmake-${{ runner.os }}-
+
+      - name: Configure native CMake project
         shell: cmd
-        run: gradlew.bat dll --no-daemon --stacktrace
+        run: gradlew.bat configureNative --no-daemon --stacktrace --info
+
+      - name: Build native DLL and loader
+        shell: cmd
+        run: gradlew.bat buildNative --no-daemon --stacktrace --info
+
+      - name: Package native distribution
+        shell: cmd
+        run: gradlew.bat packageDist --no-daemon --stacktrace --info
 
       - name: Package native artifacts
         shell: pwsh
