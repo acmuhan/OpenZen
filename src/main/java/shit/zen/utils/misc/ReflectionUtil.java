@@ -86,7 +86,7 @@ public final class ReflectionUtil {
     public static void setJumpDelay(LivingEntity livingEntity, int delay) {
         if (livingEntity == null) return;
         try {
-            Field field = findField(livingEntity.getClass(), "noJumpDelay", "f_20889_");
+            Field field = findField(livingEntity.getClass(), "noJumpDelay", "f_20954_");
             field.setInt(livingEntity, delay);
         } catch (Exception ex) {
             ClientBase.logger.error("Failed to set noJumpDelay field", ex);
@@ -96,7 +96,7 @@ public final class ReflectionUtil {
     public static void setRightClickDelay(int delay) {
         if (ClientBase.mc == null) return;
         try {
-            Field field = findField(ClientBase.mc.getClass(), "rightClickDelay", "f_91076_");
+            Field field = findField(ClientBase.mc.getClass(), "rightClickDelay", "f_91011_");
             field.setInt(ClientBase.mc, delay);
         } catch (Exception ex) {
             ClientBase.logger.error("Failed to set rightClickDelay field", ex);
