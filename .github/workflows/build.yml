@@ -105,7 +105,7 @@ jobs:
           where.exe ninja || Write-Host "ninja not found on PATH; Visual Studio generator will be used by Gradle"
           if ($env:VCPKG_ROOT -and (Test-Path $env:VCPKG_ROOT)) {
             & "$env:VCPKG_ROOT/vcpkg.exe" version
-            & "$env:VCPKG_ROOT/vcpkg.exe" x-package-info qtbase:x64-windows-static --x-json | Select-Object -First 80
+            & "$env:VCPKG_ROOT/vcpkg.exe" list | Select-String -Pattern '^qtbase:' | Select-Object -First 20 || Write-Host "qtbase is not installed yet; configureNative will install/build it if needed"
           }
 
       - name: Cache vcpkg binary artifacts
