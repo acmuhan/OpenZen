@@ -49,6 +49,14 @@ target_link_libraries(OpenZenLoader PRIVATE
     user32
 )
 
+# Build-time git revision passed in by Gradle (gradle.properties /
+# CI). Stamped into the window title so a built loader can be
+# traced back to its source commit.
+if(DEFINED OPENZEN_BUILD_REVISION AND NOT OPENZEN_BUILD_REVISION STREQUAL "")
+    target_compile_definitions(OpenZenLoader PRIVATE
+        OPENZEN_BUILD_REVISION="${OPENZEN_BUILD_REVISION}")
+endif()
+
 set_target_properties(OpenZenLoader PROPERTIES
     OUTPUT_NAME "OpenZenLoader"
 )

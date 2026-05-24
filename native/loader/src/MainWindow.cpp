@@ -50,7 +50,12 @@ MainWindow::MainWindow(QWidget* parent)
 }
 
 void MainWindow::buildUi() {
+#ifdef OPENZEN_BUILD_REVISION
+    setWindowTitle(QStringLiteral("OpenZen Loader (build %1)")
+            .arg(QString::fromLatin1(OPENZEN_BUILD_REVISION).left(7)));
+#else
     setWindowTitle(QStringLiteral("OpenZen Loader"));
+#endif
     resize(720, 460);
 
     auto* central = new QWidget(this);

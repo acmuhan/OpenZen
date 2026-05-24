@@ -383,6 +383,24 @@ def vcpkgMissingMessage =
         'Then re-run ./gradlew dll - the first run will build static Qt\n' +
         '(can take 30 min to 2 h); subsequent builds are fast.'
 
+ext.gitShortRevision = {
+    // CI passes the resolved sha in OPENZEN_BUILD_REVISION so we don't have
+    // to assume git is on PATH inside the runner image.
+    def envRev = System.getenv('OPENZEN_BUILD_REVISION')
+    if (envRev && !envRev.allWhitespace) return envRev.trim().take(7)
+    try {
+        def p = ['git', 'rev-parse', '--short=7', 'HEAD'].execute(null, project.rootDir)
+        def out = new StringBuilder()
+        p.consumeProcessOutput(out, new StringBuilder())
+        p.waitForOrKill(2000)
+        if (p.exitValue() == 0) {
+            def v = out.toString().trim()
+            if (v) return v
+        }
+    } catch (Exception ignored) {}
+    return null
+}
+
 tasks.register('stageNativeJar', Copy) {
     group = 'openzen'
     description = 'Stage the freshly built mod jar at native/zen.jar so the DLL ' +
@@ -404,13 +422,17 @@ tasks.register('configureNative', Exec) {
         if (!cmake) throw new GradleException(cmakeMissingMessage)
         def vcpkg = findVcpkg()
         if (!vcpkg) throw new GradleException(vcpkgMissingMessage)
+        def rev = gitShortRevision()
         logger.lifecycle("Using CMake : ${cmake}")
         logger.lifecycle("Using vcpkg : ${vcpkg}")
-        commandLine cmake, '-S', '.', '-B', 'build', '-A', 'x64',
+        logger.lifecycle("Build rev   : ${rev ?: '(unknown)'}")
+        def args = [cmake, '-S', '.', '-B', 'build', '-A', 'x64',
                 "-DCMAKE_TOOLCHAIN_FILE=${vcpkg}/scripts/buildsystems/vcpkg.cmake",
                 '-DVCPKG_TARGET_TRIPLET=x64-windows-static',
                 '-DVCPKG_HOST_TRIPLET=x64-windows-static',
-                '-DVCPKG_BUILD_TYPE=release'
+                '-DVCPKG_BUILD_TYPE=release']
+        if (rev) args << "-DOPENZEN_BUILD_REVISION=${rev}"
+        commandLine args
     }
 }
 
@@ -448,6 +470,48 @@ tasks.register('packageDist') {
             into "$buildDir/dist"
         }
         logger.lifecycle("Packaged ${src.length()} bytes -> ${buildDir}/dist/${src.name}")
+    }
+}
+
+ext.findUpx = {
+    try {
+        def p = ['cmd', '/c', 'where', 'upx'].execute()
+        def out = new StringBuilder()
+        p.consumeProcessOutput(out, new StringBuilder())
+        p.waitForOrKill(2000)
+        if (p.exitValue() == 0) {
+            def first = out.toString().readLines().find { it?.trim() }
+            if (first) return first.trim()
+        }
+    } catch (Exception ignored) {}
+    return null
+}
+
+tasks.register('upxCompress') {
+    group = 'openzen'
+    description = 'Run UPX --best --lzma on the packaged OpenZenLoader.exe. ' +
+                  'No-op (warning only) when upx is not on PATH so local builds ' +
+                  'do not need it installed.'
+    dependsOn 'packageDist'
+    doLast {
+        def exe = file("$buildDir/dist/OpenZenLoader.exe")
+        if (!exe.isFile()) {
+            throw new GradleException("packageDist did not produce ${exe}")
+        }
+        def upx = findUpx()
+        if (!upx) {
+            logger.warn("upx not on PATH; skipping compression. Install from " +
+                    "https://upx.github.io/ to enable.")
+            return
+        }
+        def before = exe.length()
+        exec {
+            commandLine upx, '--best', '--lzma', exe.absolutePath
+        }
+        def after = exe.length()
+        logger.lifecycle(String.format(
+                "UPX: %,d -> %,d bytes (%.1f%% of original)",
+                before, after, after * 100.0 / before))
     }
 }
 
